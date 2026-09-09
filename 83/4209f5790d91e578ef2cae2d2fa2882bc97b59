@@ -1,0 +1,24 @@
+e2e/grid-strategy.spec.ts
+  s_38b7c7364662d2::t_d8bb56d9fcdef4 65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "834209f5790d91e578ef2cae2d2fa2882bc97b59",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_38b7c7364662d2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cd8923a5-3579-464e-b1d0-39248cc8e81b",
+        "model": "grok-4.6"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
