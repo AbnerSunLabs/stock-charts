@@ -1003,6 +1003,76 @@
   color: var(--border);
 }
 
+.grid-shell .grid-portfolio-card .ant-card-head-wrapper {
+  align-items: center;
+  gap: 8px;
+}
+
+.grid-shell .grid-portfolio-card .ant-card-extra {
+  margin-inline-start: auto;
+}
+
+.grid-shell .grid-portfolio-card .ant-card-extra .ant-tag {
+  white-space: nowrap;
+}
+
+/* 记账弹窗挂到 body，不能套在 .grid-shell 下 */
+.grid-trade-entry-modal .ant-modal-content {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.grid-trade-entry-modal .ant-modal-header {
+  margin-bottom: 0;
+  padding: 16px 20px 0;
+  border-bottom: 0;
+}
+
+.grid-trade-entry-modal .ant-modal-body {
+  padding: 12px 20px 0;
+}
+
+.grid-trade-entry-modal .ant-form-item {
+  margin-bottom: 12px;
+}
+
+.grid-trade-entry-modal__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-trade-entry-modal__amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 2px 0 12px;
+  font-size: 13px;
+  color: #5b616e;
+}
+
+.grid-trade-entry-modal__amount-value {
+  font-size: 16px;
+  font-weight: 650;
+  color: #0a0b0d;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid-trade-entry-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 -20px 0;
+  padding: 14px 20px 16px;
+  border-top: 1px solid #dee1e6;
+  background: #fafafa;
+}
+
+.grid-trade-entry-modal .ant-input-number,
+.grid-trade-entry-modal .ant-picker {
+  width: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .grid-shell .grid-save-island--loading .grid-save-island__pulse {
     animation: none;

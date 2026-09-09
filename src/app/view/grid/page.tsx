@@ -225,10 +225,6 @@ function GridStrategyPageInner() {
         qty: side === 'buy' ? leg.buyShares : q.openQty,
         maxSellQty: side === 'sell' ? q.openQty : undefined,
         priceDecimals,
-        hint:
-          side === 'buy' && q.rounds > 0
-            ? `该档第 ${q.rounds + 1} 轮买入`
-            : undefined,
       });
     },
     [getLevelQty, persistence.currentStrategy, priceDecimals, result]
