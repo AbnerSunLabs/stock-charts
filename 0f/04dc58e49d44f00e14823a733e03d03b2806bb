@@ -1,0 +1,34 @@
+src/lib/supabase/client.ts
+  s_38b7c7364662d2::t_1b52c95a24ea4d 6-14,17,20-23
+playwright.config.ts
+  s_38b7c7364662d2::t_d856b4c386d8c8 20-28
+src/hooks/use-grid-strategy-trades.ts
+  s_38b7c7364662d2::t_ef6430edd54ea5 20-24
+  s_38b7c7364662d2::t_05abb3235c08c1 38-41
+  s_38b7c7364662d2::t_f1d46a3926ef06 58-60,70-72
+__tests__/supabase-browser-client.test.ts
+  s_38b7c7364662d2::t_4c8c5d241b376b 1-32
+.github/workflows/ci.yml
+  s_38b7c7364662d2::t_f5caa0ad79c720 30-32,38-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0f04dc58e49d44f00e14823a733e03d03b2806bb",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_38b7c7364662d2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cd8923a5-3579-464e-b1d0-39248cc8e81b",
+        "model": "grok-4.6"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
