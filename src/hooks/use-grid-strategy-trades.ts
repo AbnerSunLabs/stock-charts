@@ -17,12 +17,11 @@ export interface UseGridStrategyTradesOptions {
  * 登录后加载/刷新网格成交流水。
  */
 export function useGridStrategyTrades(options: UseGridStrategyTradesOptions) {
-  const repo = useMemo(
-    () =>
-      options.repository ??
-      new GridStrategyTradeRepository(createBrowserSupabaseClient()),
-    [options.repository]
-  );
+  const repo = useMemo(() => {
+    if (options.repository) return options.repository;
+    if (!options.enabled) return null;
+    return new GridStrategyTradeRepository(createBrowserSupabaseClient());
+  }, [options.enabled, options.repository]);
 
   const [trades, setTrades] = useState<GridStrategyTrade[]>([]);
   const [loading, setLoading] = useState(false);
@@ -36,6 +35,10 @@ export function useGridStrategyTrades(options: UseGridStrategyTradesOptions) {
     setLoading(true);
     setError(null);
     try {
+      if (!repo) {
+        setTrades([]);
+        return;
+      }
       const list = await repo.list();
       setTrades(list);
     } catch (e) {
@@ -52,6 +55,9 @@ export function useGridStrategyTrades(options: UseGridStrategyTradesOptions) {
 
   const createTrade = useCallback(
     async (payload: GridStrategyTradeCreatePayload) => {
+      if (!repo) {
+        throw new Error('未登录，无法记账');
+      }
       const created = await repo.create(payload);
       setTrades(prev => [created, ...prev]);
       return created;
@@ -61,6 +67,9 @@ export function useGridStrategyTrades(options: UseGridStrategyTradesOptions) {
 
   const deleteTrade = useCallback(
     async (id: string) => {
+      if (!repo) {
+        throw new Error('未登录，无法删除流水');
+      }
       await repo.delete(id);
       setTrades(prev => prev.filter(t => t.id !== id));
     },
