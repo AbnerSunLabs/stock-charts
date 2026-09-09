@@ -110,7 +110,7 @@ describe('GridStrategyRepository', () => {
     const list = await repo.list();
 
     expect(builder.select).toHaveBeenCalledWith(
-      'id,name,schema_version,created_at,updated_at'
+      'id,name,symbol,schema_version,created_at,updated_at'
     );
     expect(builder.eq).toHaveBeenCalledWith('user_id', 'user-1');
     expect(builder.order).toHaveBeenCalledWith('updated_at', { ascending: false });

@@ -19,10 +19,11 @@ export interface GridStrategyNameOverlayProps {
   open: boolean;
   mode: 'create' | 'rename';
   initialName?: string;
+  initialSymbol?: string;
   loading: boolean;
   error: string | null;
   onCancel: () => void;
-  onSubmit: (name: string) => Promise<void>;
+  onSubmit: (name: string, symbol: string) => Promise<void>;
 }
 
 type OverlayPhase = 'form' | 'success';
@@ -39,6 +40,7 @@ export function GridStrategyNameOverlay({
   open,
   mode,
   initialName,
+  initialSymbol,
   loading,
   error,
   onCancel,
@@ -49,6 +51,7 @@ export function GridStrategyNameOverlay({
   const inputRef = useRef<HTMLInputElement>(null);
   const [mounted, setMounted] = useState(false);
   const [name, setName] = useState('');
+  const [symbol, setSymbol] = useState('');
   const [phase, setPhase] = useState<OverlayPhase>('form');
   const [submitting, setSubmitting] = useState(false);
   const closingRef = useRef(false);
@@ -65,6 +68,7 @@ export function GridStrategyNameOverlay({
       setMounted(true);
       setPhase('form');
       setName(initialName ?? '');
+      setSymbol(initialSymbol ?? '');
       setSubmitting(false);
       closingRef.current = false;
       return;
@@ -74,7 +78,7 @@ export function GridStrategyNameOverlay({
       setPhase('form');
       setSubmitting(false);
     }
-  }, [open, initialName]);
+  }, [open, initialName, initialSymbol]);
 
   const finishClose = useCallback(() => {
     setMounted(false);
@@ -169,7 +173,7 @@ export function GridStrategyNameOverlay({
     if (invalid || busy || phase === 'success') return;
     setSubmitting(true);
     try {
-      await onSubmit(trimmed);
+      await onSubmit(trimmed, symbol.trim());
       setPhase('success');
     } catch {
       // 错误由父层 error prop 展示
@@ -246,6 +250,18 @@ export function GridStrategyNameOverlay({
           >
             {error ?? '1～50 个字符，同账号下名称不可重复'}
           </p>
+          <label className="grid-name-overlay__label" htmlFor="grid-strategy-symbol-input">
+            标的代码（可选）
+          </label>
+          <input
+            id="grid-strategy-symbol-input"
+            className="grid-name-overlay__input"
+            value={symbol}
+            maxLength={32}
+            placeholder="例如：159928"
+            disabled={busy || phase === 'success'}
+            onChange={event => setSymbol(event.target.value)}
+          />
           <div className="grid-name-overlay__footer">
             <button
               type="button"

@@ -42,9 +42,47 @@ export function computeBreakEvenRise(dropRatePercent: number): number {
   return (drop / (1 - drop)) * 100;
 }
 
+function formatPriceLabel(price: number, priceDecimals: number): string {
+  return `¥${price.toFixed(priceDecimals)}`;
+}
+
+function toComparisonPoint(
+  row: GridRow,
+  clusterBuyAmount: number,
+  clusterBuyShares: number,
+  gridBoughtAmount: number,
+  gridBoughtShares: number,
+  totalBuyAmount: number,
+  basePrice: number,
+  priceDecimals: number
+): StrategyComparisonPoint {
+  const price = row.buyPrice;
+  const lumpSumDropRate = ((basePrice - price) / basePrice) * 100;
+  const lumpSumFloatingLoss = totalBuyAmount * (lumpSumDropRate / 100);
+  const gridAverageCost = gridBoughtAmount / gridBoughtShares;
+  const gridDropRate = ((basePrice - gridAverageCost) / basePrice) * 100;
+  const gridFloatingLoss = gridBoughtAmount * (gridDropRate / 100);
+
+  return {
+    price,
+    priceLabel: formatPriceLabel(price, priceDecimals),
+    lumpSumFloatingLoss,
+    lumpSumFloatingLossRate: -Math.abs(lumpSumDropRate),
+    gridFloatingLoss,
+    gridFloatingLossRate: -Math.abs(gridDropRate),
+    advantage: lumpSumFloatingLoss - gridFloatingLoss,
+    lumpSumBuyPrice: basePrice,
+    gridAverageCost,
+    gridBuyAmount: clusterBuyAmount,
+    gridBuyShares: clusterBuyShares,
+    gridBuyPrice: row.buyPrice,
+    gridPosition: row.position,
+  };
+}
+
 /**
- * 构建策略对比图数据：以单次遍历累计买入金额和股数，
- * 逐档对比「一次全仓死拿」与「本策略（网格分批买入）」的浮亏。
+ * 构建策略对比图数据：同展示价合并为一档（横轴等距、避免同价横盘），
+ * 再逐档对比「一次全仓死拿」与「本策略」的浮亏。
  */
 export function buildStrategyComparisonData(
   gridData: GridRow[],
@@ -54,47 +92,43 @@ export function buildStrategyComparisonData(
   if (gridData.length === 0 || basePrice <= 0) return [];
 
   const totalBuyAmount = gridData.reduce((sum, row) => sum + row.buyAmount, 0);
-  const lumpSumBuyPrice = basePrice;
+  const dataPoints: StrategyComparisonPoint[] = [];
   let gridBoughtAmount = 0;
   let gridBoughtShares = 0;
+  let cluster: GridRow[] = [];
+  let clusterLabel: string | null = null;
 
-  const dataPoints: StrategyComparisonPoint[] = [];
+  const flushCluster = (): void => {
+    if (cluster.length === 0) return;
+    const clusterBuyAmount = cluster.reduce((sum, row) => sum + row.buyAmount, 0);
+    const clusterBuyShares = cluster.reduce((sum, row) => sum + row.buyShares, 0);
+    gridBoughtAmount += clusterBuyAmount;
+    gridBoughtShares += clusterBuyShares;
+    dataPoints.push(
+      toComparisonPoint(
+        cluster[cluster.length - 1],
+        clusterBuyAmount,
+        clusterBuyShares,
+        gridBoughtAmount,
+        gridBoughtShares,
+        totalBuyAmount,
+        basePrice,
+        priceDecimals
+      )
+    );
+    cluster = [];
+  };
 
   for (const row of gridData) {
-    // 防御：0 股档位无法计算平均成本，直接跳过
     if (row.buyShares <= 0) continue;
-
-    const price = row.buyPrice;
-
-    // 一次全仓死拿：跌幅与浮亏
-    const lumpSumDropRate = ((lumpSumBuyPrice - price) / lumpSumBuyPrice) * 100;
-    const lumpSumFloatingLoss = totalBuyAmount * (lumpSumDropRate / 100);
-    const lumpSumFloatingLossRate = -Math.abs(lumpSumDropRate);
-
-    // 本策略：累计到当前档位的平均成本与浮亏
-    gridBoughtAmount += row.buyAmount;
-    gridBoughtShares += row.buyShares;
-    const gridAverageCost = gridBoughtAmount / gridBoughtShares;
-    const gridDropRate = ((basePrice - gridAverageCost) / basePrice) * 100;
-    const gridFloatingLoss = gridBoughtAmount * (gridDropRate / 100);
-    const gridFloatingLossRate = -Math.abs(gridDropRate);
-
-    dataPoints.push({
-      price,
-      priceLabel: `¥${price.toFixed(priceDecimals)}`,
-      lumpSumFloatingLoss,
-      lumpSumFloatingLossRate,
-      gridFloatingLoss,
-      gridFloatingLossRate,
-      advantage: lumpSumFloatingLoss - gridFloatingLoss,
-      lumpSumBuyPrice,
-      gridAverageCost,
-      gridBuyAmount: row.buyAmount,
-      gridBuyShares: row.buyShares,
-      gridBuyPrice: row.buyPrice,
-      gridPosition: row.position,
-    });
+    const label = formatPriceLabel(row.buyPrice, priceDecimals);
+    if (clusterLabel !== null && label !== clusterLabel) {
+      flushCluster();
+    }
+    clusterLabel = label;
+    cluster.push(row);
   }
+  flushCluster();
 
   return dataPoints;
 }

@@ -1,15 +1,12 @@
 'use client';
 
-import type { GridBudgetMode } from '@/types/grid-v2';
 import { GridSaveStatusIsland } from '@/components/grid/grid-save-status-island';
 import { Button } from 'antd';
 
 interface GridParamsSummaryBarProps {
   basePrice: number;
   minPrice: number;
-  totalBudget: number;
   amountPerGrid: number;
-  budgetMode: GridBudgetMode;
   gridCount: number;
   priceDecimals: number;
   /** 已加载的云端策略名；本地未保存结果为 null */
@@ -30,9 +27,7 @@ interface GridParamsSummaryBarProps {
 export function GridParamsSummaryBar({
   basePrice,
   minPrice,
-  totalBudget,
   amountPerGrid,
-  budgetMode,
   gridCount,
   priceDecimals,
   strategyName,
@@ -44,9 +39,6 @@ export function GridParamsSummaryBar({
   saveReason,
   onSave,
 }: GridParamsSummaryBarProps) {
-  const budgetLabel = budgetMode === 'auto' ? '总弹药' : '单格金额';
-  const budgetValue =
-    budgetMode === 'auto' ? totalBudget : amountPerGrid;
   const editLabel = draftDirty ? '去重新生成' : '修改参数';
 
   return (
@@ -78,16 +70,14 @@ export function GridParamsSummaryBar({
       <div className="grid-summary-bar__row">
         <div className="grid-summary-bar__meta">
           <span>
-            基准价{' '}
-            <strong>{basePrice.toFixed(priceDecimals)}</strong>
+            基准价 <strong>{basePrice.toFixed(priceDecimals)}</strong>
           </span>
           <span>
-            最低价{' '}
-            <strong>{minPrice.toFixed(priceDecimals)}</strong>
+            最低价 <strong>{minPrice.toFixed(priceDecimals)}</strong>
           </span>
           <span>
-            {budgetLabel}{' '}
-            <strong>{budgetValue.toLocaleString()}</strong>
+            单格金额{' '}
+            <strong>{Math.round(amountPerGrid).toLocaleString()}</strong>
           </span>
           <span>
             档位 <strong>{gridCount}</strong>
@@ -107,9 +97,7 @@ export function GridParamsSummaryBar({
           <Button
             type={draftDirty ? 'primary' : 'default'}
             shape="round"
-            className={
-              draftDirty ? 'grid-summary-bar__regen' : undefined
-            }
+            className={draftDirty ? 'grid-summary-bar__regen' : undefined}
             onClick={onEdit}
           >
             {editLabel}

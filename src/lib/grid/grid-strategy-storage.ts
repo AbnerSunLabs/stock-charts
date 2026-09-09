@@ -164,9 +164,16 @@ export function parseGridStrategyMetadata(row: unknown): GridStrategyMetadata {
   if (schemaVersion !== GRID_STRATEGY_SCHEMA_VERSION) {
     throw new Error('该策略版本暂不支持');
   }
+  const symbolRaw = row.symbol;
+  const symbol =
+    symbolRaw == null || symbolRaw === ''
+      ? ''
+      : String(symbolRaw).trim().slice(0, 32);
+
   return {
     id: assertString(row.id),
     name: normalizeGridStrategyName(assertString(row.name)),
+    symbol,
     schemaVersion: GRID_STRATEGY_SCHEMA_VERSION,
     createdAt: assertString(row.created_at),
     updatedAt: assertString(row.updated_at),

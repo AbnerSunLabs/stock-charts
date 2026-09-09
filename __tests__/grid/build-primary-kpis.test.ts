@@ -37,17 +37,16 @@ describe('buildPrimaryKpis', () => {
 
     expect(items).toHaveLength(4);
     expect(items.map(item => item.label)).toEqual([
-      '预算使用率',
       '预计最大投入',
-      '扣费后收益率',
-      '综合净利润',
+      '最大单档聚合资金',
+      '推演网格利润',
+      '单格金额',
     ]);
-    expect(items[0].value).toBe('80.0%');
-    expect(items[1].value).toBe('400,000');
-    expect(items[2].value).toBe('+1.25%');
+    expect(items[0].value).toBe('400,000');
+    expect(items[1].value).toBe('10,000');
+    expect(items[2].value).toBe('+1,234');
     expect(items[2].color).toBe('var(--profit)');
-    expect(items[3].value).toBe('+1,284');
-    expect(items[3].color).toBe('var(--profit)');
+    expect(items[3].value).toBe('10,000');
   });
 
   it('returns legacy primary cards without inventing V2 fields', () => {

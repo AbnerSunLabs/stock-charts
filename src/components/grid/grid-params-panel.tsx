@@ -3,7 +3,6 @@
 import { BaseInfoConfig } from '@/components/grid/base-info-config';
 import { FundCoefficientConfig } from '@/components/grid/fund-coefficient-config';
 import { GridStepConfig } from '@/components/grid/grid-step-config';
-import type { GridBudgetMode } from '@/types/grid-v2';
 import type { ReactNode } from 'react';
 
 export interface GridParamsPanelProps {
@@ -15,10 +14,6 @@ export interface GridParamsPanelProps {
   onBasePriceChange: (value: number | null) => void;
   minPrice: number;
   onMinPriceChange: (value: number | null) => void;
-  totalBudget: number;
-  onTotalBudgetChange: (value: number | null) => void;
-  budgetMode: GridBudgetMode;
-  onBudgetModeChange: (mode: GridBudgetMode) => void;
   amountPerGrid: number;
   onAmountPerGridChange: (value: number | null) => void;
   amountMultiplier: number;
@@ -54,10 +49,6 @@ export function GridParamsPanel({
   onBasePriceChange,
   minPrice,
   onMinPriceChange,
-  totalBudget,
-  onTotalBudgetChange,
-  budgetMode,
-  onBudgetModeChange,
   amountPerGrid,
   onAmountPerGridChange,
   amountMultiplier,
@@ -95,10 +86,6 @@ export function GridParamsPanel({
 
       <div className="border-b border-[var(--border)]">
         <FundCoefficientConfig
-          totalBudget={totalBudget}
-          onTotalBudgetChange={onTotalBudgetChange}
-          budgetMode={budgetMode}
-          onBudgetModeChange={onBudgetModeChange}
           amountPerGrid={amountPerGrid}
           onAmountPerGridChange={onAmountPerGridChange}
           amountMultiplier={amountMultiplier}

@@ -1,14 +1,9 @@
 "use client";
 
 import { HelpTooltip } from "@/components/shared/help-tooltip";
-import type { GridBudgetMode } from "@/types/grid-v2";
-import { InputNumber, Segmented } from "antd";
+import { InputNumber } from "antd";
 
 interface FundCoefficientConfigProps {
-  totalBudget: number;
-  onTotalBudgetChange: (value: number | null) => void;
-  budgetMode: GridBudgetMode;
-  onBudgetModeChange: (mode: GridBudgetMode) => void;
   amountPerGrid: number;
   onAmountPerGridChange: (value: number | null) => void;
   amountMultiplier: number;
@@ -17,11 +12,10 @@ interface FundCoefficientConfigProps {
   onProfitReserveMultiplierChange: (value: number | null) => void;
 }
 
+/**
+ * 资金系数：单格金额 + 加码/留利系数（已去掉总弹药与自动反推）。
+ */
 export function FundCoefficientConfig({
-  totalBudget,
-  onTotalBudgetChange,
-  budgetMode,
-  onBudgetModeChange,
   amountPerGrid,
   onAmountPerGridChange,
   amountMultiplier,
@@ -39,7 +33,7 @@ export function FundCoefficientConfig({
               size="md"
               placement="bottomLeft"
               maxWidth="16rem"
-              title="总弹药反推单格金额，支持越跌越买与留利底仓"
+              title="按单格金额配置网格，支持越跌越买与留利底仓"
             />
           </div>
         </div>
@@ -48,23 +42,18 @@ export function FundCoefficientConfig({
       <div className="space-y-4">
         <div className="space-y-2">
           <label
-            htmlFor="totalBudget"
+            htmlFor="amountPerGrid"
             className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]"
           >
             <span className="text-[var(--loss)]">*</span>
-            总弹药
-            <HelpTooltip
-              title="愿意投入网格的最大现金，系统将反推单格基础金额"
-              placement="topLeft"
-              maxWidth="14rem"
-            />
+            每份金额
           </label>
           <InputNumber
-            id="totalBudget"
-            value={totalBudget}
-            onChange={onTotalBudgetChange}
+            id="amountPerGrid"
+            value={amountPerGrid}
+            onChange={onAmountPerGridChange}
             precision={0}
-            min={1000}
+            min={100}
             controls={false}
             className="w-full"
             style={{
@@ -75,48 +64,6 @@ export function FundCoefficientConfig({
             }}
           />
         </div>
-
-        <div className="space-y-2">
-          <span className="text-xs font-semibold text-[var(--foreground)]">
-            预算模式
-          </span>
-          <Segmented
-            block
-            value={budgetMode}
-            onChange={value => onBudgetModeChange(value as GridBudgetMode)}
-            options={[
-              { label: "自动反推", value: "auto" },
-              { label: "手动金额", value: "manual" },
-            ]}
-          />
-        </div>
-
-        {budgetMode === "manual" && (
-          <div className="space-y-2">
-            <label
-              htmlFor="amountPerGrid"
-              className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]"
-            >
-              <span className="text-[var(--loss)]">*</span>
-              每份金额
-            </label>
-            <InputNumber
-              id="amountPerGrid"
-              value={amountPerGrid}
-              onChange={onAmountPerGridChange}
-              precision={0}
-              min={100}
-              controls={false}
-              className="w-full"
-              style={{
-                width: "100%",
-                textAlign: "center",
-                fontWeight: 600,
-                fontSize: "16px",
-              }}
-            />
-          </div>
-        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">

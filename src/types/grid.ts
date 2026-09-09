@@ -56,7 +56,7 @@ export const DEFAULT_GRID_PARAMS: GridParams = {
   basePrice: 1.0,
   minPrice: 0.5,
   totalBudget: 500000,
-  budgetMode: 'auto',
+  budgetMode: 'manual',
   amountPerGrid: 10000,
   smallGridStep: 5.0,
   mediumGridStep: 15.0,

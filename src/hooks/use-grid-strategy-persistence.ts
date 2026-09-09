@@ -44,7 +44,7 @@ export interface UseGridStrategyPersistenceReturn {
   openStrategy: (id: string) => Promise<void>;
   createStrategy: (name: string, payload: GridStrategySavePayload) => Promise<void>;
   updateCurrentStrategy: (payload: GridStrategySavePayload) => Promise<void>;
-  renameStrategy: (id: string, name: string) => Promise<void>;
+  renameStrategy: (id: string, name: string, symbol?: string) => Promise<void>;
   deleteStrategy: (id: string) => Promise<void>;
   requireLoginForSave: (payload: GridStrategySavePayload) => boolean;
   handleSignedOut: () => void;
@@ -194,6 +194,7 @@ export function useGridStrategyPersistence(
         setCurrentStrategy({
           id: strategy.id,
           name: strategy.name,
+          symbol: strategy.symbol,
           schemaVersion: strategy.schemaVersion,
           createdAt: strategy.createdAt,
           updatedAt: strategy.updatedAt,
@@ -220,6 +221,7 @@ export function useGridStrategyPersistence(
         const meta: GridStrategyMetadata = {
           id: created.id,
           name: created.name,
+          symbol: created.symbol,
           schemaVersion: created.schemaVersion,
           createdAt: created.createdAt,
           updatedAt: created.updatedAt,
@@ -254,6 +256,7 @@ export function useGridStrategyPersistence(
         const meta: GridStrategyMetadata = {
           id: updated.id,
           name: updated.name,
+          symbol: updated.symbol,
           schemaVersion: updated.schemaVersion,
           createdAt: updated.createdAt,
           updatedAt: updated.updatedAt,
@@ -276,11 +279,11 @@ export function useGridStrategyPersistence(
   );
 
   const renameStrategy = useCallback(
-    async (id: string, name: string) => {
+    async (id: string, name: string, symbol?: string) => {
       setActionId(id);
       setWriteLoading(true);
       try {
-        const meta = await repo.rename(id, name);
+        const meta = await repo.rename(id, name, symbol);
         setStrategies(prev =>
           sortByUpdatedAtDesc([meta, ...prev.filter(s => s.id !== meta.id)])
         );
