@@ -1,0 +1,36 @@
+__tests__/grid/format-trade-amount.test.ts
+  s_0a4aeb847e0d21::t_714ec67a9cfc40 1-12
+src/app/view/grid/grid.css
+  s_0a4aeb847e0d21::t_a3f9217568b641 1006-1018
+  s_0a4aeb847e0d21::t_b442ae63ef888a 1019-1075
+src/components/grid/grid-portfolio-board.tsx
+  s_0a4aeb847e0d21::t_8f4c4df0d917d4 182,193-196
+  s_0a4aeb847e0d21::t_70fc5129bad039 197
+src/components/grid/grid-trade-entry-modal.tsx
+  s_0a4aeb847e0d21::t_da2376ac883afb 6,39-124,153,161,163-169
+  s_0a4aeb847e0d21::t_36dd22dd936cef 3
+  s_0a4aeb847e0d21::t_ae3ffc11b6541a 5,37-38,136-137,157-159
+src/lib/grid/format-trade-amount.ts
+  s_0a4aeb847e0d21::t_1663bd6edc7713 1-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4bb5deb38ff02c72ade9b20161d5c604e305b8bf",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_0a4aeb847e0d21": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a0383621-738e-4141-afbb-7b173424e0fe",
+        "model": "grok-4.6"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
