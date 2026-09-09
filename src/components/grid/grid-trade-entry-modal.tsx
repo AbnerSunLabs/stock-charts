@@ -1,7 +1,9 @@
 'use client';
 
+import { formatTradeAmount } from '@/lib/grid/format-trade-amount';
 import type { GridStrategyTradeSide } from '@/types/grid-strategy-trade';
-import { Button, DatePicker, Form, InputNumber, Modal, Space } from 'antd';
+import { Button, DatePicker, Form, InputNumber, Modal } from 'antd';
+import type { FormInstance } from 'antd/es/form';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect } from 'react';
 
@@ -12,7 +14,6 @@ export interface GridTradeEntryDefaults {
   qty: number;
   maxSellQty?: number;
   priceDecimals: number;
-  hint?: string;
 }
 
 export interface GridTradeEntryModalProps {
@@ -33,6 +34,94 @@ interface FormValues {
   tradeDate: Dayjs;
 }
 
+const FULL_WIDTH = { width: '100%' } as const;
+
+interface TradeEntryFieldsProps {
+  form: FormInstance<FormValues>;
+  defaults: GridTradeEntryDefaults;
+  loading?: boolean;
+  price: number | undefined;
+  qty: number | undefined;
+  onCancel: () => void;
+  onSubmit: GridTradeEntryModalProps['onSubmit'];
+}
+
+/**
+ * 记账表单字段与页脚。
+ */
+function TradeEntryFields({
+  form,
+  defaults,
+  loading,
+  price,
+  qty,
+  onCancel,
+  onSubmit,
+}: TradeEntryFieldsProps) {
+  return (
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={async values => {
+        await onSubmit({
+          price: values.price,
+          qty: values.qty,
+          tradeDate: values.tradeDate.format('YYYY-MM-DD'),
+        });
+      }}
+    >
+      <div className="grid-trade-entry-modal__pair">
+        <Form.Item
+          name="price"
+          label="成交价"
+          rules={[{ required: true, message: '请输入成交价' }]}
+        >
+          <InputNumber
+            controls={false}
+            min={0.0001}
+            step={10 ** -defaults.priceDecimals}
+            precision={defaults.priceDecimals}
+            style={FULL_WIDTH}
+          />
+        </Form.Item>
+        <Form.Item
+          name="qty"
+          label="股数"
+          rules={[{ required: true, message: '请输入股数' }]}
+        >
+          <InputNumber
+            controls={false}
+            min={1}
+            step={100}
+            precision={0}
+            max={defaults.side === 'sell' ? defaults.maxSellQty : undefined}
+            style={FULL_WIDTH}
+          />
+        </Form.Item>
+      </div>
+      <Form.Item
+        name="tradeDate"
+        label="成交日"
+        rules={[{ required: true, message: '请选择成交日' }]}
+      >
+        <DatePicker style={FULL_WIDTH} />
+      </Form.Item>
+      <div className="grid-trade-entry-modal__amount">
+        <span>成交额</span>
+        <span className="grid-trade-entry-modal__amount-value">
+          {formatTradeAmount(price, qty)}
+        </span>
+      </div>
+      <div className="grid-trade-entry-modal__footer">
+        <Button onClick={onCancel}>取消</Button>
+        <Button type="primary" htmlType="submit" loading={loading}>
+          确认
+        </Button>
+      </div>
+    </Form>
+  );
+}
+
 /**
  * 档位买卖记账弹窗。
  */
@@ -44,6 +133,8 @@ export function GridTradeEntryModal({
   onSubmit,
 }: GridTradeEntryModalProps) {
   const [form] = Form.useForm<FormValues>();
+  const price = Form.useWatch('price', form);
+  const qty = Form.useWatch('qty', form);
 
   useEffect(() => {
     if (!open || !defaults) return;
@@ -56,73 +147,26 @@ export function GridTradeEntryModal({
 
   if (!defaults) return null;
 
-  const title = defaults.side === 'buy' ? '记录买入' : '记录卖出';
-
   return (
     <Modal
       open={open}
-      title={title}
+      title={defaults.side === 'buy' ? '记录买入' : '记录卖出'}
       onCancel={onCancel}
       footer={null}
       destroyOnClose
+      width={400}
+      centered
+      wrapClassName="grid-trade-entry-modal"
     >
-      {defaults.hint ? (
-        <p className="mb-3 text-xs text-[var(--muted-foreground)]">
-          {defaults.hint}
-        </p>
-      ) : null}
-      <Form
+      <TradeEntryFields
         form={form}
-        layout="vertical"
-        onFinish={async values => {
-          await onSubmit({
-            price: values.price,
-            qty: values.qty,
-            tradeDate: values.tradeDate.format('YYYY-MM-DD'),
-          });
-        }}
-      >
-        <Form.Item
-          name="price"
-          label="成交价"
-          rules={[{ required: true, message: '请输入成交价' }]}
-        >
-          <InputNumber
-            className="w-full"
-            min={0.0001}
-            step={10 ** -defaults.priceDecimals}
-            precision={defaults.priceDecimals}
-          />
-        </Form.Item>
-        <Form.Item
-          name="qty"
-          label="股数"
-          rules={[{ required: true, message: '请输入股数' }]}
-        >
-          <InputNumber
-            className="w-full"
-            min={1}
-            step={100}
-            precision={0}
-            max={
-              defaults.side === 'sell' ? defaults.maxSellQty : undefined
-            }
-          />
-        </Form.Item>
-        <Form.Item
-          name="tradeDate"
-          label="成交日"
-          rules={[{ required: true, message: '请选择成交日' }]}
-        >
-          <DatePicker className="w-full" />
-        </Form.Item>
-        <Space className="w-full justify-end">
-          <Button onClick={onCancel}>取消</Button>
-          <Button type="primary" htmlType="submit" loading={loading}>
-            确认
-          </Button>
-        </Space>
-      </Form>
+        defaults={defaults}
+        loading={loading}
+        price={price}
+        qty={qty}
+        onCancel={onCancel}
+        onSubmit={onSubmit}
+      />
     </Modal>
   );
 }

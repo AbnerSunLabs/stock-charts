@@ -179,6 +179,7 @@ export function GridPortfolioBoard({
         {visible.map(({ s, st, maxLoss }) => (
           <Card
             key={s.id}
+            className="grid-portfolio-card"
             title={
               <span>
                 {s.name}
@@ -188,6 +189,11 @@ export function GridPortfolioBoard({
                   </span>
                 ) : null}
               </span>
+            }
+            extra={
+              <Tag color="processing" className="m-0">
+                持仓中 {st.openLevels}/{st.totalLevels}，累计 {st.rounds} 轮
+              </Tag>
             }
           >
             <Space direction="vertical" size={8} className="w-full">
@@ -229,9 +235,6 @@ export function GridPortfolioBoard({
                   {money(st.realized)}
                 </span>
               </div>
-              <Tag color="processing">
-                持仓中 {st.openLevels}/{st.totalLevels}，累计 {st.rounds} 轮
-              </Tag>
               <Space>
                 <Button
                   type="primary"
