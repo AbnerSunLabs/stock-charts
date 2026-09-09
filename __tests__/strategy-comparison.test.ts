@@ -89,6 +89,55 @@ describe('buildStrategyComparisonData', () => {
     const points = buildStrategyComparisonData(rows, basePrice, 3);
     expect(points[0].priceLabel).toBe('¥100.000');
   });
+
+  it('同一展示价只输出一个点，并累计该价全部买入', () => {
+    const sameFloor: GridRow[] = [
+      makeRow({ buyPrice: 100, buyAmount: 10000, buyShares: 100, position: 1 }),
+      makeRow({
+        buyPrice: 50,
+        buyAmount: 10000,
+        buyShares: 200,
+        position: 0.5,
+        gridType: '小网',
+      }),
+      makeRow({
+        buyPrice: 50,
+        buyAmount: 10000,
+        buyShares: 200,
+        position: 0.5,
+        gridType: '中网',
+      }),
+      makeRow({
+        buyPrice: 50,
+        buyAmount: 10000,
+        buyShares: 200,
+        position: 0.5,
+        gridType: '大网',
+      }),
+    ];
+    const points = buildStrategyComparisonData(sameFloor, basePrice, 2);
+
+    expect(points).toHaveLength(2);
+    expect(points.map(p => p.priceLabel)).toEqual(['¥100.00', '¥50.00']);
+    expect(new Set(points.map(p => p.priceLabel)).size).toBe(points.length);
+    expect(points[1].gridBuyAmount).toBe(30000);
+    expect(points[1].gridBuyShares).toBe(600);
+    expect(points[1].gridAverageCost).toBeCloseTo(40000 / 700);
+    expect(points[1].lumpSumFloatingLossRate).toBeCloseTo(-50);
+  });
+
+  it('toFixed 后标签相同的价位也应合并', () => {
+    const rowsNear: GridRow[] = [
+      makeRow({ buyPrice: 100, buyAmount: 10000, buyShares: 100 }),
+      makeRow({ buyPrice: 50.004, buyAmount: 8000, buyShares: 160 }),
+      makeRow({ buyPrice: 50.001, buyAmount: 7000, buyShares: 140 }),
+    ];
+    const points = buildStrategyComparisonData(rowsNear, basePrice, 2);
+    expect(points).toHaveLength(2);
+    expect(points[1].priceLabel).toBe('¥50.00');
+    expect(points[1].gridBuyAmount).toBe(15000);
+    expect(points[1].gridBuyShares).toBe(300);
+  });
 });
 
 describe('computeTooltipMetrics', () => {

@@ -55,6 +55,7 @@ function meta(partial: Partial<GridStrategyMetadata> = {}): GridStrategyMetadata
   return {
     id: 'strategy-1',
     name: '策略一',
+    symbol: '',
     schemaVersion: 1,
     createdAt: '2026-08-07T01:00:00.000Z',
     updatedAt: '2026-08-07T02:00:00.000Z',

@@ -18,6 +18,8 @@ export type GridStrategySnapshotV1 = GridRunResult;
 export interface GridStrategyMetadata {
   id: string;
   name: string;
+  /** 标的代码，可空 */
+  symbol: string;
   schemaVersion: typeof GRID_STRATEGY_SCHEMA_VERSION;
   createdAt: string;
   updatedAt: string;
@@ -33,4 +35,6 @@ export interface SavedGridStrategyV1 extends GridStrategyMetadata {
 export interface GridStrategySavePayload {
   config: GridStrategyConfigV1;
   resultSnapshot: GridStrategySnapshotV1;
+  /** 创建时可带标的代码；覆盖更新时若传入则一并写入 */
+  symbol?: string;
 }

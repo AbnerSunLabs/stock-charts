@@ -5,13 +5,12 @@ import {
   buildFirstPositionByType,
   buildLegGridRowMap,
   getDisplayDropRate,
-  getGridRowKey,
   GRID_TYPE_META,
 } from '@/components/grid/grid-table-row-helpers';
 import { exportGridTablePng } from '@/lib/grid/export-grid-table-png';
 import type { GridRow } from '@/types/grid';
 import type { AggregatedGridRow, GridLeg } from '@/types/grid-v2';
-import { message, Table } from 'antd';
+import { Button, message, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Download } from 'lucide-react';
 import {
@@ -24,11 +23,18 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 
+export interface GridResultTradeActions {
+  strategyId: string | null;
+  getLevelQty: (levelKey: string) => { openQty: number; rounds: number };
+  onTrade: (side: 'buy' | 'sell', levelKey: string) => void;
+}
+
 interface GridResultTableProps {
   aggregatedRows: AggregatedGridRow[];
   legs: GridLeg[];
   basePrice: number;
   priceDecimals: number;
+  tradeActions?: GridResultTradeActions;
 }
 
 type GroupTableRow = {
@@ -54,7 +60,7 @@ const DETAIL_CELL_CLS =
 
 /** 与 Ant Design 展开列宽度对齐 */
 const EXPAND_COL_WIDTH = 48;
-const LEG_COUNT_COL_WIDTH = 72;
+const EXEC_COL_WIDTH = 200;
 
 function TypeBadge({ gridType }: { gridType: GridRow['gridType'] }) {
   return (
@@ -84,6 +90,76 @@ function DropRateCell({
       {displayDropRate === 0 ? '—' : `${displayDropRate.toFixed(2)}%`}
     </span>
   );
+}
+
+function ExecuteTradeCell({
+  levelKey,
+  tradeActions,
+}: {
+  levelKey: string;
+  tradeActions: GridResultTradeActions;
+}) {
+  const { openQty, rounds } = tradeActions.getLevelQty(levelKey);
+
+  if (openQty > 0) {
+    return (
+      <Space size="small" wrap>
+        <Tag color="processing">持仓中</Tag>
+        <Button
+          size="small"
+          onClick={() => tradeActions.onTrade('sell', levelKey)}
+        >
+          卖出
+        </Button>
+        {rounds > 0 ? (
+          <span className="text-xs text-[var(--muted-foreground)]">
+            已完成 {rounds} 轮
+          </span>
+        ) : null}
+      </Space>
+    );
+  }
+
+  return (
+    <Button
+      size="small"
+      onClick={() => tradeActions.onTrade('buy', levelKey)}
+    >
+      买入
+    </Button>
+  );
+}
+
+function renderExecuteCell(
+  record: ResultTableRow,
+  tradeActions?: GridResultTradeActions
+) {
+  if (record.kind === 'group') {
+    return (
+      <span className="text-[var(--muted-foreground)]">展开后记账</span>
+    );
+  }
+  if (!tradeActions?.strategyId) {
+    return (
+      <span className="text-[var(--muted-foreground)]">保存后可记账</span>
+    );
+  }
+  const levelKey = record.childLegIds[0];
+  return (
+    <ExecuteTradeCell levelKey={levelKey} tradeActions={tradeActions} />
+  );
+}
+
+function renderExpandedExecuteCell(
+  legId: string,
+  tradeActions?: GridResultTradeActions
+) {
+  if (!tradeActions?.strategyId) {
+    return (
+      <span className="text-[var(--muted-foreground)]">保存后可记账</span>
+    );
+  }
+  return <ExecuteTradeCell levelKey={legId} tradeActions={tradeActions} />;
 }
 
 function DetailRowCells({
@@ -119,16 +195,15 @@ function ExpandedLegRows({
   legRowMap,
   firstPositionByType,
   priceDecimals,
+  tradeActions,
 }: {
   legIds: string[];
   legRowMap: Map<string, GridRow>;
   firstPositionByType: Map<string, number>;
   priceDecimals: number;
+  tradeActions?: GridResultTradeActions;
 }) {
-  const data = legIds
-    .map(id => legRowMap.get(id))
-    .filter((row): row is GridRow => row !== undefined)
-    .sort((a, b) => b.buyPrice - a.buyPrice);
+  const hasExecCol = tradeActions !== undefined;
 
   return (
     <table className="grid-result-expanded-table w-full border-collapse">
@@ -143,25 +218,32 @@ function ExpandedLegRows({
         <col />
         <col />
         <col />
-        <col style={{ width: LEG_COUNT_COL_WIDTH }} />
+        {hasExecCol ? <col style={{ width: EXEC_COL_WIDTH }} /> : null}
       </colgroup>
       <tbody>
-        {data.map(row => (
-          <tr
-            key={getGridRowKey(row)}
-            className="grid-result-detail-row border-b border-[var(--border)] transition-colors last:border-b-0 hover:bg-[var(--hover-bg)]"
-          >
-            <td className="grid-result-expand-spacer" aria-hidden />
-            <DetailRowCells
-              row={row}
-              firstPositionByType={firstPositionByType}
-              priceDecimals={priceDecimals}
-            />
-            <td className={`${DETAIL_CELL_CLS} text-[var(--muted-foreground)]`}>
-              —
-            </td>
-          </tr>
-        ))}
+        {legIds.map(legId => {
+          const row = legRowMap.get(legId);
+          if (!row) return null;
+
+          return (
+            <tr
+              key={legId}
+              className="grid-result-detail-row border-b border-[var(--border)] transition-colors last:border-b-0 hover:bg-[var(--hover-bg)]"
+            >
+              <td className="grid-result-expand-spacer" aria-hidden />
+              <DetailRowCells
+                row={row}
+                firstPositionByType={firstPositionByType}
+                priceDecimals={priceDecimals}
+              />
+              {hasExecCol ? (
+                <td className={DETAIL_CELL_CLS}>
+                  {renderExpandedExecuteCell(legId, tradeActions)}
+                </td>
+              ) : null}
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
@@ -175,6 +257,7 @@ interface GridResultTableViewProps {
   legRowMap: Map<string, GridRow>;
   firstPositionByType: Map<string, number>;
   priceDecimals: number;
+  tradeActions?: GridResultTradeActions;
   containerRef?: RefObject<HTMLDivElement>;
   containerClassName?: string;
   containerStyle?: CSSProperties;
@@ -189,6 +272,7 @@ function GridResultTableView({
   legRowMap,
   firstPositionByType,
   priceDecimals,
+  tradeActions,
   containerRef,
   containerClassName = '',
   containerStyle,
@@ -222,6 +306,7 @@ function GridResultTableView({
                 legRowMap={legRowMap}
                 firstPositionByType={firstPositionByType}
                 priceDecimals={priceDecimals}
+                tradeActions={tradeActions}
               />
             ) : null,
           rowExpandable: record =>
@@ -237,6 +322,7 @@ export function GridResultTable({
   legs,
   basePrice,
   priceDecimals,
+  tradeActions,
 }: GridResultTableProps) {
   const visibleTableRef = useRef<HTMLDivElement>(null);
   const exportCaptureRef = useRef<HTMLDivElement>(null);
@@ -304,14 +390,14 @@ export function GridResultTable({
     [tableRows]
   );
 
-  const columns: ColumnsType<ResultTableRow> = [
+  const columns: ColumnsType<ResultTableRow> = useMemo(() => [
     {
       title: '类型',
-      width: 112,
+      width: 168,
       render: (_: unknown, record: ResultTableRow) => {
         if (record.kind === 'group') {
           return (
-            <span className="font-medium text-[var(--foreground)]">
+            <span className="whitespace-nowrap font-medium text-[var(--foreground)]">
               {record.aggregated.displayType}
             </span>
           );
@@ -410,12 +496,13 @@ export function GridResultTable({
           : '—',
     },
     {
-      title: '子腿数',
-      width: LEG_COUNT_COL_WIDTH,
+      title: '执行',
+      width: EXEC_COL_WIDTH,
+      fixed: 'right',
       render: (_: unknown, record: ResultTableRow) =>
-        record.childLegIds.length > 1 ? record.childLegIds.length : '—',
+        renderExecuteCell(record, tradeActions),
     },
-  ];
+  ], [firstPositionByType, priceDecimals, tradeActions]);
 
   const handleDownloadPng = useCallback(async (): Promise<string> => {
     const visibleTableWidth = visibleTableRef.current?.scrollWidth;
@@ -463,7 +550,7 @@ export function GridResultTable({
     <div className="mb-8">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
-          同价位小/中/大网已合并为聚合组；展开查看各子腿买卖明细
+          同价位小/中/大网已合并为聚合组；展开后可对各档记账
         </p>
         <button
           type="button"
@@ -484,6 +571,7 @@ export function GridResultTable({
         legRowMap={legRowMap}
         firstPositionByType={firstPositionByType}
         priceDecimals={priceDecimals}
+        tradeActions={tradeActions}
         containerRef={visibleTableRef}
       />
 
@@ -495,6 +583,7 @@ export function GridResultTable({
           legRowMap={legRowMap}
           firstPositionByType={firstPositionByType}
           priceDecimals={priceDecimals}
+          tradeActions={tradeActions}
           containerRef={exportCaptureRef}
           containerClassName="pointer-events-none fixed left-[-10000px] top-0 z-[-1] overflow-visible shadow-none"
           containerStyle={{ width: exportTableWidth }}

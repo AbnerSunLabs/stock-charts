@@ -39,7 +39,8 @@ export function useGridParams(initialParams: GridParams): UseGridParamsReturn {
   }, []);
 
   const replaceParams = useCallback((next: GridParams) => {
-    setParams(next);
+    // UI 已取消自动反推：加载旧策略时强制 manual
+    setParams({ ...next, budgetMode: 'manual' });
   }, []);
 
   return {

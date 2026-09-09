@@ -48,29 +48,25 @@ export function buildPrimaryKpis(stressTest: StressTest): GridKpiItem[] {
 
   return [
     {
-      label: '预算使用率',
-      value: `${(v2.budgetUsageRate * 100).toFixed(1)}%`,
-      tooltip: '预计最大投入 / 总弹药',
-    },
-    {
       label: '预计最大投入',
       value: Math.round(v2.totalBudgetRequired).toLocaleString(),
       tooltip: '所有档位买入成本（含佣金）之和',
     },
     {
-      label: '扣费后收益率',
-      value:
-        (v2.realizedGridProfitRate > 0 ? '+' : '') +
-        v2.realizedGridProfitRate.toFixed(2) +
-        '%',
-      color: toneBySign(v2.realizedGridProfitRate),
-      tooltip: '已实现网格利润 / 预计最大投入',
+      label: '最大单档聚合资金',
+      value: Math.round(v2.maxClusterCashDemand).toLocaleString(),
+      tooltip: '单个聚合组一次触发的最大资金需求',
     },
     {
-      label: '综合净利润',
-      value: signedAmount(v2.totalNetProfit),
-      color: toneBySign(v2.totalNetProfit),
-      tooltip: '已实现网格利润 + 底仓浮盈',
+      label: '推演网格利润',
+      value: signedAmount(v2.realizedGridProfit),
+      color: toneBySign(v2.realizedGridProfit),
+      tooltip: '假设全档回补后的推演净利润，非成交记账',
+    },
+    {
+      label: '单格金额',
+      value: Math.round(v2.amountPerGrid).toLocaleString(),
+      tooltip: '当前策略使用的单格基础金额',
     },
   ];
 }

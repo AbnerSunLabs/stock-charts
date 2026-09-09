@@ -5,7 +5,6 @@ import type { StressTest } from "@/types/grid";
 
 interface StatsCardsProps {
   stressTest: StressTest;
-  amountPerGrid?: number;
   /** 隐藏已在主 KPI 行展示的指标，避免重复 */
   omitPrimary?: boolean;
   /** 侧栏紧凑布局：指标卡两列排布 */
@@ -21,7 +20,6 @@ interface StatCardItem {
 
 export function StatsCards({
   stressTest,
-  amountPerGrid,
   omitPrimary = false,
   compact = false,
 }: StatsCardsProps) {
@@ -29,7 +27,7 @@ export function StatsCards({
   const primaryLabels = new Set(
     omitPrimary
       ? v2
-        ? ['预算使用率', '预计最大投入', '扣费后收益率', '综合净利润']
+        ? ['预计最大投入', '最大单档聚合资金', '推演网格利润', '单格金额']
         : ['总买入金额', '收益率', '预期利润']
       : []
   );
@@ -37,19 +35,9 @@ export function StatsCards({
   const fundingCards: StatCardItem[] = v2
     ? [
         {
-          label: "总弹药",
-          value: v2.totalBudget.toLocaleString(),
-          tooltip: "用户愿意投入网格的最大现金",
-        },
-        {
           label: "预计最大投入",
           value: Math.round(v2.totalBudgetRequired).toLocaleString(),
           tooltip: "所有档位买入成本（含佣金）之和",
-        },
-        {
-          label: "预算使用率",
-          value: `${(v2.budgetUsageRate * 100).toFixed(1)}%`,
-          tooltip: "预计最大投入 / 总弹药",
         },
         {
           label: "最大单档聚合资金",
@@ -68,7 +56,7 @@ export function StatsCards({
   const profitCards: StatCardItem[] = v2
     ? [
         {
-          label: "已实现网格利润",
+          label: "推演网格利润",
           value:
             (v2.realizedGridProfit > 0 ? "+" : "") +
             Math.round(v2.realizedGridProfit).toLocaleString(),
@@ -78,7 +66,7 @@ export function StatsCards({
               : v2.realizedGridProfit < 0
                 ? "var(--loss)"
                 : null,
-          tooltip: "扣费后滚动网格净利润",
+          tooltip: "假设全档回补后的推演净利润，非成交记账",
         },
         {
           label: "扣费后收益率",
@@ -92,7 +80,7 @@ export function StatsCards({
               : v2.realizedGridProfitRate < 0
                 ? "var(--loss)"
                 : null,
-          tooltip: "已实现网格利润 / 预计最大投入",
+          tooltip: "推演网格利润 / 预计最大投入",
         },
         {
           label: "成本覆盖步长",
@@ -164,7 +152,7 @@ export function StatsCards({
               : v2.totalNetProfit < 0
                 ? "var(--loss)"
                 : null,
-          tooltip: "已实现网格利润 + 底仓浮盈",
+          tooltip: "推演网格利润 + 底仓浮盈",
         },
       ]
     : [
@@ -188,15 +176,6 @@ export function StatsCards({
 
   return (
     <div className={compact ? 'space-y-5' : 'mb-8 space-y-6'}>
-      {amountPerGrid !== undefined && (
-        <p className="text-xs text-[var(--muted-foreground)]">
-          单格基础金额由总弹药反推：
-          <span className="ml-1 font-semibold text-[var(--foreground)]">
-            {Math.round(amountPerGrid).toLocaleString()} 元
-          </span>
-        </p>
-      )}
-
       {sections.map(section => (
         <div key={section.title}>
           <p className="mb-3 text-xs font-medium text-[var(--muted-foreground)]">

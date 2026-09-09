@@ -8,7 +8,6 @@ import {
   calculateCostCoverageStepPct,
   extractTradeCost,
 } from '@/lib/grid/trade-cost';
-import { calculateTotalBudgetRequired } from '@/lib/grid/capital-allocation';
 
 /**
  * 生成策略风险警告。
@@ -16,8 +15,8 @@ import { calculateTotalBudgetRequired } from '@/lib/grid/capital-allocation';
 export function buildStrategyWarnings(
   params: GridStrategyParamsV2,
   options: GridStrategyOptionsV2,
-  legs: GridLeg[],
-  amountPerGrid: number
+  _legs: GridLeg[],
+  _amountPerGrid: number
 ): StrategyWarning[] {
   const warnings: StrategyWarning[] = [];
   const cost = extractTradeCost(params);
@@ -26,10 +25,8 @@ export function buildStrategyWarnings(
     params.priceUnit,
     cost
   );
-  const totalRequired = calculateTotalBudgetRequired(legs);
 
   appendCostWarnings(warnings, params.smallGridStep, costCoverageStepPct);
-  appendBudgetWarnings(warnings, params, totalRequired);
   appendAtrWarnings(warnings, params.smallGridStep, options.atr20Pct);
 
   return warnings;
@@ -53,20 +50,6 @@ function appendCostWarnings(
       code: 'W01-YELLOW',
       level: 'warning',
       message: '小网步长接近成本覆盖线，请注意磨损风险',
-    });
-  }
-}
-
-function appendBudgetWarnings(
-  warnings: StrategyWarning[],
-  params: GridStrategyParamsV2,
-  totalRequired: number
-): void {
-  if (params.budgetMode === 'manual' && totalRequired > params.totalBudget) {
-    warnings.push({
-      code: 'BUDGET-OVER',
-      level: 'warning',
-      message: `预计总投入 ${Math.round(totalRequired)} 超出总弹药 ${params.totalBudget}`,
     });
   }
 }

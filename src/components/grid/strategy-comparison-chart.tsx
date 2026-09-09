@@ -235,7 +235,7 @@ export function StrategyComparisonChart({
       <div className="mb-5 border-b border-[var(--border)] pb-4">
         <h3 className="ds-section-title">策略优势推演</h3>
         <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-          模拟单边下跌：一次全仓死拿 vs 本策略的浮亏差距
+          模拟单边下跌：一次全仓死拿 vs 本策略的浮亏差距；同展示价合并为一档，横轴按档位等距
         </p>
       </div>
 
