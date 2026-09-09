@@ -62,7 +62,7 @@ test.describe('网格策略', () => {
     await expect(page.getByText('网格计算结果')).toBeVisible({ timeout: 15_000 });
 
     const hint = page.getByText(
-      '同价位小/中/大网已合并为聚合组；展开查看各子腿买卖明细'
+      '同价位小/中/大网已合并为聚合组；展开后可对各档记账'
     );
     const downloadBtn = page.getByRole('button', { name: '下载表格' });
     const table = page.locator('.grid-result-table');
