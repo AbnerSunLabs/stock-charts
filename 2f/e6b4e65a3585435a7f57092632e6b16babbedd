@@ -1,0 +1,163 @@
+src/components/grid/strategy-comparison-chart.tsx
+  s_38b7c7364662d2::t_5a046ce73e40c9 238
+src/hooks/use-grid-strategy-persistence.ts
+  s_6f7716a03c0700::t_cc37b909f91150 259
+  s_6f7716a03c0700::t_14881169dd2d10 47
+  s_6f7716a03c0700::t_136019a662d77e 282,286
+  s_6f7716a03c0700::t_f4236bbaea9a54 224
+  s_6f7716a03c0700::t_75721552080d0f 197
+src/hooks/use-grid-params.ts
+  s_6f7716a03c0700::t_83dcf635fe1165 42-43
+__tests__/grid/use-grid-strategy-persistence.test.ts
+  s_6f7716a03c0700::t_0cd1145d715a95 58
+src/types/grid.ts
+  s_6f7716a03c0700::t_75810f86d3723d 59
+src/app/view/grid/page.tsx
+  s_6f7716a03c0700::t_2d438b41ca5004 773
+  s_6f7716a03c0700::t_3dc1281851307b 39
+  s_6f7716a03c0700::t_76ae6a71a20c38 574-587,590-593,595-598,600-634
+  s_6f7716a03c0700::t_3fe36e1be39c99 393-394
+  s_6f7716a03c0700::t_5ead98fdfb2c1f 158-236
+  s_6f7716a03c0700::t_d1671e9d462f90 521
+  s_6f7716a03c0700::t_1b686b8a3f1b97 10,14-16,22,29-31
+  s_6f7716a03c0700::t_89037e35fcf3e3 352,356,365,367-368
+  s_6f7716a03c0700::t_d37146c054b6ae 562-573,588-589,594,599,635-637
+  s_6f7716a03c0700::t_13d2bd69cb15f2 677
+  s_6f7716a03c0700::t_42a0fba08482b7 741-745
+  s_6f7716a03c0700::t_a718f53cee4478 810-812,818-848
+  s_6f7716a03c0700::t_1272591c13be63 75-85
+  s_6f7716a03c0700::t_56c36206ccb2a0 849
+__tests__/grid/grid-strategy-trade-stats.test.ts
+  s_6f7716a03c0700::t_cfdc0bba628adc 1-67
+src/components/grid/build-primary-kpis.ts
+  s_6f7716a03c0700::t_93736374535c33 56-58,62-63,67-69
+  s_6f7716a03c0700::t_ad4b6be23b04a9 61,64
+  s_6f7716a03c0700::t_ba0d9f65667796 59-60
+src/types/grid-strategy-trade.ts
+  s_6f7716a03c0700::t_8951125565723e 1-25
+src/types/grid-strategy-storage.ts
+  s_6f7716a03c0700::t_6a92e565200713 38-39
+  s_6f7716a03c0700::t_65fd4c16d8f379 21-22
+__tests__/grid/grid-strategy-repository.test.ts
+  s_6f7716a03c0700::t_20bb60878d9ae9 113
+src/lib/grid/grid-strategy-trade-parse.ts
+  s_6f7716a03c0700::t_ab7595913c37f1 1-97
+src/components/grid/grid-result-table.tsx
+  s_dbc5f6b812e47f::t_3583b043366162 393
+  s_dbc5f6b812e47f::t_ae6b61f3eaf827 13
+  s_dbc5f6b812e47f::t_28a8276092d2c8 198,204,206,221,224-246
+  s_dbc5f6b812e47f::t_6601c47273f381 574
+  s_6f7716a03c0700::t_1ea950bae22161 553
+  s_dbc5f6b812e47f::t_dcb69cf20f41b4 499-501,503,505
+  s_dbc5f6b812e47f::t_3385e52fc81092 309
+  s_dbc5f6b812e47f::t_8dfc6577d00e0e 95-164
+  s_dbc5f6b812e47f::t_0a122650d756ce 63
+  s_dbc5f6b812e47f::t_8f552e706e7b83 275
+  s_dbc5f6b812e47f::t_8194e3a423bcc6 325
+  s_dbc5f6b812e47f::t_dfe71f840eb3fd 260
+  s_dbc5f6b812e47f::t_c24fda0cf02b3e 26-31,37
+  s_dbc5f6b812e47f::t_fa555c707dcaa0 586
+  s_38b7c7364662d2::t_7b36d1ab17bc06 396,400
+src/lib/grid/warnings.ts
+  s_6f7716a03c0700::t_4f04a38c4b7772 19
+  s_6f7716a03c0700::t_551912363b4357 18
+src/components/grid/grid-trade-entry-modal.tsx
+  s_6f7716a03c0700::t_2721967fd1427a 1-128
+src/components/grid/grid-params-summary-bar.tsx
+  s_6f7716a03c0700::t_6cb692709d5ab1 73,76,79-80
+  s_6f7716a03c0700::t_3c287c094e8ec8 100
+src/components/grid/grid-trade-journal.tsx
+  s_6f7716a03c0700::t_aa1f3b3dd5c238 1-7,9-51,56-231
+  s_6f7716a03c0700::t_361e8f29694bff 8
+  s_6f7716a03c0700::t_d07e726e97fcb6 52-55
+src/hooks/use-grid-strategy-trades.ts
+  s_6f7716a03c0700::t_414729f91a0e1f 3
+  s_6f7716a03c0700::t_16cd37b855731a 1-2,4-78
+src/lib/grid/grid-strategy-storage.ts
+  s_6f7716a03c0700::t_a5e63074d072c0 167-172,176
+src/components/grid/fund-coefficient-config.tsx
+  s_6f7716a03c0700::t_8e2f5c32e9d3ae 4,15-17,36,45,49,52-54,56
+docs/superpowers/specs/2026-09-09-grid-portfolio-journal-design.md
+  s_6f7716a03c0700::t_d26939df18514f 6
+  s_6f7716a03c0700::t_23335af76bd0f3 1-5,7-128
+src/components/grid/grid-portfolio-board.tsx
+  s_6f7716a03c0700::t_3a7c9fb2b195b8 102-109
+  s_6f7716a03c0700::t_b144088b9bbc77 1-101,110-231,233-253
+  s_6f7716a03c0700::t_338faea609f65f 232
+__tests__/strategy-comparison.test.ts
+  s_38b7c7364662d2::t_961a81e1c5e6cf 128-140
+  s_38b7c7364662d2::t_f9c4f7550296dd 125
+  s_38b7c7364662d2::t_3a5bdc4b85b484 122
+  s_38b7c7364662d2::t_f56dcb0414a09f 92-121,123-124,126-127
+src/lib/strategy-comparison.ts
+  s_38b7c7364662d2::t_beed89054899a2 45-82,84-85,95,98-99,101-120,124-129,131
+src/components/grid/grid-strategy-name-overlay.tsx
+  s_6f7716a03c0700::t_992f8f37959472 176
+  s_6f7716a03c0700::t_55588fce507ca2 253-264
+  s_6f7716a03c0700::t_1fa8e87fff3ba2 43,54,71,81
+  s_6f7716a03c0700::t_794a2fcfa41829 22,26
+docs/grid-strategy-design.md
+  h_245285a78fca97 15,34,50,64,102,110,189,211,224,234,259,289,341,356,367,382,400,427,441,580,677,715,732,747-748,818,828,839,865,879,912,919,971,1027,1053,1074,1086,1111,1129,1167,1181,1223,1241,1256,1267,1276,1292,1305,1375,1396,1404,1479,1505,1525,1542,1558,1568
+  s_6f7716a03c0700::t_c03734e301a959 820
+  s_6f7716a03c0700::t_95244f05faa4d5 821
+  s_6f7716a03c0700::t_93e00b7902d673 14,16-19,33,35-41,49,51,53-59,63,65,67-72,101,103-105,109,111-116,188,190-196,210,212-219,223,225-227,233,235-242,258,260-265,288,290-295,340,342-351,355,357,359-362,366,368-375,381,383-395,399,401-408,426,428-430,432,440,442,444,579,581,676,678-679,714,716-725,731,733-736,817,827,829-834,838,840-842,864,866-870,878,880-885,911,913,918,920-922,970,972-973,1026,1028-1030,1052,1054-1056,1073,1075-1077,1085,1087-1091,1110,1112-1115,1128,1130-1132,1166,1169-1170,1180,1182-1187,1222,1224-1234,1240,1242-1248,1266,1269-1271,1275,1277-1287,1291,1293-1298,1304,1306-1312,1478,1480-1491,1504,1506-1509,1524,1526-1528,1541,1543-1545,1557,1559-1561,1567,1569-1578
+src/components/grid/stats-cards.tsx
+  s_6f7716a03c0700::t_37000e7949d15d 59,69,83
+  s_6f7716a03c0700::t_f5da017e4e00e2 30
+  s_6f7716a03c0700::t_1aec7b0ad4de0f 155
+src/lib/grid/grid-strategy-trade-stats.ts
+  s_6f7716a03c0700::t_cfc3872328e6fe 144
+  s_6f7716a03c0700::t_d9fcc8c5c938a8 155-160
+  s_6f7716a03c0700::t_f457ef282c1134 1-141,146-154,161-162,164-180
+  s_6f7716a03c0700::t_f13ed713ac1301 142-143,145,163
+src/lib/supabase/grid-strategy-trade-repository.ts
+  s_6f7716a03c0700::t_33e0ac28a75dc2 1-104,106-107,131-142
+  s_6f7716a03c0700::t_a8b52692de07be 105,108-130
+src/lib/supabase/grid-strategy-repository.ts
+  s_6f7716a03c0700::t_459a2dbb8e8e57 57-69
+  s_6f7716a03c0700::t_1d6c74fd965572 106,112
+  s_6f7716a03c0700::t_303ba18c3992ee 75
+  s_6f7716a03c0700::t_d730c8792e94a8 133-141,144
+  s_6f7716a03c0700::t_95cc71690f4b01 155-160,164-171,174,177
+  s_6f7716a03c0700::t_14d60e680e2933 14
+__tests__/grid/build-primary-kpis.test.ts
+  s_6f7716a03c0700::t_adcdbde0d7e181 41,43,45-47,49
+  s_6f7716a03c0700::t_a4b93a67bd53ab 42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2fe6b4e65a3585435a7f57092632e6b16babbedd",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_38b7c7364662d2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cd8923a5-3579-464e-b1d0-39248cc8e81b",
+        "model": "grok-4.6"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_6f7716a03c0700": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ee99de81-2f19-4fca-803f-204e4d12838c",
+        "model": "grok-4.5"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_dbc5f6b812e47f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "007306c4-c6fb-4c03-ae86-7bda38c8f4f8",
+        "model": "composer-2.5"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
