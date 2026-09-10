@@ -222,7 +222,7 @@ export function parseSavedGridStrategy(row: unknown): SavedGridStrategyV1 {
   const config = parseConfig(row.config);
   return {
     ...meta,
-    note: config.note,
+    note: normalizeGridStrategyNote(config.note ?? meta.note),
     config,
     resultSnapshot: parseSnapshot(row.result_snapshot),
   };
