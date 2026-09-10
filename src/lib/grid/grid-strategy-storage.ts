@@ -67,6 +67,21 @@ export function normalizeGridStrategyName(name: string): string {
   return trimmed;
 }
 
+const MAX_STRATEGY_NOTE_LENGTH = 200;
+
+/**
+ * 规范化策略备注：trim；允许空；最长 200。
+ */
+export function normalizeGridStrategyNote(
+  note: string | null | undefined
+): string {
+  const trimmed = (note ?? '').trim();
+  if (trimmed.length > MAX_STRATEGY_NOTE_LENGTH) {
+    throw new Error('备注最多 200 个字符');
+  }
+  return trimmed;
+}
+
 /**
  * 逐字段比较 v1 配置，不依赖属性顺序。
  */
@@ -77,6 +92,12 @@ export function isSameGridStrategyConfig(
   if (left.dynamicGridEnabled !== right.dynamicGridEnabled) return false;
   if (left.dynamicGridMode !== right.dynamicGridMode) return false;
   if (left.params.budgetMode !== right.params.budgetMode) return false;
+  if (
+    Boolean(left.params.alignLastGridToStep) !==
+    Boolean(right.params.alignLastGridToStep)
+  ) {
+    return false;
+  }
   for (const key of GRID_PARAM_NUMBER_KEYS) {
     if (left.params[key] !== right.params[key]) return false;
   }
@@ -95,6 +116,7 @@ function parseGridParams(value: unknown): GridParams {
   for (const key of GRID_PARAM_NUMBER_KEYS) {
     params[key] = assertFiniteNumber(value[key]);
   }
+  params.alignLastGridToStep = value.alignLastGridToStep === true;
   return params;
 }
 
@@ -113,6 +135,9 @@ function parseConfig(value: unknown): GridStrategyConfigV1 {
     params: parseGridParams(value.params),
     dynamicGridEnabled: value.dynamicGridEnabled,
     dynamicGridMode: mode as 'stable' | 'aggressive',
+    note: normalizeGridStrategyNote(
+      typeof value.note === 'string' ? value.note : ''
+    ),
   };
 }
 
@@ -169,11 +194,17 @@ export function parseGridStrategyMetadata(row: unknown): GridStrategyMetadata {
     symbolRaw == null || symbolRaw === ''
       ? ''
       : String(symbolRaw).trim().slice(0, 32);
+  const noteFromColumn = typeof row.note === 'string' ? row.note : undefined;
+  const noteFromConfig =
+    isRecord(row.config) && typeof row.config.note === 'string'
+      ? row.config.note
+      : '';
 
   return {
     id: assertString(row.id),
     name: normalizeGridStrategyName(assertString(row.name)),
     symbol,
+    note: normalizeGridStrategyNote(noteFromColumn ?? noteFromConfig),
     schemaVersion: GRID_STRATEGY_SCHEMA_VERSION,
     createdAt: assertString(row.created_at),
     updatedAt: assertString(row.updated_at),
@@ -188,9 +219,11 @@ export function parseSavedGridStrategy(row: unknown): SavedGridStrategyV1 {
     throw new Error('策略数据已损坏，无法打开');
   }
   const meta = parseGridStrategyMetadata(row);
+  const config = parseConfig(row.config);
   return {
     ...meta,
-    config: parseConfig(row.config),
+    note: config.note,
+    config,
     resultSnapshot: parseSnapshot(row.result_snapshot),
   };
 }

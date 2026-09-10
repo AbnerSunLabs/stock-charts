@@ -75,7 +75,7 @@ export function BaseInfoConfig({
       label: "最低价",
       value: minPrice,
       onChange: onMinPriceChange,
-      tooltip: "计划买入价硬地板：表格中所有买入价不低于此价，触及后该层收尾",
+      tooltip: "计划接到什么价位。最后一档要不要改写成这个价，看步长区的「对齐步长」。",
       precision: priceDecimals,
       min: 0.0001,
     },

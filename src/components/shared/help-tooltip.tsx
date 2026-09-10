@@ -1,13 +1,13 @@
 "use client";
 
-import { Tooltip, type TooltipProps } from "antd";
-import { HelpCircle } from "lucide-react";
-import type { ReactNode } from "react";
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { Tooltip, type TooltipProps } from 'antd';
+import type { ReactNode } from 'react';
 
 type HelpTooltipSize = "sm" | "md";
 type HelpTooltipVariant = "default" | "rich";
 
-export const TOOLTIP_Z_INDEX = 10000;
+export const TOOLTIP_Z_INDEX = 99999;
 
 interface HelpTooltipProps {
   title: ReactNode;
@@ -18,9 +18,9 @@ interface HelpTooltipProps {
   className?: string;
 }
 
-const SIZE_CLASS: Record<HelpTooltipSize, string> = {
-  sm: "h-3.5 w-3.5",
-  md: "h-4 w-4",
+const SIZE_PX: Record<HelpTooltipSize, number> = {
+  sm: 14,
+  md: 16,
 };
 
 export function HelpTooltip({
@@ -44,23 +44,25 @@ export function HelpTooltip({
       getPopupContainer={() =>
         (document.querySelector('.grid-shell') as HTMLElement) ?? document.body
       }
-      overlayClassName={rootClassName}
-      overlayInnerStyle={{
-        maxWidth,
-        backgroundColor: '#ffffff',
-        color: 'var(--foreground)',
-        zIndex: TOOLTIP_Z_INDEX,
+      classNames={{ root: rootClassName }}
+      styles={{
+        root: { zIndex: TOOLTIP_Z_INDEX },
+        body: {
+          maxWidth,
+          backgroundColor: '#ffffff',
+          color: 'var(--foreground)',
+        },
       }}
-      overlayStyle={{ zIndex: TOOLTIP_Z_INDEX }}
+      zIndex={TOOLTIP_Z_INDEX}
     >
       <span
         className="inline-flex shrink-0 cursor-help align-middle"
         tabIndex={0}
         aria-label="查看说明"
       >
-        <HelpCircle
-          className={`${SIZE_CLASS[size]} text-[var(--muted-foreground)] opacity-60 transition-opacity hover:text-[var(--accent)] hover:opacity-100 ${className}`}
-          strokeWidth={1.5}
+        <QuestionCircleOutlined
+          className={`text-[var(--muted-foreground)] opacity-60 transition-opacity hover:text-[var(--accent)] hover:opacity-100 ${className}`}
+          style={{ fontSize: SIZE_PX[size] }}
         />
       </span>
     </Tooltip>

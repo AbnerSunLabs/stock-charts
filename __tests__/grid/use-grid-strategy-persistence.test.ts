@@ -56,6 +56,7 @@ function meta(partial: Partial<GridStrategyMetadata> = {}): GridStrategyMetadata
     id: 'strategy-1',
     name: '策略一',
     symbol: '',
+    note: '',
     schemaVersion: 1,
     createdAt: '2026-08-07T01:00:00.000Z',
     updatedAt: '2026-08-07T02:00:00.000Z',
@@ -137,6 +138,16 @@ describe('useGridStrategyPersistence', () => {
     expect(repository.list).not.toHaveBeenCalled();
   });
 
+  it('getUser 抛错时按未登录处理，不把页面打崩', async () => {
+    getUserMock.mockRejectedValue(
+      new TypeError("Cannot read properties of undefined (reading 'ok')")
+    );
+    await mount();
+    expect(latest?.user).toBeNull();
+    expect(latest?.authLoading).toBe(false);
+    expect(latest?.loginOpen).toBe(false);
+  });
+
   it('有用户且存在 pending-save 时恢复并清理', async () => {
     const payload = buildPayload();
     writePendingGridStrategySave(payload, window.sessionStorage);
@@ -150,7 +161,10 @@ describe('useGridStrategyPersistence', () => {
       await Promise.resolve();
     });
 
-    expect(onRestorePendingSave).toHaveBeenCalledWith(payload);
+    expect(onRestorePendingSave).toHaveBeenCalledWith({
+      ...payload,
+      config: { ...payload.config, note: '' },
+    });
     expect(window.sessionStorage.getItem(PENDING_GRID_STRATEGY_SAVE_KEY)).toBeNull();
   });
 

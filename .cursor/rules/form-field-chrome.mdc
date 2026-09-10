@@ -1,0 +1,28 @@
+---
+description: 表单必填用 * 前缀；说明用问号 Tooltip（白底、最高层），禁止「可选/必选」文案
+alwaysApply: true
+---
+
+# 表单标签与说明
+
+适用于本仓所有表单（含自建浮层、Ant Design Form）。
+
+## 必填标记
+
+- 必填项：标签**前面**加红色 `*`（可与 antd `requiredMark` 一致）。
+- 禁止在标签或 placeholder 里写「必填 / 必选 / 可选」等字样。非必填只写字段名。
+
+```tsx
+// ❌
+<label>标的代码（可选）</label>
+// ✅
+<label><span className="text-[var(--loss)]">*</span> 策略名称</label>
+<label>备注</label>
+```
+
+## 说明文案
+
+- 不把长说明写在输入框下方当常驻 help。
+- 用 `@ant-design/icons` 的 `QuestionCircleOutlined` 放在**该表单项标签旁**；`hover` 出 Tooltip。
+- Tooltip：白底、深色字；外观复用现有 `.grid-shell .ds-help-tooltip`（白底、边框、`--ds-shadow-lg`、12px 字）；`z-index` 用 `--z-tooltip`（高于 Modal / Drawer / 自建浮层）。
+- 网格页说明图标必须走 `HelpTooltip`，禁止另起一套 Tooltip 皮肤。

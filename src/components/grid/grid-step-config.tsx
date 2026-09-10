@@ -1,8 +1,64 @@
 "use client";
 
 import { HelpTooltip } from "@/components/shared/help-tooltip";
-import { InputNumber } from "antd";
+import { Input, InputNumber, Space } from "antd";
+import type { InputNumberProps } from "antd";
 import { Filter, Shield } from "lucide-react";
+
+const GRID_STEP_FORMULA_TOOLTIP = (
+  <>
+    <div className="mb-2 font-semibold text-[var(--foreground)]">
+      计算逻辑公式：
+    </div>
+    <div className="space-y-1 font-mono text-[11px] text-[var(--muted-foreground)]">
+      <div>P₁ = 基准价</div>
+      <div>P₂ = P₁ × (1 - Step_initial)</div>
+      <div>Pₙ = Pₙ₋₁ × (1 - Stepₙ₋₁)</div>
+      <div className="mt-2 border-t border-[var(--border)] pt-2">
+        <div className="text-[var(--foreground)]">动态步长更新：</div>
+        <div>Stepₙ = Stepₙ₋₁ × (1 + Scale)</div>
+        <div className="mt-1 text-[11px] leading-snug">
+          稳健模式 Scale=0.3 · 抄底模式 Scale=0.6
+        </div>
+      </div>
+    </div>
+    <p className="mt-2 border-t border-[var(--border)] pt-2 text-[11px] leading-snug text-[var(--muted-foreground)]">
+      动态间距只放大<strong className="text-[var(--foreground)]">价格步长</strong>
+      （档位更疏），不改变单档买入金额；金额请用「金额加码系数」。
+    </p>
+  </>
+);
+
+/** 步长公式说明，挂在区块标题旁（勿放在开关行左侧）。 */
+export function GridStepFormulaHelp() {
+  return (
+    <HelpTooltip
+      size="md"
+      placement="bottomLeft"
+      maxWidth="20rem"
+      title={GRID_STEP_FORMULA_TOOLTIP}
+    />
+  );
+}
+
+/** InputNumber 右侧单位，替代已弃用的 addonAfter。 */
+function CompactUnitInputNumber({
+  unit,
+  ...props
+}: InputNumberProps<number> & { unit: string }) {
+  return (
+    <Space.Compact block>
+      <InputNumber {...props} />
+      <Input
+        readOnly
+        tabIndex={-1}
+        value={unit}
+        aria-hidden
+        className="grid-input-compact-unit"
+      />
+    </Space.Compact>
+  );
+}
 
 interface GridStepConfigProps {
   baseStep: number;
@@ -13,6 +69,8 @@ interface GridStepConfigProps {
   onLargeStepChange: (value: number) => void;
   dynamicEnabled: boolean;
   onDynamicEnabledChange: (enabled: boolean) => void;
+  alignLastGridToStep: boolean;
+  onAlignLastGridToStepChange: (enabled: boolean) => void;
   mode: "stable" | "aggressive";
   onModeChange: (mode: "stable" | "aggressive") => void;
   /** 嵌套在可折叠摘要内时隐藏重复标题 */
@@ -28,6 +86,8 @@ export function GridStepConfig({
   onLargeStepChange,
   dynamicEnabled,
   onDynamicEnabledChange,
+  alignLastGridToStep,
+  onAlignLastGridToStepChange,
   mode,
   onModeChange,
   compactHeader = false,
@@ -53,32 +113,42 @@ export function GridStepConfig({
     onLargeStepChange(normalizeValue(value, 30));
   }
 
-  const formulaTooltip = (
-    <>
-      <div className="mb-2 font-semibold text-[var(--foreground)]">
-        计算逻辑公式：
-      </div>
-      <div className="space-y-1 font-mono text-[11px] text-[var(--muted-foreground)]">
-        <div>P₁ = 基准价</div>
-        <div>P₂ = P₁ × (1 - Step_initial)</div>
-        <div>Pₙ = Pₙ₋₁ × (1 - Stepₙ₋₁)</div>
-        <div className="mt-2 border-t border-[var(--border)] pt-2">
-          <div className="text-[var(--foreground)]">动态步长更新：</div>
-          <div>Stepₙ = Stepₙ₋₁ × (1 + Scale)</div>
-          <div className="mt-1 text-[11px] leading-snug">
-            稳健模式 Scale=0.3 · 抄底模式 Scale=0.6
-          </div>
-        </div>
-      </div>
-      <p className="mt-2 border-t border-[var(--border)] pt-2 text-[11px] leading-snug text-[var(--muted-foreground)]">
-        动态间距只放大<strong className="text-[var(--foreground)]">价格步长</strong>
-        （档位更疏），不改变单档买入金额；金额请用「金额加码系数」。
-      </p>
-    </>
-  );
-
   const dynamicSpacingTooltip =
     '放大价格步长（越跌档位越疏），不改变单档金额。单档买多少请调「金额加码系数」。';
+
+  const alignLastGridTooltip =
+    '关掉：最后一档买在最低价，这一档跌幅可能小于步长。打开：按步长继续排，第一次低于最低价后收网，不再改写成最低价。';
+
+  const alignSwitch = (
+    <div className="flex shrink-0 items-center gap-2 sm:pt-1">
+      <span className="flex items-center gap-1 text-xs font-medium text-[var(--foreground)]">
+        对齐步长
+        <HelpTooltip
+          title={alignLastGridTooltip}
+          placement="topLeft"
+          maxWidth="16rem"
+        />
+      </span>
+      <button
+        id="align-step-switch"
+        role="switch"
+        aria-checked={alignLastGridToStep}
+        type="button"
+        onClick={() => onAlignLastGridToStepChange(!alignLastGridToStep)}
+        className={`relative inline-flex h-7 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] ${
+          alignLastGridToStep
+            ? "bg-[var(--accent)]"
+            : "bg-[color-mix(in_srgb,var(--muted-foreground)_28%,var(--border))]"
+        }`}
+      >
+        <span
+          className={`inline-block h-[18px] w-[18px] transform rounded-full bg-[var(--card)] shadow-[var(--ds-shadow-sm)] transition-transform duration-200 ${
+            alignLastGridToStep ? "translate-x-[22px]" : "translate-x-1"
+          }`}
+        />
+      </button>
+    </div>
+  );
 
   const dynamicSwitch = (
     <div className="flex shrink-0 items-center gap-2 sm:pt-1">
@@ -114,32 +184,28 @@ export function GridStepConfig({
     </div>
   );
 
+  const stepSwitches = (
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+      {alignSwitch}
+      {dynamicSwitch}
+    </div>
+  );
+
   return (
     <div className="space-y-4 p-4 sm:p-6 md:p-7">
       {compactHeader ? (
         <div className="mb-2 flex items-center justify-end gap-3">
-          <HelpTooltip
-            size="md"
-            placement="bottomLeft"
-            maxWidth="20rem"
-            title={formulaTooltip}
-          />
-          {dynamicSwitch}
+          {stepSwitches}
         </div>
       ) : (
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <h3 className="ds-section-title">网格步长</h3>
-              <HelpTooltip
-                size="md"
-                placement="bottomLeft"
-                maxWidth="20rem"
-                title={formulaTooltip}
-              />
+              <GridStepFormulaHelp />
             </div>
           </div>
-          {dynamicSwitch}
+          {stepSwitches}
         </div>
       )}
 
@@ -156,15 +222,15 @@ export function GridStepConfig({
             </label>
           </div>
 
-          <InputNumber
+          <CompactUnitInputNumber
             id="base-step-input"
+            unit="%"
             value={baseStep}
             onChange={handleBaseStepChange}
             precision={1}
             min={0.1}
             max={99}
             controls={false}
-            addonAfter="%"
             className="w-full"
             style={{
               width: "100%",
@@ -189,15 +255,15 @@ export function GridStepConfig({
               </label>
             </div>
 
-            <InputNumber
+            <CompactUnitInputNumber
               id="medium-step-input"
+              unit="%"
               value={mediumStep}
               onChange={handleMediumStepChange}
               precision={1}
               min={0.1}
               max={100}
               controls={false}
-              addonAfter="%"
               className="w-full"
               style={{
                 width: "100%",
@@ -220,15 +286,15 @@ export function GridStepConfig({
               </label>
             </div>
 
-            <InputNumber
+            <CompactUnitInputNumber
               id="large-step-input"
+              unit="%"
               value={largeStep}
               onChange={handleLargeStepChange}
               precision={1}
               min={0.1}
               max={100}
               controls={false}
-              addonAfter="%"
               className="w-full"
               style={{
                 width: "100%",

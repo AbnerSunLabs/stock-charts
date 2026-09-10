@@ -46,6 +46,8 @@ export interface GridStrategyParamsV2 {
   stampDutyRate: number;
   transferFeeRate: number;
   slippageTicks: number;
+  /** 最后一档对齐步长；缺省 false */
+  alignLastGridToStep: boolean;
 }
 
 /** 计算选项 */

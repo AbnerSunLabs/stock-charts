@@ -9,6 +9,8 @@ export interface GridStrategyConfigV1 {
   params: GridParams;
   dynamicGridEnabled: boolean;
   dynamicGridMode: 'stable' | 'aggressive';
+  /** 策略备注；缺省视为空 */
+  note?: string;
 }
 
 /** v1 结果快照：运行时须为成功计算结果 */
@@ -18,8 +20,10 @@ export type GridStrategySnapshotV1 = GridRunResult;
 export interface GridStrategyMetadata {
   id: string;
   name: string;
-  /** 标的代码，可空 */
+  /** 标的代码；保存浮层必填，历史记录可能为空 */
   symbol: string;
+  /** 策略备注；可空 */
+  note: string;
   schemaVersion: typeof GRID_STRATEGY_SCHEMA_VERSION;
   createdAt: string;
   updatedAt: string;
@@ -35,6 +39,6 @@ export interface SavedGridStrategyV1 extends GridStrategyMetadata {
 export interface GridStrategySavePayload {
   config: GridStrategyConfigV1;
   resultSnapshot: GridStrategySnapshotV1;
-  /** 创建时可带标的代码；覆盖更新时若传入则一并写入 */
+  /** 创建时写入标的代码；覆盖更新时若传入则一并写入 */
   symbol?: string;
 }

@@ -257,7 +257,7 @@ export function GridStrategyLibraryDrawer({
       placement={isMobile ? 'bottom' : 'right'}
       width={isMobile ? undefined : 420}
       height={isMobile ? '90%' : undefined}
-      destroyOnClose={false}
+      destroyOnHidden={false}
       getContainer={() =>
         document.querySelector('.grid-shell') ?? document.body
       }

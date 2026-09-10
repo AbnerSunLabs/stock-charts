@@ -524,7 +524,7 @@ export function FamilyLedgerPage() {
         onOk={() => saveItem()}
         confirmLoading={itemSaving}
         okButtonProps={{ disabled: itemSaving }}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="mt-2">
           <Row gutter={16}>

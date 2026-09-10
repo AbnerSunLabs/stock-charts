@@ -46,12 +46,12 @@ export function buildLegGridRowMap(
       position: parseFloat(leg.positionRatio.toFixed(2)),
       buyTriggerPrice: leg.buyExecutionPrice,
       buyPrice: leg.buyPrice,
-      buyAmount: Math.round(leg.actualBuyAmount),
+      buyAmount: leg.actualBuyAmount,
       buyShares: leg.buyShares,
       sellTriggerPrice: leg.sellExecutionPrice,
       sellPrice: leg.sellPrice,
       sellShares: leg.sellShares,
-      sellAmount: Math.round(leg.sellAmount),
+      sellAmount: leg.sellAmount,
       priceDropRate: parseFloat(priceDropRate.toFixed(2)),
       gridType: leg.gridLabel as GridType,
     });
@@ -91,4 +91,22 @@ export function getDisplayDropRate(
     return -row.priceDropRate;
   }
   return row.priceDropRate;
+}
+
+/** 组合行卖出股数 / 卖出金额：子档合计（与明细行同一 `sellAmount` 口径）。 */
+export function sumChildSellStats(
+  childLegIds: string[],
+  legRowMap: Map<string, GridRow>
+): { sellShares: number; sellAmount: number } {
+  return childLegIds.reduce(
+    (acc, id) => {
+      const row = legRowMap.get(id);
+      if (!row) return acc;
+      return {
+        sellShares: acc.sellShares + row.sellShares,
+        sellAmount: acc.sellAmount + row.sellAmount,
+      };
+    },
+    { sellShares: 0, sellAmount: 0 }
+  );
 }

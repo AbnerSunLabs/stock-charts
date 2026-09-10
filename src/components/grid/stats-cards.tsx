@@ -1,6 +1,10 @@
 "use client";
 
 import { HelpTooltip } from "@/components/shared/help-tooltip";
+import {
+  formatGridAmount,
+  formatSignedGridAmount,
+} from "@/lib/grid/format-grid-amount";
 import type { StressTest } from "@/types/grid";
 
 interface StatsCardsProps {
@@ -36,19 +40,19 @@ export function StatsCards({
     ? [
         {
           label: "预计最大投入",
-          value: Math.round(v2.totalBudgetRequired).toLocaleString(),
+          value: formatGridAmount(v2.totalBudgetRequired),
           tooltip: "所有档位买入成本（含佣金）之和",
         },
         {
           label: "最大单档聚合资金",
-          value: Math.round(v2.maxClusterCashDemand).toLocaleString(),
+          value: formatGridAmount(v2.maxClusterCashDemand),
           tooltip: "单个聚合组一次触发的最大资金需求",
         },
       ]
     : [
         {
           label: "总买入金额",
-          value: stressTest.totalBuyAmount.toLocaleString(),
+          value: formatGridAmount(stressTest.totalBuyAmount),
           tooltip: null,
         },
       ];
@@ -57,9 +61,7 @@ export function StatsCards({
     ? [
         {
           label: "推演网格利润",
-          value:
-            (v2.realizedGridProfit > 0 ? "+" : "") +
-            Math.round(v2.realizedGridProfit).toLocaleString(),
+          value: formatSignedGridAmount(v2.realizedGridProfit),
           color:
             v2.realizedGridProfit > 0
               ? "var(--profit)"
@@ -91,9 +93,7 @@ export function StatsCards({
     : [
         {
           label: "预期利润",
-          value:
-            (stressTest.profit > 0 ? "+" : "") +
-            stressTest.profit.toLocaleString(),
+          value: formatSignedGridAmount(stressTest.profit),
           color:
             stressTest.profit > 0
               ? "var(--profit)"
@@ -125,14 +125,12 @@ export function StatsCards({
         },
         {
           label: "底仓成本",
-          value: Math.round(v2.basePositionCost).toLocaleString(),
+          value: formatGridAmount(v2.basePositionCost),
           tooltip: "底仓分摊买入成本（含佣金）",
         },
         {
           label: "底仓浮盈",
-          value:
-            (v2.basePositionUnrealizedPnL > 0 ? "+" : "") +
-            Math.round(v2.basePositionUnrealizedPnL).toLocaleString(),
+          value: formatSignedGridAmount(v2.basePositionUnrealizedPnL),
           color:
             v2.basePositionUnrealizedPnL > 0
               ? "var(--profit)"
@@ -143,9 +141,7 @@ export function StatsCards({
         },
         {
           label: "综合净利润",
-          value:
-            (v2.totalNetProfit > 0 ? "+" : "") +
-            Math.round(v2.totalNetProfit).toLocaleString(),
+          value: formatSignedGridAmount(v2.totalNetProfit),
           color:
             v2.totalNetProfit > 0
               ? "var(--profit)"

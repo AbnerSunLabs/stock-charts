@@ -7,6 +7,7 @@ interface UseGridParamsReturn {
   params: GridParams;
   updateParam: (key: keyof GridParams, value: number | null) => void;
   updateBudgetMode: (mode: GridBudgetMode) => void;
+  setAlignLastGridToStep: (enabled: boolean) => void;
   /** 整体替换参数（加载云端策略） */
   replaceParams: (next: GridParams) => void;
   validateParams: () => { isValid: boolean; errors: string[] };
@@ -38,15 +39,24 @@ export function useGridParams(initialParams: GridParams): UseGridParamsReturn {
     setParams(prev => ({ ...prev, budgetMode: mode }));
   }, []);
 
+  const setAlignLastGridToStep = useCallback((enabled: boolean) => {
+    setParams(prev => ({ ...prev, alignLastGridToStep: enabled }));
+  }, []);
+
   const replaceParams = useCallback((next: GridParams) => {
     // UI 已取消自动反推：加载旧策略时强制 manual
-    setParams({ ...next, budgetMode: 'manual' });
+    setParams({
+      ...next,
+      budgetMode: 'manual',
+      alignLastGridToStep: next.alignLastGridToStep === true,
+    });
   }, []);
 
   return {
     params,
     updateParam,
     updateBudgetMode,
+    setAlignLastGridToStep,
     replaceParams,
     validateParams,
     errors,

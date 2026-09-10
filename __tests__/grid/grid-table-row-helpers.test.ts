@@ -2,6 +2,7 @@ import {
   buildFirstPositionByType,
   buildLegGridRowMap,
   getDisplayDropRate,
+  sumChildSellStats,
 } from '@/components/grid/grid-table-row-helpers';
 import type { GridRow } from '@/types/grid';
 import type { GridLeg } from '@/types/grid-v2';
@@ -92,5 +93,22 @@ describe('grid-table-row-helpers', () => {
     ]);
 
     expect(getDisplayDropRate(row, firstByType)).toBeCloseTo(-15.16, 2);
+  });
+
+  it('sumChildSellStats 应汇总子档卖出股数与卖出金额', () => {
+    const legs = [
+      buildLeg('a', '小网', 1.0, 1),
+      buildLeg('b', '中网', 0.998, 0.5),
+    ];
+    const map = buildLegGridRowMap(legs, 1.0);
+
+    expect(sumChildSellStats(['a', 'b'], map)).toEqual({
+      sellShares: 200,
+      sellAmount: 1.0 * 100 + 0.998 * 100,
+    });
+    expect(sumChildSellStats(['missing'], map)).toEqual({
+      sellShares: 0,
+      sellAmount: 0,
+    });
   });
 });

@@ -34,12 +34,12 @@ export function legsToGridRows(
       position: parseFloat(leg.positionRatio.toFixed(2)),
       buyTriggerPrice: leg.buyExecutionPrice,
       buyPrice: leg.buyPrice,
-      buyAmount: Math.round(leg.actualBuyAmount),
+      buyAmount: leg.actualBuyAmount,
       buyShares: leg.buyShares,
       sellTriggerPrice: leg.sellExecutionPrice,
       sellPrice: leg.sellPrice,
       sellShares: leg.sellShares,
-      sellAmount: Math.round(leg.sellAmount),
+      sellAmount: leg.sellAmount,
       priceDropRate: parseFloat(priceDropRate.toFixed(2)),
       gridType: leg.gridLabel as GridType,
     };
@@ -56,12 +56,12 @@ export function stressTestV2ToLegacy(
   const totalSellAmount = legs.reduce((sum, leg) => sum + leg.sellAmount, 0);
 
   return {
-    totalBuyAmount: Math.round(stressTest.totalBudgetRequired),
+    totalBuyAmount: stressTest.totalBudgetRequired,
     totalBuyShares: stressTest.totalBuyShares,
-    totalSellAmount: Math.round(totalSellAmount),
+    totalSellAmount: totalSellAmount,
     totalSellShares: stressTest.totalSellShares,
     remainingShares: stressTest.basePositionShares,
-    profit: Math.round(stressTest.totalNetProfit),
+    profit: stressTest.totalNetProfit,
     profitRate: parseFloat(stressTest.totalNetProfitRate.toFixed(2)),
     v2: stressTest,
   };

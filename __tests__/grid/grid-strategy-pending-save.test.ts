@@ -40,7 +40,10 @@ describe('grid-strategy-pending-save', () => {
     const payload = buildPayload();
     writePendingGridStrategySave(payload, window.sessionStorage);
     const read = readPendingGridStrategySave(window.sessionStorage);
-    expect(read).toEqual(payload);
+    expect(read).toEqual({
+      ...payload,
+      config: { ...payload.config, note: '' },
+    });
     expect(window.sessionStorage.getItem(PENDING_GRID_STRATEGY_SAVE_KEY)).not.toBeNull();
     clearPendingGridStrategySave(window.sessionStorage);
     expect(window.sessionStorage.getItem(PENDING_GRID_STRATEGY_SAVE_KEY)).toBeNull();

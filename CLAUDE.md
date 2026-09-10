@@ -56,3 +56,5 @@ alwaysApply: true
 
 ## 6. 项目特殊说明
 - 修改代码之后自动使用 /code-review 命令进行代码 CR
+- 表单 UI：必填标签前加 `*`；禁止「可选/必选」文案；说明用 `QuestionCircleOutlined` + 白底最高层 Tooltip。详见 `.cursor/rules/form-field-chrome.mdc`
+- 破坏性操作（删除等）：必须 `modal.confirm` 二次确认后再执行，禁止单击立即调 API。详见 `.cursor/rules/destructive-confirm.mdc`

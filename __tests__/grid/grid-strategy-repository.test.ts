@@ -110,7 +110,7 @@ describe('GridStrategyRepository', () => {
     const list = await repo.list();
 
     expect(builder.select).toHaveBeenCalledWith(
-      'id,name,symbol,schema_version,created_at,updated_at'
+      'id,name,symbol,schema_version,created_at,updated_at,config'
     );
     expect(builder.eq).toHaveBeenCalledWith('user_id', 'user-1');
     expect(builder.order).toHaveBeenCalledWith('updated_at', { ascending: false });
@@ -143,7 +143,10 @@ describe('GridStrategyRepository', () => {
         user_id: 'user-1',
         name: '策略一',
         schema_version: 1,
-        config: payload.config,
+        config: expect.objectContaining({
+          ...payload.config,
+          note: '',
+        }),
         result_snapshot: payload.resultSnapshot,
       })
     );
@@ -159,7 +162,10 @@ describe('GridStrategyRepository', () => {
 
     expect(builder.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        config: payload.config,
+        config: expect.objectContaining({
+          ...payload.config,
+          note: '',
+        }),
         result_snapshot: payload.resultSnapshot,
         updated_at: expect.any(String),
       })
@@ -169,26 +175,22 @@ describe('GridStrategyRepository', () => {
     expect(updateArg).not.toHaveProperty('user_id');
   });
 
-  it('rename 只写名称与 updated_at', async () => {
+  it('rename 写入名称、备注与 updated_at', async () => {
     const { client, builder } = createClient({
       result: {
-        data: {
-          id: 'strategy-1',
-          name: '新名',
-          schema_version: 1,
-          created_at: '2026-08-07T01:00:00.000Z',
-          updated_at: '2026-08-07T04:00:00.000Z',
-        },
+        data: savedRow({ name: '新名' }),
         error: null,
       },
     });
     const repo = new GridStrategyRepository(client);
-    const meta = await repo.rename('strategy-1', ' 新名 ');
+    const meta = await repo.rename('strategy-1', ' 新名 ', '510300', '只做震荡');
 
     expect(builder.update).toHaveBeenCalledWith(
       expect.objectContaining({
         name: '新名',
+        symbol: '510300',
         updated_at: expect.any(String),
+        config: expect.objectContaining({ note: '只做震荡' }),
       })
     );
     expect(meta.name).toBe('新名');

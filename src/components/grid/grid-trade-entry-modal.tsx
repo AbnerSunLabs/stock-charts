@@ -2,9 +2,8 @@
 
 import { formatTradeAmount } from '@/lib/grid/format-trade-amount';
 import type { GridStrategyTradeSide } from '@/types/grid-strategy-trade';
-import { Button, DatePicker, Form, InputNumber, Modal } from 'antd';
-import type { FormInstance } from 'antd/es/form';
-import dayjs, { type Dayjs } from 'dayjs';
+import { Button, DatePicker, Form, InputNumber, Modal, type FormInstance } from 'antd';
+import dayjs, { type Dayjs } from '@/lib/antd-dayjs';
 import { useEffect } from 'react';
 
 export interface GridTradeEntryDefaults {
@@ -153,7 +152,7 @@ export function GridTradeEntryModal({
       title={defaults.side === 'buy' ? '记录买入' : '记录卖出'}
       onCancel={onCancel}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       width={400}
       centered
       wrapClassName="grid-trade-entry-modal"

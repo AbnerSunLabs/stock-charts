@@ -267,7 +267,7 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
         onOk={() => save()}
         confirmLoading={saving}
         okButtonProps={{ disabled: saving }}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="mt-2">
           <Form.Item name="name" label="名称" rules={[{ required: true }]}>

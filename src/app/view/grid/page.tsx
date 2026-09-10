@@ -26,7 +26,10 @@ import {
   hasDiscardableGridChanges,
   isDraftConfigDirty,
 } from '@/lib/grid/grid-strategy-workflow';
-import { computeLevelTradeQty } from '@/lib/grid/grid-strategy-trade-stats';
+import {
+  defaultSellQty,
+  getLevelExecuteState,
+} from '@/lib/grid/grid-strategy-trade-stats';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { GridStrategyRepository } from '@/lib/supabase/grid-strategy-repository';
 import { DEFAULT_GRID_PARAMS } from '@/types/grid';
@@ -98,6 +101,7 @@ function GridStrategyPageInner() {
   const {
     params,
     updateParam,
+    setAlignLastGridToStep,
     replaceParams,
     validateParams,
     errors,
@@ -196,8 +200,12 @@ function GridStrategyPageInner() {
   const getLevelQty = useCallback(
     (levelKey: string) => {
       const list = currentStrategyTrades.filter(t => t.levelKey === levelKey);
-      const q = computeLevelTradeQty(list);
-      return { openQty: q.openQty, rounds: q.rounds };
+      const q = getLevelExecuteState(list);
+      return {
+        openQty: q.openQty,
+        rounds: q.rounds,
+        awaitingSell: q.awaitingSell,
+      };
     },
     [currentStrategyTrades]
   );
@@ -222,7 +230,10 @@ function GridStrategyPageInner() {
         side,
         levelKey,
         price: side === 'buy' ? leg.buyPrice : leg.sellPrice,
-        qty: side === 'buy' ? leg.buyShares : q.openQty,
+        qty:
+          side === 'buy'
+            ? leg.buyShares
+            : defaultSellQty(q.openQty, leg.sellShares),
         maxSellQty: side === 'sell' ? q.openQty : undefined,
         priceDecimals,
       });
@@ -246,12 +257,21 @@ function GridStrategyPageInner() {
   const buildSavePayload = (): GridStrategySavePayload | null => {
     if (!generatedConfig || !result || !hasResult) return null;
     return {
-      config: generatedConfig,
+      config: {
+        ...generatedConfig,
+        note:
+          generatedConfig.note ||
+          persistence.currentStrategy?.note ||
+          '',
+      },
       resultSnapshot: result,
     };
   };
 
-  const confirmDiscardIfNeeded = (onConfirm: () => void) => {
+  const confirmDiscardIfNeeded = (
+    onConfirm: () => void,
+    kind: 'open' | 'create' = 'open'
+  ) => {
     const discardable = hasDiscardableGridChanges({
       hasResult,
       hasCloudId: persistence.currentStrategy !== null,
@@ -264,11 +284,32 @@ function GridStrategyPageInner() {
     }
     modal.confirm({
       title: '放弃未保存的更改？',
-      content: '当前有未保存的结果或尚未重新生成的参数修改，打开其他策略将覆盖当前页面。',
-      okText: '放弃并打开',
+      content:
+        kind === 'create'
+          ? '当前有未保存的结果或尚未重新生成的参数修改，另起一份将覆盖当前页面。云端已保存的策略不会被删除。'
+          : '当前有未保存的结果或尚未重新生成的参数修改，打开其他策略将覆盖当前页面。',
+      okText: kind === 'create' ? '放弃并新建' : '放弃并打开',
       cancelText: '取消',
       onOk: onConfirm,
     });
+  };
+
+  const resetCalculatorDraft = () => {
+    replaceParams(DEFAULT_GRID_PARAMS);
+    setDynamicGridEnabled(false);
+    setDynamicGridMode('stable');
+    setResult(null);
+    setGeneratedConfig(null);
+    setGeneratedDirty(false);
+    setParamsDrawerOpen(false);
+  };
+
+  const handleCreateGridStrategy = () => {
+    confirmDiscardIfNeeded(() => {
+      persistence.clearCurrentStrategy();
+      resetCalculatorDraft();
+      setMainTab('calc');
+    }, 'create');
   };
 
   const applyCalculationResult = () => {
@@ -291,6 +332,10 @@ function GridStrategyPageInner() {
       params: { ...params },
       dynamicGridEnabled,
       dynamicGridMode,
+      note:
+        generatedConfig?.note ||
+        persistence.currentStrategy?.note ||
+        '',
     });
     setGeneratedDirty(true);
     message.success('策略已生成');
@@ -345,11 +390,23 @@ function GridStrategyPageInner() {
     setNameModalOpen(true);
   };
 
-  const handleNameSubmit = async (name: string, symbol: string) => {
+  const handleNameSubmit = async (
+    name: string,
+    symbol: string,
+    note: string
+  ) => {
     setNameModalError(null);
     try {
       if (nameModalMode === 'rename' && renameTarget) {
-        await persistence.renameStrategy(renameTarget.id, name, symbol);
+        await persistence.renameStrategy(
+          renameTarget.id,
+          name,
+          symbol,
+          note
+        );
+        if (persistence.currentStrategy?.id === renameTarget.id) {
+          setGeneratedConfig(prev => (prev ? { ...prev, note } : prev));
+        }
         return;
       }
       const payload = buildSavePayload();
@@ -358,7 +415,12 @@ function GridStrategyPageInner() {
         setNameModalError(err.message);
         throw err;
       }
-      await persistence.createStrategy(name, { ...payload, symbol });
+      await persistence.createStrategy(name, {
+        ...payload,
+        symbol,
+        config: { ...payload.config, note },
+      });
+      setGeneratedConfig(prev => (prev ? { ...prev, note } : prev));
       setGeneratedDirty(false);
       void tradesApi.refresh();
       void refreshBoardStrategies();
@@ -401,13 +463,7 @@ function GridStrategyPageInner() {
     const wasCloud = persistence.currentStrategy !== null;
     persistence.handleSignedOut();
     if (wasCloud) {
-      replaceParams(DEFAULT_GRID_PARAMS);
-      setDynamicGridEnabled(false);
-      setDynamicGridMode('stable');
-      setResult(null);
-      setGeneratedConfig(null);
-      setGeneratedDirty(false);
-      setParamsDrawerOpen(false);
+      resetCalculatorDraft();
     }
   };
 
@@ -438,6 +494,8 @@ function GridStrategyPageInner() {
     onLargeStepChange: (value: number) => updateParam('largeGridStep', value),
     dynamicEnabled: dynamicGridEnabled,
     onDynamicEnabledChange: setDynamicGridEnabled,
+    alignLastGridToStep: params.alignLastGridToStep,
+    onAlignLastGridToStepChange: setAlignLastGridToStep,
     mode: dynamicGridMode,
     onModeChange: setDynamicGridMode,
   };
@@ -541,6 +599,13 @@ function GridStrategyPageInner() {
           </div>
           <div className="grid-header-actions">
             <Button
+              type="primary"
+              shape="round"
+              onClick={handleCreateGridStrategy}
+            >
+              创建网格策略
+            </Button>
+            <Button
               shape="round"
               onClick={() => void persistence.openLibrary()}
             >
@@ -560,8 +625,8 @@ function GridStrategyPageInner() {
           onChange={key => setMainTab(key as 'calc' | 'board' | 'journal')}
           className="mb-4"
           items={[
-            { key: 'calc', label: '计算器' },
             { key: 'board', label: '组合看板' },
+            { key: 'calc', label: '计算器' },
             { key: 'journal', label: '流水' },
           ]}
         />
@@ -805,6 +870,9 @@ function GridStrategyPageInner() {
         }
         initialSymbol={
           nameModalMode === 'rename' ? renameTarget?.symbol : undefined
+        }
+        initialNote={
+          nameModalMode === 'rename' ? renameTarget?.note : undefined
         }
         loading={persistence.writeLoading}
         error={nameModalError}

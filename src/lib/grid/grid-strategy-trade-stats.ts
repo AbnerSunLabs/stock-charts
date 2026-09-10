@@ -1,3 +1,4 @@
+import type { StressTest } from '@/types/grid';
 import type { GridStrategyTrade } from '@/types/grid-strategy-trade';
 
 /** 单档持仓与轮次 */
@@ -62,6 +63,39 @@ export function computeLevelTradeQty(trades: GridStrategyTrade[]): LevelTradeQty
   };
 }
 
+/** 执行列：上一笔是买入则待卖，否则可再买（留利底仓不挡住下一轮） */
+export interface LevelExecuteState extends LevelTradeQty {
+  awaitingSell: boolean;
+}
+
+/**
+ * 执行列状态：循环买卖看最后一笔方向，不把留利底仓当成「必须先卖完」。
+ */
+export function getLevelExecuteState(
+  trades: GridStrategyTrade[]
+): LevelExecuteState {
+  const qty = computeLevelTradeQty(trades);
+  const ordered = sortTrades(trades);
+  const last = ordered[ordered.length - 1];
+  return {
+    ...qty,
+    awaitingSell: last?.side === 'buy',
+  };
+}
+
+/**
+ * 卖出默认股数：先按计划卖出份额，不超过当前持仓。
+ */
+export function defaultSellQty(
+  openQty: number,
+  plannedSellShares: number
+): number {
+  if (plannedSellShares > 0) {
+    return Math.min(openQty, plannedSellShares);
+  }
+  return openQty;
+}
+
 /**
  * 卖出 FIFO 已实现盈亏；买入返回 null。
  */
@@ -121,6 +155,8 @@ export function assertSellWithinOpenQty(
 
 /**
  * 汇总策略流水与档位列表。
+ * `openLevels` 只统计当前快照中「上一笔是买入」的档（与结果表「持仓中」相同）；
+ * 留利底仓、失效档不进 a。占用、轮次、股数仍计入失效档与底仓。
  */
 export function computeStrategyTradeStats(
   trades: GridStrategyTrade[],
@@ -139,14 +175,18 @@ export function computeStrategyTradeStats(
   let realized = 0;
   let openShares = 0;
 
+  const currentKeys = new Set(levelKeys);
   const keys =
     levelKeys.length > 0
       ? Array.from(new Set(levelKeys.concat(Array.from(byLevel.keys()))))
       : Array.from(byLevel.keys());
   for (const key of keys) {
     const list = byLevel.get(key) ?? [];
-    const q = computeLevelTradeQty(list);
-    if (q.openQty > 0) openLevels += 1;
+    const q = getLevelExecuteState(list);
+    // a = 当前快照里上一笔是买的档；与结果表「持仓中」一致
+    if (q.awaitingSell && (levelKeys.length === 0 || currentKeys.has(key))) {
+      openLevels += 1;
+    }
     rounds += q.rounds;
     occupied += q.occupiedCost;
     openShares += q.openQty;
@@ -169,12 +209,26 @@ export function computeStrategyTradeStats(
 }
 
 /**
- * 预计最大亏损粗估：全仓买入后按最低价计残值。
+ * 预计最大亏损：全仓按计划买齐后，股价跌到最低价的残值差。
+ * `shares` 必须是计划买入总股数，不能用留利底仓。
  */
 export function estimateMaxLoss(
   totalBuyAmount: number,
-  remainingShares: number,
+  shares: number,
   minPrice: number
 ): number {
-  return Math.max(0, totalBuyAmount - remainingShares * minPrice);
+  return Math.max(0, totalBuyAmount - shares * minPrice);
+}
+
+/**
+ * 用最新保存快照的投入与买入股数，配保存配置里的最低价。
+ */
+export function estimateMaxLossFromSnapshot(
+  stress: StressTest | null | undefined,
+  minPrice: number
+): number {
+  if (!stress) return 0;
+  const totalBuy = stress.v2?.totalBudgetRequired ?? stress.totalBuyAmount;
+  const shares = stress.v2?.totalBuyShares ?? stress.totalBuyShares;
+  return estimateMaxLoss(totalBuy, shares, minPrice);
 }

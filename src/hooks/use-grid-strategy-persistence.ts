@@ -44,12 +44,25 @@ export interface UseGridStrategyPersistenceReturn {
   openStrategy: (id: string) => Promise<void>;
   createStrategy: (name: string, payload: GridStrategySavePayload) => Promise<void>;
   updateCurrentStrategy: (payload: GridStrategySavePayload) => Promise<void>;
-  renameStrategy: (id: string, name: string, symbol?: string) => Promise<void>;
+  renameStrategy: (id: string, name: string, symbol: string, note: string) => Promise<void>;
   deleteStrategy: (id: string) => Promise<void>;
   requireLoginForSave: (payload: GridStrategySavePayload) => boolean;
   handleSignedOut: () => void;
+  clearCurrentStrategy: () => void;
   actionId: string | null;
   writeLoading: boolean;
+}
+
+function toMeta(strategy: SavedGridStrategyV1): GridStrategyMetadata {
+  return {
+    id: strategy.id,
+    name: strategy.name,
+    symbol: strategy.symbol,
+    note: strategy.note,
+    schemaVersion: strategy.schemaVersion,
+    createdAt: strategy.createdAt,
+    updatedAt: strategy.updatedAt,
+  };
 }
 
 function sortByUpdatedAtDesc(items: GridStrategyMetadata[]): GridStrategyMetadata[] {
@@ -157,6 +170,9 @@ export function useGridStrategyPersistence(
             }
           }
         }
+      } catch {
+        // getUser 内部 fetch 失败时会抛（如 response 为 undefined），按未登录处理
+        if (!cancelled) setUser(null);
       } finally {
         if (!cancelled) setAuthLoading(false);
       }
@@ -191,14 +207,7 @@ export function useGridStrategyPersistence(
       setActionId(id);
       try {
         const strategy = await repo.get(id);
-        setCurrentStrategy({
-          id: strategy.id,
-          name: strategy.name,
-          symbol: strategy.symbol,
-          schemaVersion: strategy.schemaVersion,
-          createdAt: strategy.createdAt,
-          updatedAt: strategy.updatedAt,
-        });
+        setCurrentStrategy(toMeta(strategy));
         onOpenStrategy(strategy);
         setLibraryOpen(false);
       } catch (error) {
@@ -218,14 +227,7 @@ export function useGridStrategyPersistence(
       setWriteLoading(true);
       try {
         const created = await repo.create(name, payload);
-        const meta: GridStrategyMetadata = {
-          id: created.id,
-          name: created.name,
-          symbol: created.symbol,
-          schemaVersion: created.schemaVersion,
-          createdAt: created.createdAt,
-          updatedAt: created.updatedAt,
-        };
+        const meta = toMeta(created);
         setCurrentStrategy(meta);
         setStrategies(prev =>
           sortByUpdatedAtDesc([meta, ...prev.filter(s => s.id !== meta.id)])
@@ -253,14 +255,7 @@ export function useGridStrategyPersistence(
       setWriteLoading(true);
       try {
         const updated = await repo.update(currentStrategy.id, payload);
-        const meta: GridStrategyMetadata = {
-          id: updated.id,
-          name: updated.name,
-          symbol: updated.symbol,
-          schemaVersion: updated.schemaVersion,
-          createdAt: updated.createdAt,
-          updatedAt: updated.updatedAt,
-        };
+        const meta = toMeta(updated);
         setCurrentStrategy(meta);
         setStrategies(prev =>
           sortByUpdatedAtDesc([meta, ...prev.filter(s => s.id !== meta.id)])
@@ -279,11 +274,11 @@ export function useGridStrategyPersistence(
   );
 
   const renameStrategy = useCallback(
-    async (id: string, name: string, symbol?: string) => {
+    async (id: string, name: string, symbol: string, note: string) => {
       setActionId(id);
       setWriteLoading(true);
       try {
-        const meta = await repo.rename(id, name, symbol);
+        const meta = await repo.rename(id, name, symbol, note);
         setStrategies(prev =>
           sortByUpdatedAtDesc([meta, ...prev.filter(s => s.id !== meta.id)])
         );
@@ -333,6 +328,10 @@ export function useGridStrategyPersistence(
     [user]
   );
 
+  const clearCurrentStrategy = useCallback(() => {
+    setCurrentStrategy(null);
+  }, []);
+
   const handleSignedOut = useCallback(() => {
     setUser(null);
     setCurrentStrategy(null);
@@ -364,6 +363,7 @@ export function useGridStrategyPersistence(
     deleteStrategy,
     requireLoginForSave,
     handleSignedOut,
+    clearCurrentStrategy,
     actionId,
     writeLoading,
   };

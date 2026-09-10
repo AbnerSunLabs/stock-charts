@@ -11,6 +11,7 @@ import {
   useState,
   type KeyboardEvent,
 } from 'react';
+import { HelpTooltip } from '@/components/shared/help-tooltip';
 import { createPortal } from 'react-dom';
 
 gsap.registerPlugin(useGSAP);
@@ -20,10 +21,11 @@ export interface GridStrategyNameOverlayProps {
   mode: 'create' | 'rename';
   initialName?: string;
   initialSymbol?: string;
+  initialNote?: string;
   loading: boolean;
   error: string | null;
   onCancel: () => void;
-  onSubmit: (name: string, symbol: string) => Promise<void>;
+  onSubmit: (name: string, symbol: string, note: string) => Promise<void>;
 }
 
 type OverlayPhase = 'form' | 'success';
@@ -41,6 +43,7 @@ export function GridStrategyNameOverlay({
   mode,
   initialName,
   initialSymbol,
+  initialNote,
   loading,
   error,
   onCancel,
@@ -52,13 +55,20 @@ export function GridStrategyNameOverlay({
   const [mounted, setMounted] = useState(false);
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
+  const [note, setNote] = useState('');
   const [phase, setPhase] = useState<OverlayPhase>('form');
   const [submitting, setSubmitting] = useState(false);
   const closingRef = useRef(false);
 
   const busy = loading || submitting;
   const trimmed = name.trim();
-  const invalid = trimmed.length < 1 || trimmed.length > 50;
+  const trimmedSymbol = symbol.trim();
+  const invalid =
+    trimmed.length < 1 ||
+    trimmed.length > 50 ||
+    trimmedSymbol.length < 1 ||
+    trimmedSymbol.length > 32 ||
+    note.trim().length > 200;
   const title = mode === 'create' ? '保存策略' : '重命名策略';
   const confirmLabel = mode === 'create' ? '保存' : '确认';
   const successLabel = mode === 'create' ? '已保存' : '已重命名';
@@ -69,6 +79,7 @@ export function GridStrategyNameOverlay({
       setPhase('form');
       setName(initialName ?? '');
       setSymbol(initialSymbol ?? '');
+      setNote(initialNote ?? '');
       setSubmitting(false);
       closingRef.current = false;
       return;
@@ -78,7 +89,7 @@ export function GridStrategyNameOverlay({
       setPhase('form');
       setSubmitting(false);
     }
-  }, [open, initialName, initialSymbol]);
+  }, [open, initialName, initialSymbol, initialNote]);
 
   const finishClose = useCallback(() => {
     setMounted(false);
@@ -173,7 +184,7 @@ export function GridStrategyNameOverlay({
     if (invalid || busy || phase === 'success') return;
     setSubmitting(true);
     try {
-      await onSubmit(trimmed, symbol.trim());
+      await onSubmit(trimmed, trimmedSymbol, note.trim());
       setPhase('success');
     } catch {
       // 错误由父层 error prop 展示
@@ -220,7 +231,11 @@ export function GridStrategyNameOverlay({
             {title}
           </h2>
           <label className="grid-name-overlay__label" htmlFor="grid-strategy-name-input">
+            <span className="grid-name-overlay__required" aria-hidden>
+              *
+            </span>
             策略名称
+            <HelpTooltip title="1～50 个字符，同账号下名称不可重复" />
           </label>
           <input
             ref={inputRef}
@@ -233,7 +248,7 @@ export function GridStrategyNameOverlay({
             placeholder="例如：沪深300低吸"
             disabled={busy || phase === 'success'}
             aria-invalid={Boolean(error)}
-            aria-describedby="grid-strategy-name-help"
+            aria-describedby={error ? 'grid-strategy-name-help' : undefined}
             onChange={event => setName(event.target.value)}
             onKeyDown={event => {
               if (event.key === 'Enter') {
@@ -242,16 +257,20 @@ export function GridStrategyNameOverlay({
               }
             }}
           />
-          <p
-            id="grid-strategy-name-help"
-            className={`grid-name-overlay__help${
-              error ? ' grid-name-overlay__help--error' : ''
-            }`}
-          >
-            {error ?? '1～50 个字符，同账号下名称不可重复'}
-          </p>
+          {error ? (
+            <p
+              id="grid-strategy-name-help"
+              className="grid-name-overlay__help grid-name-overlay__help--error"
+            >
+              {error}
+            </p>
+          ) : null}
           <label className="grid-name-overlay__label" htmlFor="grid-strategy-symbol-input">
-            标的代码（可选）
+            <span className="grid-name-overlay__required" aria-hidden>
+              *
+            </span>
+            标的代码
+            <HelpTooltip title="用于组合看板展示，最多 32 个字符" />
           </label>
           <input
             id="grid-strategy-symbol-input"
@@ -261,6 +280,19 @@ export function GridStrategyNameOverlay({
             placeholder="例如：159928"
             disabled={busy || phase === 'success'}
             onChange={event => setSymbol(event.target.value)}
+          />
+          <label className="grid-name-overlay__label" htmlFor="grid-strategy-note-input">
+            备注
+            <HelpTooltip title="组合看板卡片上用 Tag 展示" />
+          </label>
+          <textarea
+            id="grid-strategy-note-input"
+            className="grid-name-overlay__textarea"
+            value={note}
+            maxLength={200}
+            placeholder="例如：只做震荡段"
+            disabled={busy || phase === 'success'}
+            onChange={event => setNote(event.target.value)}
           />
           <div className="grid-name-overlay__footer">
             <button

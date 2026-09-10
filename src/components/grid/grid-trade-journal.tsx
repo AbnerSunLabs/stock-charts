@@ -1,9 +1,14 @@
 'use client';
 
+import {
+  formatGridAmount,
+  formatGridPrice,
+  formatSignedGridAmount,
+} from '@/lib/grid/format-grid-amount';
 import { computeSellRealizedPnl } from '@/lib/grid/grid-strategy-trade-stats';
 import type { GridStrategyTrade } from '@/types/grid-strategy-trade';
 import type { SavedGridStrategyV1 } from '@/types/grid-strategy-storage';
-import { Button, Empty, Select, Space, Table, Tag } from 'antd';
+import { App, Button, Empty, Select, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -23,16 +28,10 @@ interface JournalRow {
   side: 'buy' | 'sell';
   level: string;
   price: number;
+  priceUnit: number;
   qty: number;
   amount: number;
   pnl: number | null;
-}
-
-function money(n: number): string {
-  return n.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }
 
 /**
@@ -44,6 +43,7 @@ export function GridTradeJournal({
   initialStrategyId = 'all',
   onDelete,
 }: GridTradeJournalProps) {
+  const { modal } = App.useApp();
   const [strategyFilter, setStrategyFilter] = useState<string>(
     initialStrategyId
   );
@@ -85,6 +85,7 @@ export function GridTradeJournal({
         side: t.side,
         level: leg ? leg.positionRatio.toFixed(2) : '-',
         price: t.price,
+        priceUnit: s?.config.params.priceUnit ?? 0.001,
         qty: t.qty,
         amount: t.price * t.qty,
         pnl: computeSellRealizedPnl(allForStrategy, t),
@@ -125,8 +126,10 @@ export function GridTradeJournal({
       title: '成交价',
       dataIndex: 'price',
       width: 100,
-      render: (v: number) => (
-        <span className="font-mono tabular-nums">{money(v)}</span>
+      render: (_: unknown, r: JournalRow) => (
+        <span className="font-mono tabular-nums">
+          {formatGridPrice(r.price, r.priceUnit)}
+        </span>
       ),
     },
     {
@@ -144,7 +147,7 @@ export function GridTradeJournal({
       dataIndex: 'amount',
       width: 110,
       render: (v: number) => (
-        <span className="font-mono tabular-nums">{money(v)}</span>
+        <span className="font-mono tabular-nums">{formatGridAmount(v)}</span>
       ),
     },
     {
@@ -162,8 +165,7 @@ export function GridTradeJournal({
                 v > 0 ? 'var(--profit)' : v < 0 ? 'var(--loss)' : undefined,
             }}
           >
-            {v >= 0 ? '+' : ''}
-            {money(v)}
+            {formatSignedGridAmount(v)}
           </span>
         ),
     },
@@ -178,7 +180,16 @@ export function GridTradeJournal({
                 type="link"
                 danger
                 size="small"
-                onClick={() => void onDelete(r.id)}
+                onClick={() => {
+                  modal.confirm({
+                    title: '删除该笔流水？',
+                    content: '仅可删除该档时间序上的最后一笔。',
+                    okText: '删除',
+                    okButtonProps: { danger: true },
+                    cancelText: '取消',
+                    onOk: () => onDelete(r.id),
+                  });
+                }}
               >
                 删除
               </Button>

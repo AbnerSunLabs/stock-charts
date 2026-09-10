@@ -3,6 +3,7 @@ import {
   assertSuccessfulGridSnapshot,
   isSameGridStrategyConfig,
   normalizeGridStrategyName,
+  normalizeGridStrategyNote,
   parseSavedGridStrategy,
 } from '@/lib/grid/grid-strategy-storage';
 import { validateGridParams } from '@/lib/grid-validate-params';
@@ -144,6 +145,31 @@ describe('grid-strategy-storage', () => {
         dynamicGridMode: 'aggressive',
       })
     ).toBe(false);
+    expect(
+      isSameGridStrategyConfig(base, {
+        ...base,
+        params: { ...DEFAULT_GRID_PARAMS, alignLastGridToStep: true },
+      })
+    ).toBe(false);
+  });
+
+  it('旧存档缺 alignLastGridToStep 视为关闭', () => {
+    const result = buildSuccessfulResult();
+    const { alignLastGridToStep: _omit, ...legacyParams } = DEFAULT_GRID_PARAMS;
+    const parsed = parseSavedGridStrategy({
+      id: 'strategy-legacy',
+      name: '旧策略',
+      schema_version: 1,
+      config: {
+        params: legacyParams,
+        dynamicGridEnabled: false,
+        dynamicGridMode: 'stable',
+      },
+      result_snapshot: result,
+      created_at: '2026-08-07T01:00:00.000Z',
+      updated_at: '2026-08-07T02:00:00.000Z',
+    });
+    expect(parsed.config.params.alignLastGridToStep).toBe(false);
   });
 
   it('名称规范化与长度校验', () => {
@@ -152,6 +178,46 @@ describe('grid-strategy-storage', () => {
     expect(() => normalizeGridStrategyName('x'.repeat(51))).toThrow(
       '策略名称需为 1～50 个字符'
     );
+  });
+
+  it('备注规范化：trim、允许空、最长 200', () => {
+    expect(normalizeGridStrategyNote('  周内做 T  ')).toBe('周内做 T');
+    expect(normalizeGridStrategyNote('   ')).toBe('');
+    expect(normalizeGridStrategyNote(undefined)).toBe('');
+    expect(() => normalizeGridStrategyNote('x'.repeat(201))).toThrow(
+      '备注最多 200 个字符'
+    );
+  });
+
+  it('解析 config.note 到元数据；比较配置时忽略备注', () => {
+    const result = buildSuccessfulResult();
+    const parsed = parseSavedGridStrategy({
+      id: 'strategy-1',
+      name: '沪深300低吸',
+      symbol: '510300',
+      schema_version: 1,
+      config: {
+        params: DEFAULT_GRID_PARAMS,
+        dynamicGridEnabled: false,
+        dynamicGridMode: 'stable',
+        note: '  只做震荡  ',
+      },
+      result_snapshot: result,
+      created_at: '2026-08-07T01:00:00.000Z',
+      updated_at: '2026-08-07T02:00:00.000Z',
+    });
+    expect(parsed.note).toBe('只做震荡');
+    expect(parsed.config.note).toBe('只做震荡');
+
+    const base: GridStrategyConfigV1 = {
+      params: DEFAULT_GRID_PARAMS,
+      dynamicGridEnabled: false,
+      dynamicGridMode: 'stable',
+      note: 'A',
+    };
+    expect(
+      isSameGridStrategyConfig(base, { ...base, note: 'B' })
+    ).toBe(true);
   });
 
   it('成功快照断言可复用解析器', () => {

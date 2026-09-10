@@ -5,6 +5,7 @@
  */
 
 import { TOOLTIP_Z_INDEX } from '@/components/shared/help-tooltip';
+import { formatGridAmount } from '@/lib/grid/format-grid-amount';
 import {
   buildStrategyComparisonData,
   computeTooltipMetrics,
@@ -107,7 +108,7 @@ function CustomTooltip({
         <div className="grid-chart-tooltip__meta">
           买入价 ¥{data.gridBuyPrice.toFixed(priceDecimals)} ·{' '}
           {data.gridBuyShares.toLocaleString()} 股 · ¥
-          {data.gridBuyAmount.toLocaleString()}
+          {formatGridAmount(data.gridBuyAmount)}
         </div>
       </div>
 

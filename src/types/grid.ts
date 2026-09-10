@@ -47,6 +47,10 @@ export interface GridParams {
   stampDutyRate: number;
   transferFeeRate: number;
   slippageTicks: number;
+  /**
+   * 最后一档对齐步长。false：夹到最低价；true：首次低于最低价后收网。
+   */
+  alignLastGridToStep: boolean;
 }
 
 /** 页面默认参数（含 Phase 1 成本默认值） */
@@ -69,4 +73,5 @@ export const DEFAULT_GRID_PARAMS: GridParams = {
   stampDutyRate: 0,
   transferFeeRate: 0,
   slippageTicks: 5,
+  alignLastGridToStep: false,
 };

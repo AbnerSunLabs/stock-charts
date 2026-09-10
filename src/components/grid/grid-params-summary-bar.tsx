@@ -1,6 +1,7 @@
 'use client';
 
 import { GridSaveStatusIsland } from '@/components/grid/grid-save-status-island';
+import { formatGridAmount } from '@/lib/grid/format-grid-amount';
 import { Button } from 'antd';
 
 interface GridParamsSummaryBarProps {
@@ -77,7 +78,7 @@ export function GridParamsSummaryBar({
           </span>
           <span>
             单格金额{' '}
-            <strong>{Math.round(amountPerGrid).toLocaleString()}</strong>
+            <strong>{formatGridAmount(amountPerGrid)}</strong>
           </span>
           <span>
             档位 <strong>{gridCount}</strong>

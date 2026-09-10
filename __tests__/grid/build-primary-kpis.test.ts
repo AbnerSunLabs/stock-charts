@@ -19,7 +19,7 @@ describe('buildPrimaryKpis', () => {
         maxClusterCashDemand: 10000,
         totalBuyShares: 0,
         totalSellShares: 0,
-        realizedGridProfit: 1234,
+        realizedGridProfit: 1234.256,
         realizedGridProfitRate: 1.25,
         basePositionShares: 100,
         basePositionCost: 1000,
@@ -44,7 +44,7 @@ describe('buildPrimaryKpis', () => {
     ]);
     expect(items[0].value).toBe('400,000');
     expect(items[1].value).toBe('10,000');
-    expect(items[2].value).toBe('+1,234');
+    expect(items[2].value).toBe('+1,234.26');
     expect(items[2].color).toBe('var(--profit)');
     expect(items[3].value).toBe('10,000');
   });

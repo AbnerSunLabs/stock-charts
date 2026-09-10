@@ -59,7 +59,7 @@ export function LoginModal({
       open={open}
       onCancel={onClose}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       centered
     >
       <Paragraph type="secondary" className="mb-4">

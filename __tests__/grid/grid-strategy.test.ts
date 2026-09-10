@@ -113,6 +113,52 @@ describe('Phase 1 DOD: calculateGridStrategyV2', () => {
     expect(lastSmall.buyPrice).toBeGreaterThanOrEqual(params.minPrice - 0.0001);
   });
 
+  it('对齐步长：首次低于 minPrice 的那一档留下后收网', () => {
+    const params = buildParams({
+      minPrice: 0.7,
+      basePrice: 1.0,
+      smallGridStep: 10,
+      mediumGridStep: 20,
+      largeGridStep: 30,
+      alignLastGridToStep: true,
+    });
+    const ladder = generateAllPriceLadders(params, STATIC_OPTIONS);
+    const smallPrices = ladder
+      .filter(entry => entry.gridType === 'small')
+      .map(entry => entry.buyPrice);
+    const last = smallPrices[smallPrices.length - 1];
+
+    expect(last).toBeLessThan(params.minPrice);
+    smallPrices.slice(0, -1).forEach(price => {
+      expect(price).toBeGreaterThan(params.minPrice);
+    });
+    expect(last).not.toBeCloseTo(params.minPrice, 3);
+  });
+
+  it('对齐步长且达档位上限时不补 minPrice 桩', () => {
+    const params = buildParams({
+      basePrice: 341.433,
+      minPrice: 111.084,
+      priceUnit: 0.001,
+      smallGridStep: 17,
+      mediumGridStep: 40.6,
+      largeGridStep: 62.3,
+      alignLastGridToStep: true,
+    });
+    const options: GridStrategyOptionsV2 = {
+      dynamicGridEnabled: true,
+      dynamicGridMode: 'aggressive',
+      maxGridCount: 2,
+    };
+    const ladder = generateAllPriceLadders(params, options);
+    const mediumBuyPrices = ladder
+      .filter(entry => entry.gridType === 'medium')
+      .map(entry => entry.buyPrice);
+
+    expect(mediumBuyPrices).toEqual([202.811, 120.469]);
+    expect(mediumBuyPrices).not.toContain(params.minPrice);
+  });
+
   it('最低价兜底不应保留落入同一聚合组的同层普通档', () => {
     const params = buildParams({
       basePrice: 0.85,

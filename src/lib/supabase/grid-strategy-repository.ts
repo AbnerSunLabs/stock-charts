@@ -8,6 +8,7 @@ import {
 import {
   assertSuccessfulGridSnapshot,
   normalizeGridStrategyName,
+  normalizeGridStrategyNote,
   parseGridStrategyMetadata,
   parseSavedGridStrategy,
 } from '@/lib/grid/grid-strategy-storage';
@@ -67,12 +68,12 @@ export class GridStrategyRepository {
     return (data ?? []).map(row => parseSavedGridStrategy(row));
   }
 
-  /** 列出当前用户策略元数据（不含 JSONB） */
+  /** 列出当前用户策略元数据（含 config 以解析备注） */
   async list(): Promise<GridStrategyMetadata[]> {
     const userId = await this.requireUserId();
     const { data, error } = await this.client
       .from('grid_strategies')
-      .select('id,name,symbol,schema_version,created_at,updated_at')
+      .select('id,name,symbol,schema_version,created_at,updated_at,config')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false });
 
@@ -111,7 +112,10 @@ export class GridStrategyRepository {
         name: normalizedName,
         symbol: symbol || null,
         schema_version: GRID_STRATEGY_SCHEMA_VERSION,
-        config: payload.config,
+        config: {
+          ...payload.config,
+          note: normalizeGridStrategyNote(payload.config.note),
+        },
         result_snapshot: payload.resultSnapshot,
       })
       .select('*')
@@ -131,7 +135,10 @@ export class GridStrategyRepository {
     assertSuccessfulGridSnapshot(payload.resultSnapshot);
     const updatedAt = new Date().toISOString();
     const patch: Record<string, unknown> = {
-      config: payload.config,
+      config: {
+        ...payload.config,
+        note: normalizeGridStrategyNote(payload.config.note),
+      },
       result_snapshot: payload.resultSnapshot,
       updated_at: updatedAt,
     };
@@ -152,29 +159,36 @@ export class GridStrategyRepository {
     return parseSavedGridStrategy(data);
   }
 
-  /** 仅改名（可选同时改代码） */
+  /** 改名、标的代码与备注（备注写入 config.note） */
   async rename(
     id: string,
     name: string,
-    symbol?: string
+    symbol?: string,
+    note?: string
   ): Promise<GridStrategyMetadata> {
+    const current = await this.get(id);
     const userId = await this.requireUserId();
-    const normalizedName = normalizeGridStrategyName(name);
     const updatedAt = new Date().toISOString();
     const patch: Record<string, unknown> = {
-      name: normalizedName,
+      name: normalizeGridStrategyName(name),
       updated_at: updatedAt,
+      config: {
+        ...current.config,
+        note:
+          note === undefined
+            ? current.config.note ?? ''
+            : normalizeGridStrategyNote(note),
+      },
     };
     if (symbol !== undefined) {
-      const normalizedSymbol = normalizeGridStrategySymbol(symbol);
-      patch.symbol = normalizedSymbol || null;
+      patch.symbol = normalizeGridStrategySymbol(symbol) || null;
     }
     const { data, error } = await this.client
       .from('grid_strategies')
       .update(patch)
       .eq('user_id', userId)
       .eq('id', id)
-      .select('id,name,symbol,schema_version,created_at,updated_at')
+      .select('id,name,symbol,schema_version,created_at,updated_at,config')
       .maybeSingle();
 
     if (error) throw mapPostgrestError(error);

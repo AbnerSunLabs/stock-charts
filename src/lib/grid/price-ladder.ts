@@ -154,6 +154,9 @@ function resolveNextBuyPrice(
     if (rounded > params.minPrice) {
       return { kind: 'normal', price: rounded };
     }
+    if (params.alignLastGridToStep && rounded > 0) {
+      return { kind: 'bottom', price: rounded };
+    }
     return {
       kind: 'bottom',
       price: floorBuy,
@@ -170,7 +173,12 @@ function resolveNextBuyPrice(
     return { kind: 'normal', price: calculatedNext };
   }
 
-  // 最后一网：夹到 minPrice 硬地板，不允许更深
+  if (params.alignLastGridToStep) {
+    if (calculatedNext <= 0) return null;
+    return { kind: 'bottom', price: calculatedNext };
+  }
+
+  // 默认：最后一网夹到 minPrice 硬地板
   return {
     kind: 'bottom',
     price: floorBuy,
@@ -227,6 +235,7 @@ function appendMaxCountBottomGrid(
   stepRatio: number,
   lastBuyPrice: number
 ): void {
+  if (params.alignLastGridToStep) return;
   if (lastBuyPrice <= params.minPrice) return;
 
   const lastGridPrice = resolveFloorBuyPrice(params);

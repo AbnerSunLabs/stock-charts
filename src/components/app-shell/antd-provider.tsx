@@ -1,7 +1,9 @@
 'use client';
 
+import '@/lib/antd-dayjs';
 import { App, ConfigProvider } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
+// 走 es 路径，避开 optimizePackageImports 把 locale 编成 Client Component 顶层 await
+import zhCN from 'antd/es/locale/zh_CN';
 
 /**
  * 应用级 Ant Design Provider，统一明亮主题的设计 token。

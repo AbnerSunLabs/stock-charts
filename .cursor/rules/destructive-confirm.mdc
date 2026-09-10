@@ -1,0 +1,31 @@
+---
+description: 删除等破坏性操作必须二次确认弹窗，禁止单击立即执行
+alwaysApply: true
+---
+
+# 破坏性操作二次确认
+
+用户点击「删除」等不可轻易撤销的写操作时，必须先弹出确认，点确认后才执行。适用于表格操作列、菜单项、图标按钮。
+
+## 要求
+
+- 用 `App.useApp()` 的 `modal.confirm`（组件已在 antd `App` 内时）；禁止 `window.confirm`。
+- `okText` 用动作词（如「删除」）；`okButtonProps: { danger: true }`；必须有「取消」。
+- 标题点明对象（如「删除该笔流水？」）；需要时加一句后果或约束。
+- 点击「删除」不得直接调用删除 API。
+
+```tsx
+// ❌
+onClick={() => void onDelete(r.id)}
+
+// ✅
+onClick={() => {
+  modal.confirm({
+    title: '删除该笔流水？',
+    okText: '删除',
+    okButtonProps: { danger: true },
+    cancelText: '取消',
+    onOk: () => onDelete(r.id),
+  });
+}}
+```

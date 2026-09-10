@@ -2,7 +2,10 @@
 
 import { BaseInfoConfig } from '@/components/grid/base-info-config';
 import { FundCoefficientConfig } from '@/components/grid/fund-coefficient-config';
-import { GridStepConfig } from '@/components/grid/grid-step-config';
+import {
+  GridStepConfig,
+  GridStepFormulaHelp,
+} from '@/components/grid/grid-step-config';
 import type { ReactNode } from 'react';
 
 export interface GridParamsPanelProps {
@@ -28,6 +31,8 @@ export interface GridParamsPanelProps {
   onLargeStepChange: (value: number) => void;
   dynamicEnabled: boolean;
   onDynamicEnabledChange: (enabled: boolean) => void;
+  alignLastGridToStep: boolean;
+  onAlignLastGridToStepChange: (enabled: boolean) => void;
   mode: 'stable' | 'aggressive';
   onModeChange: (mode: 'stable' | 'aggressive') => void;
   /** 步长段是否默认展开（默认收起） */
@@ -63,6 +68,8 @@ export function GridParamsPanel({
   onLargeStepChange,
   dynamicEnabled,
   onDynamicEnabledChange,
+  alignLastGridToStep,
+  onAlignLastGridToStepChange,
   mode,
   onModeChange,
   stepDefaultOpen = false,
@@ -100,6 +107,15 @@ export function GridParamsPanel({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="ds-section-title">步长与动态（进阶）</h3>
+              <span
+                className="inline-flex"
+                onClick={event => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+              >
+                <GridStepFormulaHelp />
+              </span>
             </div>
             <p className="grid-step-details__hint mt-1">
               价格步长设置；动态间距只疏密档位，不改单档金额
@@ -119,6 +135,8 @@ export function GridParamsPanel({
             onLargeStepChange={onLargeStepChange}
             dynamicEnabled={dynamicEnabled}
             onDynamicEnabledChange={onDynamicEnabledChange}
+            alignLastGridToStep={alignLastGridToStep}
+            onAlignLastGridToStepChange={onAlignLastGridToStepChange}
             mode={mode}
             onModeChange={onModeChange}
             compactHeader

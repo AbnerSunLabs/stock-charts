@@ -18,7 +18,7 @@ import {
   Switch,
   Tooltip,
 } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from '@/lib/antd-dayjs';
 import type { FamilyFinanceRepository } from '@/lib/supabase/family-finance-repository';
 import {
   aggregateMentalGoalsByPriority,
@@ -366,7 +366,7 @@ export function FamilyMentalAccountsPanel({
         onOk={() => save()}
         confirmLoading={saving}
         okButtonProps={{ disabled: saving || selectable.length === 0 }}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="mt-2">
           <Form.Item
@@ -385,25 +385,35 @@ export function FamilyMentalAccountsPanel({
           >
             <Input placeholder="如：应急金、旅游基金" maxLength={32} />
           </Form.Item>
-          <Form.Item
-            name="targetAmount"
-            label="预期目标"
-            rules={[
-              { required: true, message: '请填写预期目标' },
-              {
-                type: 'number',
-                min: 0.01,
-                message: '预期目标必须大于 0',
-              },
-            ]}
-          >
-            <InputNumber
-              min={0.01}
-              precision={2}
-              className="w-full"
-              addonAfter="元"
-              placeholder="50000.00"
-            />
+          <Form.Item label="预期目标" required>
+            <Space.Compact block>
+              <Form.Item
+                name="targetAmount"
+                noStyle
+                rules={[
+                  { required: true, message: '请填写预期目标' },
+                  {
+                    type: 'number',
+                    min: 0.01,
+                    message: '预期目标必须大于 0',
+                  },
+                ]}
+              >
+                <InputNumber
+                  min={0.01}
+                  precision={2}
+                  className="w-full"
+                  placeholder="50000.00"
+                />
+              </Form.Item>
+              <Input
+                readOnly
+                tabIndex={-1}
+                value="元"
+                aria-hidden
+                className="w-12 text-center pointer-events-none"
+              />
+            </Space.Compact>
           </Form.Item>
           <Form.Item
             name="priority"

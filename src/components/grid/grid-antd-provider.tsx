@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/antd-dayjs';
 import { App, ConfigProvider } from 'antd';
 
 interface GridAntdProviderProps {

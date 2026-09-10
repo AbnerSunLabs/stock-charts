@@ -6,8 +6,14 @@ import {
   buildLegGridRowMap,
   getDisplayDropRate,
   GRID_TYPE_META,
+  sumChildSellStats,
 } from '@/components/grid/grid-table-row-helpers';
 import { exportGridTablePng } from '@/lib/grid/export-grid-table-png';
+import { formatGridAmount } from '@/lib/grid/format-grid-amount';
+import {
+  gridRoundsTagStyle,
+  sumChildRounds,
+} from '@/lib/grid/grid-rounds-tag-style';
 import type { GridRow } from '@/types/grid';
 import type { AggregatedGridRow, GridLeg } from '@/types/grid-v2';
 import { Button, message, Space, Table, Tag } from 'antd';
@@ -25,7 +31,11 @@ import { flushSync } from 'react-dom';
 
 export interface GridResultTradeActions {
   strategyId: string | null;
-  getLevelQty: (levelKey: string) => { openQty: number; rounds: number };
+  getLevelQty: (levelKey: string) => {
+    openQty: number;
+    rounds: number;
+    awaitingSell: boolean;
+  };
   onTrade: (side: 'buy' | 'sell', levelKey: string) => void;
 }
 
@@ -43,6 +53,8 @@ type GroupTableRow = {
   sortPrice: number;
   aggregated: AggregatedGridRow;
   childLegIds: string[];
+  sellShares: number;
+  sellAmount: number;
 };
 
 type DetailTableRow = {
@@ -60,7 +72,30 @@ const DETAIL_CELL_CLS =
 
 /** 与 Ant Design 展开列宽度对齐 */
 const EXPAND_COL_WIDTH = 48;
-const EXEC_COL_WIDTH = 200;
+const EXEC_COL_WIDTH = 160;
+const ROUNDS_COL_WIDTH = 64;
+
+function renderRoundsCell(
+  record: ResultTableRow,
+  expandedRowKeys: string[],
+  tradeActions?: GridResultTradeActions
+) {
+  if (record.kind === 'group') {
+    if (expandedRowKeys.includes(record.key)) {
+      return <span className="text-[var(--muted-foreground)]">-</span>;
+    }
+    return (
+      <RoundsTag
+        rounds={sumChildRounds(record.childLegIds, id =>
+          readRounds(id, tradeActions)
+        )}
+      />
+    );
+  }
+  return (
+    <RoundsTag rounds={readRounds(record.childLegIds[0], tradeActions)} />
+  );
+}
 
 function TypeBadge({ gridType }: { gridType: GridRow['gridType'] }) {
   return (
@@ -92,6 +127,21 @@ function DropRateCell({
   );
 }
 
+function readRounds(
+  levelKey: string,
+  tradeActions?: GridResultTradeActions
+): number {
+  return tradeActions?.getLevelQty(levelKey).rounds ?? 0;
+}
+
+function RoundsTag({ rounds }: { rounds: number }) {
+  return (
+    <Tag className="m-0 tabular-nums" style={gridRoundsTagStyle(rounds)}>
+      {rounds}
+    </Tag>
+  );
+}
+
 function ExecuteTradeCell({
   levelKey,
   tradeActions,
@@ -99,9 +149,9 @@ function ExecuteTradeCell({
   levelKey: string;
   tradeActions: GridResultTradeActions;
 }) {
-  const { openQty, rounds } = tradeActions.getLevelQty(levelKey);
+  const { awaitingSell } = tradeActions.getLevelQty(levelKey);
 
-  if (openQty > 0) {
+  if (awaitingSell) {
     return (
       <Space size="small" wrap>
         <Tag color="processing">持仓中</Tag>
@@ -111,11 +161,6 @@ function ExecuteTradeCell({
         >
           卖出
         </Button>
-        {rounds > 0 ? (
-          <span className="text-xs text-[var(--muted-foreground)]">
-            已完成 {rounds} 轮
-          </span>
-        ) : null}
       </Space>
     );
   }
@@ -166,10 +211,12 @@ function DetailRowCells({
   row,
   firstPositionByType,
   priceDecimals,
+  rounds,
 }: {
   row: GridRow;
   firstPositionByType: Map<string, number>;
   priceDecimals: number;
+  rounds: number;
 }) {
   return (
     <>
@@ -177,15 +224,18 @@ function DetailRowCells({
         <TypeBadge gridType={row.gridType} />
       </td>
       <td className={DETAIL_CELL_CLS}>{row.position.toFixed(2)}</td>
+      <td className={DETAIL_CELL_CLS}>
+        <RoundsTag rounds={rounds} />
+      </td>
       <td className={DETAIL_CELL_CLS}>{row.buyPrice.toFixed(priceDecimals)}</td>
       <td className={DETAIL_CELL_CLS}>
         <DropRateCell row={row} firstPositionByType={firstPositionByType} />
       </td>
-      <td className={DETAIL_CELL_CLS}>{row.buyAmount.toLocaleString()}</td>
+      <td className={DETAIL_CELL_CLS}>{formatGridAmount(row.buyAmount)}</td>
       <td className={DETAIL_CELL_CLS}>{row.buyShares.toLocaleString()}</td>
       <td className={DETAIL_CELL_CLS}>{row.sellPrice.toFixed(priceDecimals)}</td>
       <td className={DETAIL_CELL_CLS}>{row.sellShares.toLocaleString()}</td>
-      <td className={DETAIL_CELL_CLS}>{row.sellAmount.toLocaleString()}</td>
+      <td className={DETAIL_CELL_CLS}>{formatGridAmount(row.sellAmount)}</td>
     </>
   );
 }
@@ -211,6 +261,7 @@ function ExpandedLegRows({
         <col style={{ width: EXPAND_COL_WIDTH }} />
         <col />
         <col />
+        <col style={{ width: ROUNDS_COL_WIDTH }} />
         <col />
         <col />
         <col />
@@ -235,6 +286,7 @@ function ExpandedLegRows({
                 row={row}
                 firstPositionByType={firstPositionByType}
                 priceDecimals={priceDecimals}
+                rounds={readRounds(legId, tradeActions)}
               />
               {hasExecCol ? (
                 <td className={DETAIL_CELL_CLS}>
@@ -249,9 +301,128 @@ function ExpandedLegRows({
   );
 }
 
+function buildGridResultColumns(
+  expandedRowKeys: string[],
+  firstPositionByType: Map<string, number>,
+  priceDecimals: number,
+  tradeActions?: GridResultTradeActions
+): ColumnsType<ResultTableRow> {
+  return [
+    {
+      title: '类型',
+      width: 168,
+      render: (_: unknown, record: ResultTableRow) => {
+        if (record.kind === 'group') {
+          return (
+            <span className="whitespace-nowrap font-medium text-[var(--foreground)]">
+              {record.aggregated.displayType}
+            </span>
+          );
+        }
+        return <TypeBadge gridType={record.row.gridType} />;
+      },
+    },
+    {
+      title: '档位',
+      width: 72,
+      render: (_: unknown, record: ResultTableRow) =>
+        record.kind === 'detail' ? record.row.position.toFixed(2) : '—',
+    },
+    {
+      title: '轮次',
+      width: ROUNDS_COL_WIDTH,
+      render: (_: unknown, record: ResultTableRow) =>
+        renderRoundsCell(record, expandedRowKeys, tradeActions),
+    },
+    {
+      title: '买入价',
+      width: 88,
+      render: (_: unknown, record: ResultTableRow) =>
+        record.kind === 'detail'
+          ? record.row.buyPrice.toFixed(priceDecimals)
+          : '—',
+    },
+    {
+      title: (
+        <div className="flex items-center gap-1">
+          <span>跌幅</span>
+          <HelpTooltip
+            title="相对于上一档位的跌幅"
+            placement="bottomLeft"
+            maxWidth="12rem"
+          />
+        </div>
+      ),
+      width: 88,
+      render: (_: unknown, record: ResultTableRow) => {
+        if (record.kind === 'group') return '—';
+        return (
+          <DropRateCell
+            row={record.row}
+            firstPositionByType={firstPositionByType}
+          />
+        );
+      },
+    },
+    {
+      title: '买入金额',
+      width: 96,
+      render: (_: unknown, record: ResultTableRow) => {
+        const amount =
+          record.kind === 'group'
+            ? record.aggregated.totalBuyAmount
+            : record.row.buyAmount;
+        return formatGridAmount(amount);
+      },
+    },
+    {
+      title: '买入股数',
+      width: 96,
+      render: (_: unknown, record: ResultTableRow) => {
+        const shares =
+          record.kind === 'group'
+            ? record.aggregated.totalBuyShares
+            : record.row.buyShares;
+        return shares.toLocaleString();
+      },
+    },
+    {
+      title: '卖出价',
+      width: 88,
+      render: (_: unknown, record: ResultTableRow) =>
+        record.kind === 'detail'
+          ? record.row.sellPrice.toFixed(priceDecimals)
+          : '—',
+    },
+    {
+      title: '卖出股数',
+      width: 96,
+      render: (_: unknown, record: ResultTableRow) =>
+        (record.kind === 'group'
+          ? record.sellShares
+          : record.row.sellShares
+        ).toLocaleString(),
+    },
+    {
+      title: '卖出金额',
+      width: 96,
+      render: (_: unknown, record: ResultTableRow) =>
+        formatGridAmount(
+          record.kind === 'group' ? record.sellAmount : record.row.sellAmount
+        ),
+    },
+    {
+      title: '执行',
+      width: EXEC_COL_WIDTH,
+      fixed: 'right',
+      render: (_: unknown, record: ResultTableRow) =>
+        renderExecuteCell(record, tradeActions),
+    },
+  ];
+}
+
 interface GridResultTableViewProps {
   tableRows: ResultTableRow[];
-  columns: ColumnsType<ResultTableRow>;
   expandedRowKeys: string[];
   onExpandedRowsChange?: (keys: string[]) => void;
   legRowMap: Map<string, GridRow>;
@@ -266,7 +437,6 @@ interface GridResultTableViewProps {
 
 function GridResultTableView({
   tableRows,
-  columns,
   expandedRowKeys,
   onExpandedRowsChange,
   legRowMap,
@@ -278,6 +448,16 @@ function GridResultTableView({
   containerStyle,
   ariaHidden = false,
 }: GridResultTableViewProps) {
+  const columns: ColumnsType<ResultTableRow> = useMemo(
+    () =>
+      buildGridResultColumns(
+        expandedRowKeys,
+        firstPositionByType,
+        priceDecimals,
+        tradeActions
+      ),
+    [expandedRowKeys, firstPositionByType, priceDecimals, tradeActions]
+  );
   return (
     <div
       ref={containerRef}
@@ -356,7 +536,7 @@ export function GridResultTable({
             position: 0,
             buyTriggerPrice: 0,
             buyPrice: agg.displayBuyPrice,
-            buyAmount: Math.round(agg.totalBuyAmount),
+            buyAmount: agg.totalBuyAmount,
             buyShares: agg.totalBuyShares,
             sellTriggerPrice: 0,
             sellPrice: 0,
@@ -369,12 +549,15 @@ export function GridResultTable({
         };
       }
 
+      const sellStats = sumChildSellStats(agg.childLegIds, legRowMap);
       return {
         kind: 'group' as const,
         key: `group-${agg.clusterId}`,
         sortPrice: agg.triggerBuyPrice,
         aggregated: agg,
         childLegIds: agg.childLegIds,
+        sellShares: sellStats.sellShares,
+        sellAmount: sellStats.sellAmount,
       };
     });
   }, [aggregatedRows, legRowMap]);
@@ -389,120 +572,6 @@ export function GridResultTable({
         .map(row => row.key),
     [tableRows]
   );
-
-  const columns: ColumnsType<ResultTableRow> = useMemo(() => [
-    {
-      title: '类型',
-      width: 168,
-      render: (_: unknown, record: ResultTableRow) => {
-        if (record.kind === 'group') {
-          return (
-            <span className="whitespace-nowrap font-medium text-[var(--foreground)]">
-              {record.aggregated.displayType}
-            </span>
-          );
-        }
-        return <TypeBadge gridType={record.row.gridType} />;
-      },
-    },
-    {
-      title: '档位',
-      width: 72,
-      render: (_: unknown, record: ResultTableRow) =>
-        record.kind === 'detail' ? record.row.position.toFixed(2) : '—',
-    },
-    {
-      title: '买入价',
-      width: 88,
-      render: (_: unknown, record: ResultTableRow) => {
-        if (record.kind === 'group') {
-          return (
-            <span
-              title={`展示价 ${record.aggregated.displayBuyPrice.toFixed(priceDecimals)}`}
-            >
-              {record.aggregated.triggerBuyPrice.toFixed(priceDecimals)}
-            </span>
-          );
-        }
-        return record.row.buyPrice.toFixed(priceDecimals);
-      },
-    },
-    {
-      title: (
-        <div className="flex items-center gap-1">
-          <span>跌幅</span>
-          <HelpTooltip
-            title="相对于上一档位的跌幅"
-            placement="bottomLeft"
-            maxWidth="12rem"
-          />
-        </div>
-      ),
-      width: 88,
-      render: (_: unknown, record: ResultTableRow) => {
-        if (record.kind === 'group') return '—';
-        return (
-          <DropRateCell
-            row={record.row}
-            firstPositionByType={firstPositionByType}
-          />
-        );
-      },
-    },
-    {
-      title: '买入金额',
-      width: 96,
-      render: (_: unknown, record: ResultTableRow) => {
-        const amount =
-          record.kind === 'group'
-            ? Math.round(record.aggregated.totalBuyAmount)
-            : record.row.buyAmount;
-        return amount.toLocaleString();
-      },
-    },
-    {
-      title: '买入股数',
-      width: 96,
-      render: (_: unknown, record: ResultTableRow) => {
-        const shares =
-          record.kind === 'group'
-            ? record.aggregated.totalBuyShares
-            : record.row.buyShares;
-        return shares.toLocaleString();
-      },
-    },
-    {
-      title: '卖出价',
-      width: 88,
-      render: (_: unknown, record: ResultTableRow) =>
-        record.kind === 'detail'
-          ? record.row.sellPrice.toFixed(priceDecimals)
-          : '—',
-    },
-    {
-      title: '卖出股数',
-      width: 96,
-      render: (_: unknown, record: ResultTableRow) =>
-        record.kind === 'detail'
-          ? record.row.sellShares.toLocaleString()
-          : '—',
-    },
-    {
-      title: '卖出金额',
-      width: 96,
-      render: (_: unknown, record: ResultTableRow) =>
-        record.kind === 'detail'
-          ? record.row.sellAmount.toLocaleString()
-          : '—',
-    },
-    {
-      title: '执行',
-      width: EXEC_COL_WIDTH,
-      fixed: 'right',
-      render: (_: unknown, record: ResultTableRow) =>
-        renderExecuteCell(record, tradeActions),
-    },
-  ], [firstPositionByType, priceDecimals, tradeActions]);
 
   const handleDownloadPng = useCallback(async (): Promise<string> => {
     const visibleTableWidth = visibleTableRef.current?.scrollWidth;
@@ -565,7 +634,6 @@ export function GridResultTable({
 
       <GridResultTableView
         tableRows={tableRows}
-        columns={columns}
         expandedRowKeys={expandedRowKeys}
         onExpandedRowsChange={setExpandedRowKeys}
         legRowMap={legRowMap}
@@ -578,7 +646,6 @@ export function GridResultTable({
       {isExportSnapshotActive ? (
         <GridResultTableView
           tableRows={tableRows}
-          columns={columns}
           expandedRowKeys={exportGroupKeys}
           legRowMap={legRowMap}
           firstPositionByType={firstPositionByType}

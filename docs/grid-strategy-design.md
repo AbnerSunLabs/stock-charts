@@ -138,7 +138,8 @@
 
 `minPrice` 表示用户设定的**最低买入边界**与**自动加码停止线**：
 
-- **计划内**：所有档位买入价必须 `>= minPrice`；触及边界时最后一网夹到 `minPrice`，不得更深。
+- **计划内（默认）**：所有档位买入价必须 `>= minPrice`；触及边界时最后一网夹到 `minPrice`，不得更深。
+- **计划内（`alignLastGridToStep`）**：按步长排到第一档 `< minPrice` 后收网，该档可以低于最低价。
 - **市价**：当 `currentPrice <= minPrice` 时不再自动补仓，状态改为「跌破网格区间，等待回到区间或人工重评」。
 
 向下生成时，每层最后一网取（见 4.5 节）：
@@ -504,8 +505,8 @@ lastGridPrice = round_up_to_tick(minPrice)
 
 含义：
 
-- 计算价已触及或穿过 `minPrice`：最后一网夹到 `minPrice`（硬地板），不允许更深。
-- 层达档位上限且上一档仍高于 `minPrice`：同样补一档到 `minPrice` 收尾。
+- 计算价已触及或穿过 `minPrice`：默认最后一网夹到 `minPrice`（硬地板）。若 `alignLastGridToStep`，留下该计算价（可低于最低价）后停止该层。
+- 层达档位上限且上一档仍高于 `minPrice`：默认补一档到 `minPrice` 收尾；对齐步长开启时不补。
 
 流程：
 
@@ -514,7 +515,7 @@ lastGridPrice = round_up_to_tick(minPrice)
 3. 三层价格梯全部生成后，使用 4.7 节完全相同的全局排序与固定锚点规则聚类。
 4. 只删除真实聚合组内与同层兜底档共组的普通档；删除后重新聚类，直到结果稳定。
 5. 对保留的档位按层重排 `indexInLayer`，再进入资金分配。
-6. 计划内不存在 `buyPrice < minPrice` 的档位；市价跌破 `minPrice` 后不再自动加码。
+6. 默认计划内不存在 `buyPrice < minPrice` 的档位；打开「对齐步长」时允许最后一档低于 `minPrice`。市价跌破 `minPrice` 后不再自动加码。
 
 触发最后一网决策的时机：
 
@@ -724,6 +725,8 @@ abs(a.buyPrice - clusterAnchorPrice) / clusterAnchorPrice * 100
 | `childLegIds`     | 组内腿 ID，用于展开明细                     |
 | `sellPlans`       | 每条子腿自己的卖出价和卖出份额              |
 
+结果表折叠组合行：买入价显示 `—`（组内多价，不合成一个买价）；卖出股数 / 卖出金额为子档合计（与明细行同一 `sellAmount` 口径）；卖出价仍为 `—`。
+
 #### 4.7.5 压力测试口径
 
 压力测试需要同时给出：
@@ -819,6 +822,8 @@ totalNetProfit = realizedGridProfit + basePositionUnrealizedPnL
 | 资金压力 | 总弹药、预计最大投入、预算使用率、最大单档聚合资金 |
 | 滚动收益 | 推演网格利润、扣费后收益率、成本覆盖步长           |
 | 底仓     | 底仓份额、底仓成本、底仓市值、底仓浮盈             |
+
+金额类字段展示最多两位小数（整数不补 `.00`）；份额仍为整数。内部计算保持浮点精度，不在适配层先四舍五入到元。
 
 ### 4.9 开网、暂停、收网与停止规则
 

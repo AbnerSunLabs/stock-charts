@@ -440,7 +440,11 @@ body::after {
   color: var(--text-muted);
 }
 
-.sunburst-page .sunburst-amount-input .ant-input-number-group-addon {
+.sunburst-page .sunburst-amount-unit.ant-input {
+  width: 48px;
+  flex: none;
+  pointer-events: none;
+  text-align: center;
   color: var(--text-secondary);
   background: var(--bg-sidebar-hover);
   border-color: var(--border-subtle);

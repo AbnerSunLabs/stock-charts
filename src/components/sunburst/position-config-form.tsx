@@ -1,6 +1,6 @@
 'use client';
 
-import { Collapse, InputNumber } from 'antd';
+import { Collapse, Input, InputNumber, Space } from 'antd';
 import { useMemo } from 'react';
 import {
   buildPositionPathMap,
@@ -35,7 +35,7 @@ function parseAmountDisplay(value: string | undefined): number {
   return Number(cleaned);
 }
 
-const AMOUNT_INPUT_CLASS = 'sunburst-amount-input w-full min-w-0 max-w-full sm:max-w-[240px]';
+const AMOUNT_INPUT_CLASS = 'sunburst-amount-input w-full min-w-0';
 
 interface PositionConfigFormProps {
   totalInvestment: number | null;
@@ -57,25 +57,33 @@ function YuanInput({
   placeholder?: string;
 }) {
   return (
-    <InputNumber
-      min={0}
-      precision={2}
-      step={0.01}
-      className={AMOUNT_INPUT_CLASS}
-      placeholder={placeholder}
-      controls
-      value={value}
-      formatter={formatAmountDisplay}
-      parser={parseAmountDisplay}
-      onChange={v => {
-        if (v === null || v === undefined || Number.isNaN(Number(v))) {
-          onChange(null);
-          return;
-        }
-        onChange(roundAmount(Number(v)));
-      }}
-      addonAfter="元"
-    />
+    <Space.Compact className="w-full min-w-0 max-w-full sm:max-w-[240px]">
+      <InputNumber
+        min={0}
+        precision={2}
+        step={0.01}
+        className={AMOUNT_INPUT_CLASS}
+        placeholder={placeholder}
+        controls
+        value={value}
+        formatter={formatAmountDisplay}
+        parser={parseAmountDisplay}
+        onChange={v => {
+          if (v === null || v === undefined || Number.isNaN(Number(v))) {
+            onChange(null);
+            return;
+          }
+          onChange(roundAmount(Number(v)));
+        }}
+      />
+      <Input
+        readOnly
+        tabIndex={-1}
+        value="元"
+        aria-hidden
+        className="sunburst-amount-unit"
+      />
+    </Space.Compact>
   );
 }
 

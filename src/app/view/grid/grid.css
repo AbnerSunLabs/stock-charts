@@ -33,7 +33,7 @@
   --radius-card: 24px;
   --radius-compact: 12px;
   --radius-pill: 999px;
-  --z-tooltip: 10000;
+  --z-tooltip: 99999;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans',
     Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-display: var(--font-sans);
@@ -353,7 +353,11 @@
   color: var(--foreground);
 }
 
-.grid-shell .ant-input-number .ant-input-number-group-addon {
+.grid-shell .grid-input-compact-unit.ant-input {
+  width: 48px;
+  flex: none;
+  pointer-events: none;
+  text-align: center;
   background: color-mix(in srgb, var(--accent) 6%, var(--card));
   border-color: var(--border);
   color: var(--muted-foreground);
@@ -796,16 +800,24 @@
 }
 
 .grid-shell .grid-name-overlay__label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   margin-bottom: 0.4rem;
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--foreground);
 }
 
+.grid-shell .grid-name-overlay__required {
+  color: var(--loss);
+  font-weight: 700;
+}
+
 .grid-shell .grid-name-overlay__input {
   width: 100%;
   min-height: 44px;
+  margin-bottom: 0.85rem;
   padding: 0.55rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-compact);
@@ -816,7 +828,23 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.grid-shell .grid-name-overlay__input:focus {
+.grid-shell .grid-name-overlay__textarea {
+  width: 100%;
+  min-height: 88px;
+  margin-bottom: 0.85rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-compact);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.grid-shell .grid-name-overlay__textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
@@ -1003,9 +1031,34 @@
   color: var(--border);
 }
 
+.grid-shell .grid-portfolio-card {
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-shell .grid-portfolio-card .ant-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.grid-shell .grid-portfolio-card .ant-card-body > .ant-space-vertical {
+  flex: 1;
+  width: 100%;
+}
+
 .grid-shell .grid-portfolio-card .ant-card-head-wrapper {
   align-items: center;
   gap: 8px;
+}
+
+.grid-shell .grid-portfolio-card .ant-card-head-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .grid-shell .grid-portfolio-card .ant-card-extra {
@@ -1014,6 +1067,106 @@
 
 .grid-shell .grid-portfolio-card .ant-card-extra .ant-tag {
   white-space: nowrap;
+}
+
+.grid-shell .grid-portfolio-card__note {
+  min-height: 22px;
+  max-width: 100%;
+}
+
+.grid-shell .grid-portfolio-card__note-text {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: bottom;
+}
+
+.grid-shell .grid-portfolio-card__note .ant-tag {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.grid-shell .grid-portfolio-card .ant-space-vertical > .ant-space-item:last-child {
+  margin-top: auto;
+}
+
+.grid-shell .grid-portfolio-card__actions {
+  margin-top: auto;
+}
+
+.grid-shell .grid-portfolio-card__quotes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.grid-shell .grid-portfolio-card__quote-cell {
+  min-width: 0;
+  padding: 10px 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--muted) 6%, var(--card));
+}
+
+.grid-shell .grid-portfolio-card__quote-k {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid-shell .grid-portfolio-card__quote-main {
+  margin-top: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--foreground);
+}
+
+.grid-shell .grid-portfolio-card__quote-main--drop {
+  color: var(--loss);
+}
+
+.grid-shell .grid-portfolio-card__quote-main--rise {
+  color: var(--profit);
+}
+
+.grid-shell .grid-portfolio-card__quote-main--flat,
+.grid-shell .grid-portfolio-card__quote-main--empty {
+  color: var(--muted-foreground);
+}
+
+.grid-shell .grid-portfolio-card__quote-sub {
+  margin-top: 2px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.grid-shell .grid-portfolio-card__kpis {
+  display: grid;
+}
+
+.grid-shell .grid-portfolio-card__kpi {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  padding: 7px 0;
+}
+
+.grid-shell .grid-portfolio-card__kpi + .grid-portfolio-card__kpi {
+  border-top: 1px dashed var(--border);
+}
+
+.grid-shell .grid-portfolio-card__kpi span:first-child {
+  color: var(--muted-foreground);
 }
 
 /* 记账弹窗挂到 body，不能套在 .grid-shell 下 */
@@ -1029,7 +1182,7 @@
 }
 
 .grid-trade-entry-modal .ant-modal-body {
-  padding: 12px 20px 0;
+  padding: 12px 20px 16px;
 }
 
 .grid-trade-entry-modal .ant-form-item {
@@ -1062,10 +1215,9 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin: 0 -20px 0;
-  padding: 14px 20px 16px;
-  border-top: 1px solid #dee1e6;
-  background: #fafafa;
+  padding: 4px 0 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .grid-trade-entry-modal .ant-input-number,
