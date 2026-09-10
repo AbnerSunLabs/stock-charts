@@ -1,0 +1,38 @@
+src/app/view/grid/page.tsx
+  s_ec9aa1c0b5e944::t_fd9b69fdf5ae49 661-666
+  s_ec9aa1c0b5e944::t_cf81797b553b73 410
+src/app/view/grid/grid.css
+  s_ec9aa1c0b5e944::t_b5819d62facd3d 1097-1102,1106-1108,1112
+  s_ec9aa1c0b5e944::t_51a620d578daf2 1060-1071,1074-1086
+src/components/grid/grid-strategy-name-overlay.tsx
+  s_ec9aa1c0b5e944::t_8a7c8eb52982a8 73
+  s_ec9aa1c0b5e944::t_097976d4806ca2 72,74
+src/components/grid/grid-portfolio-board.tsx
+  s_ec9aa1c0b5e944::t_ec81f697cfbd94 28
+  s_ec9aa1c0b5e944::t_030df48fe2a493 275-292
+  s_ec9aa1c0b5e944::t_66547685b71c99 78
+  s_ec9aa1c0b5e944::t_8141856754115e 38
+docs/superpowers/specs/2026-09-09-grid-portfolio-journal-design.md
+  s_ec9aa1c0b5e944::t_326b4e7ac54f44 42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ba829bf2a8ea856a4b4d5825a9cf1448b61cfa30",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_ec9aa1c0b5e944": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3589cfc2-ce0e-4322-a9c6-72511cde5fa7",
+        "model": "grok-4.6"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
