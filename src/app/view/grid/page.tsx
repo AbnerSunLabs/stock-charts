@@ -407,6 +407,7 @@ function GridStrategyPageInner() {
         if (persistence.currentStrategy?.id === renameTarget.id) {
           setGeneratedConfig(prev => (prev ? { ...prev, note } : prev));
         }
+        void refreshBoardStrategies();
         return;
       }
       const payload = buildSavePayload();
@@ -656,6 +657,12 @@ function GridStrategyPageInner() {
               onOpenJournal={id => {
                 setJournalStrategyFilter(id);
                 setMainTab('journal');
+              }}
+              onEdit={strategy => {
+                setNameModalMode('rename');
+                setRenameTarget(strategy);
+                setNameModalError(null);
+                setNameModalOpen(true);
               }}
             />
           )

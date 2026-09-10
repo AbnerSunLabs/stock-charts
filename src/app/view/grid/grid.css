@@ -1057,8 +1057,33 @@
 
 .grid-shell .grid-portfolio-card .ant-card-head-title {
   overflow: hidden;
+}
+
+.grid-shell .grid-portfolio-card__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.grid-shell .grid-portfolio-card__title-text {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.grid-shell .grid-portfolio-card__edit.ant-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--muted-foreground);
+}
+
+.grid-shell .grid-portfolio-card__edit.ant-btn:hover {
+  color: var(--accent);
 }
 
 .grid-shell .grid-portfolio-card .ant-card-extra {
@@ -1069,15 +1094,23 @@
   white-space: nowrap;
 }
 
+.grid-shell .grid-portfolio-card .ant-card-body > .ant-space-vertical > .ant-space-item:first-child {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+}
+
 .grid-shell .grid-portfolio-card__note {
   min-height: 22px;
   max-width: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .grid-shell .grid-portfolio-card__note-text {
-  display: inline-block;
+  display: block;
   max-width: 100%;
-  vertical-align: bottom;
 }
 
 .grid-shell .grid-portfolio-card__note .ant-tag {
@@ -1086,7 +1119,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  vertical-align: bottom;
 }
 
 .grid-shell .grid-portfolio-card .ant-space-vertical > .ant-space-item:last-child {

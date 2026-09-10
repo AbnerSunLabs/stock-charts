@@ -69,9 +69,9 @@ export function GridStrategyNameOverlay({
     trimmedSymbol.length < 1 ||
     trimmedSymbol.length > 32 ||
     note.trim().length > 200;
-  const title = mode === 'create' ? '保存策略' : '重命名策略';
-  const confirmLabel = mode === 'create' ? '保存' : '确认';
-  const successLabel = mode === 'create' ? '已保存' : '已重命名';
+  const title = mode === 'create' ? '保存策略' : '编辑策略';
+  const confirmLabel = '保存';
+  const successLabel = mode === 'create' ? '已保存' : '已更新';
 
   useEffect(() => {
     if (open) {

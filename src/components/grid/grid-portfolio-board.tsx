@@ -25,6 +25,7 @@ import {
 } from '@/lib/supabase/etf-daily-repository';
 import type { GridStrategyTrade } from '@/types/grid-strategy-trade';
 import type { SavedGridStrategyV1 } from '@/types/grid-strategy-storage';
+import { EditOutlined } from '@ant-design/icons';
 import { Button, Card, Empty, Input, Select, Space, Tag, Tooltip } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -34,6 +35,7 @@ export interface GridPortfolioBoardProps {
   loading?: boolean;
   onOpenCalculator: (strategyId: string) => void;
   onOpenJournal: (strategyId: string) => void;
+  onEdit?: (strategy: SavedGridStrategyV1) => void;
 }
 
 type BoardSort = 'maxLoss' | 'occupied';
@@ -73,6 +75,7 @@ export function GridPortfolioBoard({
   loading,
   onOpenCalculator,
   onOpenJournal,
+  onEdit,
 }: GridPortfolioBoardProps) {
   const [sort, setSort] = useState<BoardSort>('maxLoss');
   const [search, setSearch] = useState('');
@@ -269,12 +272,24 @@ export function GridPortfolioBoard({
               key={s.id}
               className="grid-portfolio-card"
               title={
-                <span>
-                  {s.name}
-                  {s.symbol ? (
-                    <span className="ml-2 font-mono text-sm font-normal text-[var(--muted-foreground)]">
-                      {s.symbol}
-                    </span>
+                <span className="grid-portfolio-card__title">
+                  <span className="grid-portfolio-card__title-text">
+                    {s.name}
+                    {s.symbol ? (
+                      <span className="ml-2 font-mono text-sm font-normal text-[var(--muted-foreground)]">
+                        {s.symbol}
+                      </span>
+                    ) : null}
+                  </span>
+                  {onEdit ? (
+                    <Button
+                      type="text"
+                      size="small"
+                      className="grid-portfolio-card__edit"
+                      icon={<EditOutlined />}
+                      aria-label="编辑"
+                      onClick={() => onEdit(s)}
+                    />
                   ) : null}
                 </span>
               }
