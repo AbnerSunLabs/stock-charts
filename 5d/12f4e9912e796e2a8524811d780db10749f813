@@ -1,0 +1,24 @@
+src/lib/grid/grid-strategy-storage.ts
+  s_ec9aa1c0b5e944::t_0b4ef5b4cc1abe 225
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5d12f4e9912e796e2a8524811d780db10749f813",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_ec9aa1c0b5e944": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3589cfc2-ce0e-4322-a9c6-72511cde5fa7",
+        "model": "grok-4.6"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
