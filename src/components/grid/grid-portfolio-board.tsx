@@ -26,7 +26,8 @@ import {
 import type { GridStrategyTrade } from '@/types/grid-strategy-trade';
 import type { SavedGridStrategyV1 } from '@/types/grid-strategy-storage';
 import { EditOutlined } from '@ant-design/icons';
-import { Button, Card, Empty, Input, Select, Space, Tag, Tooltip } from 'antd';
+import { DsTooltip } from '@/components/shared/help-tooltip';
+import { Button, Card, Empty, Input, Select, Space, Tag } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 
 export interface GridPortfolioBoardProps {
@@ -302,13 +303,18 @@ export function GridPortfolioBoard({
               <Space direction="vertical" size={8} className="w-full">
                 <div className="grid-portfolio-card__note">
                   {s.note ? (
-                    <Tooltip title={s.note} placement="topLeft">
+                    <DsTooltip
+                      title={s.note}
+                      placement="topLeft"
+                      maxWidth="20rem"
+                      wrapBody
+                    >
                       <span className="grid-portfolio-card__note-text">
                         <Tag color="blue" className="m-0">
                           {s.note}
                         </Tag>
                       </span>
-                    </Tooltip>
+                    </DsTooltip>
                   ) : null}
                 </div>
                 <div className="grid-portfolio-card__quotes">

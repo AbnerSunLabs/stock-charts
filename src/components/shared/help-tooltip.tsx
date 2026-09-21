@@ -18,19 +18,33 @@ interface HelpTooltipProps {
   className?: string;
 }
 
+interface DsTooltipProps {
+  title: ReactNode;
+  children: ReactNode;
+  placement?: TooltipProps["placement"];
+  maxWidth?: number | string;
+  variant?: HelpTooltipVariant;
+  /** 长备注需要折行；问号说明保持默认单段排版 */
+  wrapBody?: boolean;
+}
+
 const SIZE_PX: Record<HelpTooltipSize, number> = {
   sm: 14,
   md: 16,
 };
 
-export function HelpTooltip({
+/**
+ * 网格页白底深色字 Tooltip。
+ * 主题 token `colorBgSpotlight` 与 `colorTextLightSolid` 均为白，裸用 antd Tooltip 会白字看不见。
+ */
+export function DsTooltip({
   title,
-  size = "sm",
-  variant = "default",
+  children,
   placement = "top",
   maxWidth = "16rem",
-  className = "",
-}: HelpTooltipProps) {
+  variant = "default",
+  wrapBody = false,
+}: DsTooltipProps) {
   const rootClassName =
     variant === "rich"
       ? "ds-help-tooltip ds-help-tooltip--rich"
@@ -51,9 +65,32 @@ export function HelpTooltip({
           maxWidth,
           backgroundColor: '#ffffff',
           color: 'var(--foreground)',
+          ...(wrapBody
+            ? { whiteSpace: 'pre-wrap' as const, wordBreak: 'break-word' as const }
+            : {}),
         },
       }}
       zIndex={TOOLTIP_Z_INDEX}
+    >
+      {children}
+    </Tooltip>
+  );
+}
+
+export function HelpTooltip({
+  title,
+  size = "sm",
+  variant = "default",
+  placement = "top",
+  maxWidth = "16rem",
+  className = "",
+}: HelpTooltipProps) {
+  return (
+    <DsTooltip
+      title={title}
+      placement={placement}
+      maxWidth={maxWidth}
+      variant={variant}
     >
       <span
         className="inline-flex shrink-0 cursor-help align-middle"
@@ -65,6 +102,6 @@ export function HelpTooltip({
           style={{ fontSize: SIZE_PX[size] }}
         />
       </span>
-    </Tooltip>
+    </DsTooltip>
   );
 }
