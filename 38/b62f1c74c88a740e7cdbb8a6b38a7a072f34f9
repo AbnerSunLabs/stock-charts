@@ -1,0 +1,31 @@
+src/components/shared/help-tooltip.tsx
+  s_fc65fcfe02df14::t_1c1fa5e0072494 68-70
+  s_fc65fcfe02df14::t_b4bea52458cf08 27-28
+  s_fc65fcfe02df14::t_a8f14ac4157813 21-26,29-30,36-40,42,45,47,74-93,105
+  s_fc65fcfe02df14::t_7b88e5c2e1a6bc 46
+src/components/grid/grid-portfolio-board.tsx
+  s_fc65fcfe02df14::t_e585fa6d74aa04 29-30
+  s_fc65fcfe02df14::t_94f21f3272e617 317
+  s_fc65fcfe02df14::t_7f8b810e602f52 306-311
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "38b62f1c74c88a740e7cdbb8a6b38a7a072f34f9",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_fc65fcfe02df14": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d52d45c0-c839-404c-a4d4-8becff650bb8",
+        "model": "grok-4.6"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
