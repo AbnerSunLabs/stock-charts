@@ -26,6 +26,7 @@ import {
   hasDiscardableGridChanges,
   isDraftConfigDirty,
 } from '@/lib/grid/grid-strategy-workflow';
+import { normalizeJournalStrategyId } from '@/lib/grid/grid-journal-filter';
 import {
   defaultSellQty,
   getLevelExecuteState,
@@ -190,6 +191,17 @@ function GridStrategyPageInner() {
       void refreshBoardStrategies();
     }
   }, [mainTab, refreshBoardStrategies, persistence.strategies]);
+
+  useEffect(() => {
+    const normalized = normalizeJournalStrategyId(
+      journalStrategyFilter,
+      boardStrategies.map(strategy => strategy.id),
+      boardLoading
+    );
+    if (normalized !== journalStrategyFilter) {
+      setJournalStrategyFilter(normalized);
+    }
+  }, [boardLoading, boardStrategies, journalStrategyFilter]);
 
   const currentStrategyTrades = useMemo(() => {
     const id = persistence.currentStrategy?.id;
@@ -463,6 +475,7 @@ function GridStrategyPageInner() {
   const handleSignedOut = () => {
     const wasCloud = persistence.currentStrategy !== null;
     persistence.handleSignedOut();
+    setJournalStrategyFilter('all');
     if (wasCloud) {
       resetCalculatorDraft();
     }
@@ -686,7 +699,8 @@ function GridStrategyPageInner() {
               <GridTradeJournal
                 strategies={boardStrategies}
                 trades={tradesApi.trades}
-                initialStrategyId={journalStrategyFilter}
+                strategyId={journalStrategyFilter}
+                onStrategyChange={setJournalStrategyFilter}
                 onDelete={async id => {
                   try {
                     await tradesApi.deleteTrade(id);

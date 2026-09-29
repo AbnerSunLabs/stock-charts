@@ -10,12 +10,13 @@ import type { GridStrategyTrade } from '@/types/grid-strategy-trade';
 import type { SavedGridStrategyV1 } from '@/types/grid-strategy-storage';
 import { App, Button, Empty, Select, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export interface GridTradeJournalProps {
   strategies: SavedGridStrategyV1[];
   trades: GridStrategyTrade[];
-  initialStrategyId?: string | 'all';
+  strategyId: string | 'all';
+  onStrategyChange: (strategyId: string | 'all') => void;
   onDelete?: (id: string) => Promise<void>;
 }
 
@@ -40,18 +41,12 @@ interface JournalRow {
 export function GridTradeJournal({
   strategies,
   trades,
-  initialStrategyId = 'all',
+  strategyId,
+  onStrategyChange,
   onDelete,
 }: GridTradeJournalProps) {
   const { modal } = App.useApp();
-  const [strategyFilter, setStrategyFilter] = useState<string>(
-    initialStrategyId
-  );
   const [sideFilter, setSideFilter] = useState<'all' | 'buy' | 'sell'>('all');
-
-  useEffect(() => {
-    setStrategyFilter(initialStrategyId);
-  }, [initialStrategyId]);
 
   const strategyMap = useMemo(() => {
     const map = new Map(strategies.map(s => [s.id, s]));
@@ -60,8 +55,8 @@ export function GridTradeJournal({
 
   const rows = useMemo((): JournalRow[] => {
     let list = [...trades];
-    if (strategyFilter !== 'all') {
-      list = list.filter(t => t.strategyId === strategyFilter);
+    if (strategyId !== 'all') {
+      list = list.filter(t => t.strategyId === strategyId);
     }
     if (sideFilter !== 'all') {
       list = list.filter(t => t.side === sideFilter);
@@ -91,7 +86,7 @@ export function GridTradeJournal({
         pnl: computeSellRealizedPnl(allForStrategy, t),
       };
     });
-  }, [trades, strategyFilter, sideFilter, strategyMap]);
+  }, [trades, strategyId, sideFilter, strategyMap]);
 
   const columns: ColumnsType<JournalRow> = [
     { title: '日期', dataIndex: 'date', width: 110 },
@@ -203,8 +198,8 @@ export function GridTradeJournal({
     <Space direction="vertical" size={12} className="w-full">
       <Space wrap>
         <Select
-          value={strategyFilter}
-          onChange={setStrategyFilter}
+          value={strategyId}
+          onChange={onStrategyChange}
           style={{ minWidth: 180 }}
           options={[
             { value: 'all', label: '全部策略' },

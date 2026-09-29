@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>组合看板跳转对应流水 Demo</title>
+    <style>
+      :root {
+        --ink: #0a0b0d;
+        --muted: #5b616e;
+        --border: #dee1e6;
+        --surface: #f7f7f7;
+        --blue: #0052ff;
+        --blue-dark: #003ecc;
+        --green: #05b169;
+        --red: #cf202f;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #fff;
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      }
+      button, select { font: inherit; }
+      .shell { width: min(1180px, calc(100% - 32px)); margin: 36px auto; }
+      h1 { margin: 0; font-size: 28px; letter-spacing: -.02em; }
+      .lead { margin: 8px 0 28px; color: var(--muted); font-size: 14px; }
+      .tabs { display: flex; gap: 28px; border-bottom: 1px solid var(--border); }
+      .tab {
+        position: relative; padding: 12px 2px; border: 0; background: transparent;
+        color: var(--muted); cursor: pointer;
+      }
+      .tab.active { color: var(--ink); font-weight: 600; }
+      .tab.active::after {
+        content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+        height: 2px; border-radius: 2px; background: var(--blue);
+      }
+      .panel { display: none; padding-top: 22px; }
+      .panel.active { display: block; animation: enter .18s ease-out both; }
+      @keyframes enter { from { opacity: 0; transform: translateY(3px); } }
+      .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .card, .journal {
+        border: 1px solid var(--border); border-radius: 24px; background: #fff;
+        box-shadow: 0 4px 12px rgba(10, 11, 13, .04);
+      }
+      .card { padding: 20px; }
+      .card-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+      .card h2 { margin: 0; font-size: 17px; }
+      .symbol { margin-left: 7px; color: var(--muted); font: 13px ui-monospace, monospace; }
+      .tag { border-radius: 999px; padding: 3px 9px; background: #eaf1ff; color: var(--blue-dark); font-size: 12px; white-space: nowrap; }
+      .quotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 18px 0; }
+      .quote { border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+      .quote small { display: block; color: var(--muted); }
+      .quote b { display: block; margin-top: 4px; font: 650 16px ui-monospace, monospace; }
+      .metrics { margin-bottom: 15px; font-size: 13px; }
+      .metric { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px dashed var(--border); }
+      .metric span:first-child { color: var(--muted); }
+      .actions { display: flex; gap: 8px; }
+      .btn {
+        min-height: 36px; padding: 0 16px; border: 1px solid var(--border);
+        border-radius: 999px; background: #fff; cursor: pointer;
+      }
+      .btn:hover, .btn:focus-visible { border-color: var(--blue); color: var(--blue); outline: none; }
+      .btn.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+      .journal { padding: 20px; }
+      .filters { display: flex; gap: 10px; margin-bottom: 14px; }
+      select { min-width: 210px; height: 36px; padding: 0 36px 0 12px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+      .table-wrap { overflow-x: auto; }
+      table { width: 100%; min-width: 780px; border-collapse: collapse; font-size: 13px; }
+      th { background: var(--surface); color: var(--muted); text-align: left; font-weight: 500; }
+      th, td { padding: 12px; border-bottom: 1px solid var(--border); }
+      .side { display: inline-block; border-radius: 6px; padding: 2px 8px; }
+      .buy { color: var(--blue-dark); background: #eaf1ff; }
+      .sell { color: #087c4d; background: #e7f8f0; }
+      .pnl { color: var(--green); font-family: ui-monospace, monospace; }
+      .empty { padding: 56px 16px; text-align: center; color: var(--muted); }
+      .demo-note { margin-top: 14px; color: var(--muted); font-size: 12px; }
+      @media (max-width: 760px) {
+        .cards { grid-template-columns: 1fr; }
+      }
+      @media (prefers-reduced-motion: reduce) { .panel.active { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <h1>网格交易策略</h1>
+      <p class="lead">点击任一卡片的「流水」，验证跳转后的策略筛选与表格内容。</p>
+
+      <nav class="tabs" aria-label="网格策略视图">
+        <button class="tab active" data-tab="board">组合看板</button>
+        <button class="tab" data-tab="calc">计算器</button>
+        <button class="tab" data-tab="journal">流水</button>
+      </nav>
+
+      <section class="panel active" id="board">
+        <div class="cards">
+          <article class="card">
+            <div class="card-head">
+              <h2>沪深 300 网格<span class="symbol">510300</span></h2>
+              <span class="tag">持仓中 2/8，累计 3 轮</span>
+            </div>
+            <div class="quotes">
+              <div class="quote"><small>收盘 09/25</small><b>4.732</b></div>
+              <div class="quote"><small>下一买</small><b style="color:var(--red)">4.680</b></div>
+              <div class="quote"><small>下一卖</small><b style="color:var(--green)">4.820</b></div>
+            </div>
+            <div class="metrics">
+              <div class="metric"><span>已投入金额</span><b>¥18,960.00</b></div>
+              <div class="metric"><span>已实现收益</span><b class="pnl">+¥626.00</b></div>
+            </div>
+            <div class="actions">
+              <button class="btn primary">打开计算器</button>
+              <button class="btn open-journal" data-strategy="hs300">流水</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>中证 500 网格<span class="symbol">510500</span></h2>
+              <span class="tag">持仓中 1/6，累计 1 轮</span>
+            </div>
+            <div class="quotes">
+              <div class="quote"><small>收盘 09/25</small><b>6.155</b></div>
+              <div class="quote"><small>下一买</small><b style="color:var(--red)">6.080</b></div>
+              <div class="quote"><small>下一卖</small><b style="color:var(--green)">6.280</b></div>
+            </div>
+            <div class="metrics">
+              <div class="metric"><span>已投入金额</span><b>¥12,160.00</b></div>
+              <div class="metric"><span>已实现收益</span><b class="pnl">+¥240.00</b></div>
+            </div>
+            <div class="actions">
+              <button class="btn primary">打开计算器</button>
+              <button class="btn open-journal" data-strategy="zz500">流水</button>
+            </div>
+          </article>
+        </div>
+        <p class="demo-note">建议分别点击两张卡片的「流水」，检查筛选项与表格是否同步变化。</p>
+      </section>
+
+      <section class="panel" id="calc"><div class="empty">计算器内容在本 Demo 中省略</div></section>
+
+      <section class="panel" id="journal">
+        <div class="journal">
+          <div class="filters">
+            <select id="strategy-filter" aria-label="策略筛选">
+              <option value="all">全部策略</option>
+              <option value="hs300">沪深 300 网格 510300</option>
+              <option value="zz500">中证 500 网格 510500</option>
+            </select>
+            <select aria-label="方向筛选">
+              <option>全部方向</option><option>买入</option><option>卖出</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>日期</th><th>策略</th><th>方向</th><th>档位</th><th>成交价</th><th>股数</th><th>金额</th><th>盈利金额</th></tr></thead>
+              <tbody id="journal-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const strategies = {
+        hs300: { name: '沪深 300 网格', symbol: '510300' },
+        zz500: { name: '中证 500 网格', symbol: '510500' }
+      };
+      const rows = [
+        ['hs300', '2026-09-25', 'sell', '0.85', '4.820', '1000', '¥4,820.00', '+¥140.00'],
+        ['hs300', '2026-09-19', 'buy', '0.85', '4.680', '1000', '¥4,680.00', '-'],
+        ['hs300', '2026-09-12', 'sell', '0.80', '4.760', '1200', '¥5,712.00', '+¥186.00'],
+        ['zz500', '2026-09-23', 'buy', '0.90', '6.080', '2000', '¥12,160.00', '-'],
+        ['zz500', '2026-09-08', 'sell', '0.85', '6.280', '1200', '¥7,536.00', '+¥240.00']
+      ];
+      const tabs = [...document.querySelectorAll('.tab')];
+      const panels = [...document.querySelectorAll('.panel')];
+      const filter = document.querySelector('#strategy-filter');
+
+      function activateTab(key) {
+        tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === key));
+        panels.forEach(panel => panel.classList.toggle('active', panel.id === key));
+      }
+
+      function renderRows(strategyId) {
+        const visible = strategyId === 'all' ? rows : rows.filter(row => row[0] === strategyId);
+        document.querySelector('#journal-body').innerHTML = visible.map(row => {
+          const strategy = strategies[row[0]];
+          const side = row[2] === 'buy' ? '<span class="side buy">买入</span>' : '<span class="side sell">卖出</span>';
+          return `<tr><td>${row[1]}</td><td>${strategy.name} <span class="symbol">${strategy.symbol}</span></td><td>${side}</td><td>${row[3]}</td><td>${row[4]}</td><td>${row[5]}</td><td>${row[6]}</td><td class="${row[7] === '-' ? '' : 'pnl'}">${row[7]}</td></tr>`;
+        }).join('');
+      }
+
+      function openJournal(strategyId) {
+        filter.value = strategyId;
+        renderRows(strategyId);
+        activateTab('journal');
+      }
+
+      tabs.forEach(tab => tab.addEventListener('click', () => activateTab(tab.dataset.tab)));
+      document.querySelectorAll('.open-journal').forEach(button => button.addEventListener('click', () => openJournal(button.dataset.strategy)));
+      filter.addEventListener('change', () => renderRows(filter.value));
+      renderRows('all');
+    </script>
+  </body>
+</html>
