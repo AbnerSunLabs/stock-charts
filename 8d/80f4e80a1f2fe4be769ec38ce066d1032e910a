@@ -1,0 +1,41 @@
+docs/superpowers/specs/2026-09-09-grid-portfolio-journal-design.md
+  s_44a03dad698af0::t_86f1054bddc0d2 53
+  s_44a03dad698af0::t_7d181bb9bdf41a 6
+__tests__/grid/grid-journal-filter.test.ts
+  s_44a03dad698af0::t_97aeffae06ee30 1-19
+__tests__/grid/grid-trade-journal.test.ts
+  s_44a03dad698af0::t_52fc4a5c45f355 1-3,5,9,11,13-37,62-104,148-150,152-153
+  s_44a03dad698af0::t_5fb8c38be39f7f 139-143,145-147
+  s_44a03dad698af0::t_97aeffae06ee30 4,6-8,10,12,38-61,105-138,144,151
+src/lib/grid/grid-journal-filter.ts
+  s_44a03dad698af0::t_5fb8c38be39f7f 1-11
+src/components/grid/grid-trade-journal.tsx
+  s_44a03dad698af0::t_f4b6199a7166e5 13,18-19,44-45,58-59,89,201-202
+output/grid-card-journal-filter-demo.html
+  s_44a03dad698af0::t_76e7097b5652e2 1-203,205-208
+  s_44a03dad698af0::t_48f4ea2617aac3 204
+src/app/view/grid/page.tsx
+  s_44a03dad698af0::t_5fb8c38be39f7f 29,195-205,478
+  s_44a03dad698af0::t_f4b6199a7166e5 702-703
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8d80f4e80a1f2fe4be769ec38ce066d1032e910a",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_44a03dad698af0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e6e7-0193-7a20-accc-0ef06b4fd5e5",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
