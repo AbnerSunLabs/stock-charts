@@ -1,0 +1,92 @@
+src/components/shared/help-tooltip.tsx
+  s_ef9bc2b1eb03ef::t_ee2753b44d1945 29-31
+  s_ef9bc2b1eb03ef::t_afd24e26304851 62
+  s_ef9bc2b1eb03ef::t_7d0f53cab6e1d5 50-51
+  s_ef9bc2b1eb03ef::t_1893e865021ed5 63
+src/lib/grid/grid-strategy-trade-stats.ts
+  s_ef9bc2b1eb03ef::t_c6004f446503c6 285-295
+  s_157f470c684234::t_89191d6f89f350 222-225,262-268,273-279,281-284
+  s_157f470c684234::t_2c398f264bb20f 212-221,226-261,269-272,280
+  s_157f470c684234::t_ce96bb4ed71aae 1
+src/components/grid/grid-portfolio-board.tsx
+  s_ef9bc2b1eb03ef::t_7e447e5620ac00 71-104
+  s_ef9bc2b1eb03ef::t_e533e15b41f2c0 350
+  s_ef9bc2b1eb03ef::t_b6e1f06f8e4bae 379,381,386
+  s_ef9bc2b1eb03ef::t_d74dfacecaacfd 18
+  s_ef9bc2b1eb03ef::t_01e0466afc7587 32
+  s_ef9bc2b1eb03ef::t_c9080b8120758b 185
+  s_ef9bc2b1eb03ef::t_c84b648b4b1507 198
+  s_ef9bc2b1eb03ef::t_2a544d2a238c87 307-316
+__tests__/grid/grid-strategy-trade-stats.test.ts
+  s_157f470c684234::t_0317f98008d5c4 113-120,123,125-145
+  s_157f470c684234::t_ad7bd0cf27364a 6
+  s_157f470c684234::t_9b1099470cb959 3
+  s_ef9bc2b1eb03ef::t_daff3e3f0b5d1f 4
+  s_ef9bc2b1eb03ef::t_31b9967aa9d663 101-112,146-147
+  s_157f470c684234::t_a9b354f18a0667 121-122,124
+docs/superpowers/specs/2026-09-10-grid-board-close-quote-design.md
+  s_ef9bc2b1eb03ef::t_94449596fb9754 19
+src/components/grid/grid-result-table.tsx
+  s_157f470c684234::t_f2a77d6e8ad637 652-653
+  s_157f470c684234::t_092b326383920d 42-47,54
+  s_157f470c684234::t_4536ce05a36265 507-530,537
+e2e/grid-strategy.spec.ts
+  s_157f470c684234::t_3d2b1f0d4aec2f 64,68-73,76,79,82-83
+output/grid-result-position-metrics-demo.html
+  s_157f470c684234::t_744e2e8d56b4a3 250
+  s_157f470c684234::t_9149a5ecf4f05b 1-58,63-69,85-120,132-249,251-262,264-266,268-275
+  h_245285a78fca97 59-62,70-84,121-131,263,267
+docs/superpowers/specs/2026-09-09-grid-portfolio-journal-design.md
+  s_ef9bc2b1eb03ef::t_f027781f587e8e 43
+  s_157f470c684234::t_f2e9a72aeb1c0e 62
+  s_ef9bc2b1eb03ef::t_e0930641ff5361 105-106
+  s_ef9bc2b1eb03ef::t_df2568d396f6fd 115
+src/app/view/grid/grid.css
+  s_ef9bc2b1eb03ef::t_6fb6976e84c948 1113,1115
+src/app/view/grid/page.tsx
+  s_157f470c684234::t_a8ed327ded0541 95
+  s_157f470c684234::t_2f329c8c63c074 218-241,249-257,269
+  s_157f470c684234::t_11d4e61563fff9 242-248
+  s_157f470c684234::t_9334e0cc9534e5 258-268
+  s_157f470c684234::t_37ff4339d33e0b 881
+  s_157f470c684234::t_f627b78d269a46 30-31,33-34,39
+output/grid-card-history-explorer-demo.html
+  s_d1514c9e295cc2::t_43c2427b198329 1-229
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0bbd4b50205b532b36b41b72e845c97f02fa6f54",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_157f470c684234": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d4d73047-5152-45dd-b17e-bbbdafb7661f",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_d1514c9e295cc2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0eb4e-06bd-7e00-a36b-071ecfa40e39",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_ef9bc2b1eb03ef": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fd1bb10c-1b6c-442d-84b3-72e443d1d80f",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
