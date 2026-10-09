@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>网格计算结果 · 市值 / 持仓 / 成本价 Demo</title>
+    <style>
+      :root {
+        --ink: #0a0b0d;
+        --muted: #5b616e;
+        --border: #dee1e6;
+        --surface: #f7f7f7;
+        --card: #fff;
+        --blue: #0052ff;
+        --shadow: 0 4px 12px rgba(10, 11, 13, 0.04);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--surface);
+        color: var(--ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          sans-serif;
+      }
+      button {
+        font: inherit;
+      }
+      .shell {
+        width: min(1080px, calc(100% - 32px));
+        margin: 32px auto 48px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+      }
+      .lead {
+        margin: 8px 0 20px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .switches {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .switch {
+        height: 32px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: #fff;
+        cursor: pointer;
+      }
+      .switch.active {
+        border-color: var(--blue);
+        color: var(--blue);
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--card);
+        box-shadow: var(--shadow);
+        padding: 24px 28px 20px;
+      }
+      .head {
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .head h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .sub {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .toolbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .metrics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px;
+      }
+      .metric small {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .metric b {
+        display: block;
+        margin-top: 4px;
+        font:
+          600 20px ui-monospace,
+          SFMono-Regular,
+          monospace;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+      }
+      .dl {
+        height: 32px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th {
+        background: var(--surface);
+        color: var(--muted);
+        font-weight: 500;
+        text-align: left;
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .note {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      @media (max-width: 640px) {
+        .card {
+          padding: 16px;
+        }
+        .toolbar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <h1>网格计算结果</h1>
+      <p class="lead">
+        三个数只看当前这只 ETF
+        已保存策略的流水。聚合组说明那一行已去掉，下载仍留在右侧。
+      </p>
+      <div class="switches">
+        <button type="button" class="switch active" data-mode="holding">
+          有持仓，有收盘
+        </button>
+        <button type="button" class="switch" data-mode="flat">
+          已全部卖出
+        </button>
+        <button type="button" class="switch" data-mode="noclose">
+          有持仓，无收盘
+        </button>
+      </div>
+      <section class="card">
+        <div class="head">
+          <h2>网格计算结果</h2>
+          <p class="sub">共 12 个网格档位 · 8 个聚合组</p>
+        </div>
+        <div class="toolbar">
+          <div class="metrics">
+            <div class="metric"><small>市值</small><b id="mv">—</b></div>
+            <div class="metric"><small>持仓</small><b id="qty">—</b></div>
+            <div class="metric"><small>成本价</small><b id="cost">—</b></div>
+          </div>
+          <button type="button" class="dl">下载表格</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>档位</th>
+              <th>买入价</th>
+              <th>买入股数</th>
+              <th>卖出价</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>3.800</td>
+              <td>1,000</td>
+              <td>3.952</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>3.600</td>
+              <td>1,000</td>
+              <td>3.744</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>3.400</td>
+              <td>1,000</td>
+              <td>3.536</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <p class="note" id="formula"></p>
+    </div>
+    <script>
+      const modes = {
+        holding: { shares: 2000, costTotal: 7400, close: 3.92 },
+        flat: { shares: 0, costTotal: 0, close: 3.92 },
+        noclose: { shares: 2000, costTotal: 7400, close: null },
+      };
+
+      function money(n) {
+        return n.toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+      }
+
+      function render(mode) {
+        const row = modes[mode];
+        const qty = document.getElementById("qty");
+        const cost = document.getElementById("cost");
+        const mv = document.getElementById("mv");
+        qty.textContent =
+          row.shares > 0 ? row.shares.toLocaleString("zh-CN") : "—";
+        cost.textContent =
+          row.shares > 0 ? (row.costTotal / row.shares).toFixed(3) : "—";
+        mv.textContent =
+          row.shares > 0 && row.close != null
+            ? money(row.close * row.shares)
+            : "—";
+        const costText =
+          row.shares > 0 ? (row.costTotal / row.shares).toFixed(3) : "—";
+        const mvText =
+          row.shares > 0 && row.close != null
+            ? money(row.close * row.shares)
+            : "—";
+        document.getElementById("formula").textContent =
+          "持仓 = 未平股数。成本价 = 券商摊薄成本（累计买入金额 + 买入佣金 − 累计卖出金额 + 卖出费用）÷ 持仓；没有持仓时为 —。市值 = 最新收盘 × 持仓；没有收盘或没有持仓时为 —。当前示例：持仓 " +
+          (row.shares || 0) +
+          "，成本合计 " +
+          row.costTotal +
+          "，收盘 " +
+          (row.close == null ? "无" : row.close) +
+          " → 市值 " +
+          mvText +
+          "，成本价 " +
+          costText +
+          "。";
+      }
+
+      document.querySelectorAll(".switch").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll(".switch")
+            .forEach((el) => el.classList.remove("active"));
+          btn.classList.add("active");
+          render(btn.dataset.mode);
+        });
+      });
+      render("holding");
+    </script>
+  </body>
+</html>

@@ -1110,7 +1110,9 @@
 
 .grid-shell .grid-portfolio-card__note-text {
   display: block;
+  min-width: 0;
   max-width: 100%;
+  overflow: hidden;
 }
 
 .grid-shell .grid-portfolio-card__note .ant-tag {

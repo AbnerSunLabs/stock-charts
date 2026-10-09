@@ -26,6 +26,9 @@ interface DsTooltipProps {
   variant?: HelpTooltipVariant;
   /** 长备注需要折行；问号说明保持默认单段排版 */
   wrapBody?: boolean;
+  /** 受控显隐；不传则跟随 hover */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const SIZE_PX: Record<HelpTooltipSize, number> = {
@@ -44,6 +47,8 @@ export function DsTooltip({
   maxWidth = "16rem",
   variant = "default",
   wrapBody = false,
+  open,
+  onOpenChange,
 }: DsTooltipProps) {
   const rootClassName =
     variant === "rich"
@@ -54,6 +59,8 @@ export function DsTooltip({
     <Tooltip
       title={title}
       placement={placement}
+      {...(open === undefined ? {} : { open })}
+      onOpenChange={onOpenChange}
       color="#ffffff"
       getPopupContainer={() =>
         (document.querySelector('.grid-shell') as HTMLElement) ?? document.body

@@ -27,11 +27,16 @@ import {
   isDraftConfigDirty,
 } from '@/lib/grid/grid-strategy-workflow';
 import { normalizeJournalStrategyId } from '@/lib/grid/grid-journal-filter';
+import { formatGridAmount, formatGridPrice } from '@/lib/grid/format-grid-amount';
+import { extractEtfCode } from '@/lib/grid/grid-board-close-quote';
 import {
+  computeOpenPositionQuote,
+  computeStrategyTradeStats,
   defaultSellQty,
   getLevelExecuteState,
 } from '@/lib/grid/grid-strategy-trade-stats';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import { fetchLatestEtfCloses } from '@/lib/supabase/etf-daily-repository';
 import { GridStrategyRepository } from '@/lib/supabase/grid-strategy-repository';
 import { DEFAULT_GRID_PARAMS } from '@/types/grid';
 import type {
@@ -87,6 +92,7 @@ function GridStrategyPageInner() {
   const [tradeDefaults, setTradeDefaults] =
     useState<GridTradeEntryDefaults | null>(null);
   const [tradeSubmitting, setTradeSubmitting] = useState(false);
+  const [latestClose, setLatestClose] = useState<number | null>(null);
   const shellRef = useRef<HTMLElement | null>(null);
 
   const screens = Grid.useBreakpoint();
@@ -208,6 +214,58 @@ function GridStrategyPageInner() {
     if (!id) return [];
     return tradesApi.trades.filter(t => t.strategyId === id);
   }, [persistence.currentStrategy?.id, tradesApi.trades]);
+
+  const quoteSymbol = persistence.currentStrategy?.symbol ?? '';
+
+  useEffect(() => {
+    const code = extractEtfCode(quoteSymbol);
+    if (!code) {
+      setLatestClose(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchLatestEtfCloses(createBrowserSupabaseClient(), [code])
+      .then(map => {
+        if (!cancelled) setLatestClose(map.get(code)?.close ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setLatestClose(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [quoteSymbol]);
+
+  const positionQuote = useMemo(() => {
+    const levelKeys = result?.legs.map(leg => leg.id) ?? [];
+    const stats = computeStrategyTradeStats(currentStrategyTrades, levelKeys);
+    const quote = computeOpenPositionQuote(stats, latestClose, currentStrategyTrades, {
+      buyCommissionRate: params.buyCommissionRate,
+      sellCommissionRate: params.sellCommissionRate,
+      minCommission: params.minCommission,
+      stampDutyRate: params.stampDutyRate,
+      transferFeeRate: params.transferFeeRate,
+    });
+    if (quote.openShares <= 0 || quote.costPrice == null) {
+      return { marketValue: '—', openShares: '—', costPrice: '—' };
+    }
+    return {
+      marketValue:
+        quote.marketValue == null ? '—' : formatGridAmount(quote.marketValue),
+      openShares: quote.openShares.toLocaleString('zh-CN'),
+      costPrice: formatGridPrice(quote.costPrice, params.priceUnit),
+    };
+  }, [
+    currentStrategyTrades,
+    latestClose,
+    params.buyCommissionRate,
+    params.minCommission,
+    params.priceUnit,
+    params.sellCommissionRate,
+    params.stampDutyRate,
+    params.transferFeeRate,
+    result,
+  ]);
 
   const getLevelQty = useCallback(
     (levelKey: string) => {
@@ -820,6 +878,7 @@ function GridStrategyPageInner() {
                     legs={legs}
                     basePrice={summaryParams.basePrice}
                     priceDecimals={priceDecimals}
+                    positionQuote={positionQuote}
                     tradeActions={{
                       strategyId: persistence.currentStrategy?.id ?? null,
                       getLevelQty,

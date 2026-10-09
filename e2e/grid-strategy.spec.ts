@@ -61,23 +61,26 @@ test.describe('网格策略', () => {
     await page.getByRole('button', { name: '生成策略' }).click();
     await expect(page.getByText('网格计算结果')).toBeVisible({ timeout: 15_000 });
 
-    const hint = page.getByText(
-      '同价位小/中/大网已合并为聚合组；展开后可对各档记账'
-    );
+    const marketValue = page.getByText('市值', { exact: true });
     const downloadBtn = page.getByRole('button', { name: '下载表格' });
     const table = page.locator('.grid-result-table');
 
-    await expect(hint).toBeVisible();
+    await expect(marketValue).toBeVisible();
+    await expect(page.getByText('持仓', { exact: true })).toBeVisible();
+    await expect(page.getByText('成本价', { exact: true })).toBeVisible();
+    await expect(
+      page.getByText('同价位小/中/大网已合并为聚合组；展开后可对各档记账')
+    ).toHaveCount(0);
     await expect(downloadBtn).toBeVisible();
 
-    const hintBox = await hint.boundingBox();
+    const quoteBox = await marketValue.boundingBox();
     const btnBox = await downloadBtn.boundingBox();
     const tableBox = await table.boundingBox();
-    expect(hintBox).not.toBeNull();
+    expect(quoteBox).not.toBeNull();
     expect(btnBox).not.toBeNull();
     expect(tableBox).not.toBeNull();
-    expect(hintBox!.x).toBeLessThan(btnBox!.x);
-    expect(hintBox!.y).toBeLessThan(tableBox!.y);
+    expect(quoteBox!.x).toBeLessThan(btnBox!.x);
+    expect(quoteBox!.y).toBeLessThan(tableBox!.y);
     expect(btnBox!.y).toBeLessThan(tableBox!.y);
 
     const visibleExpandableGroupCount = await page

@@ -1,6 +1,9 @@
 import {
   assertSellWithinOpenQty,
+  computeDilutedCostPrice,
+  computeLatestProfit,
   computeLevelTradeQty,
+  computeOpenPositionQuote,
   computeSellRealizedPnl,
   computeStrategyTradeStats,
   defaultSellQty,
@@ -93,6 +96,53 @@ describe('grid-strategy-trade-stats', () => {
     expect(stats.rounds).toBe(1);
     expect(stats.realized).toBeCloseTo(10);
     expect(stats.openShares).toBe(50);
+  });
+
+  it('最新收益用收盘价盯市未平仓，无行情只计已实现', () => {
+    const trades = [
+      trade({ id: '1', side: 'buy', price: 1, qty: 100, levelKey: 'A' }),
+      trade({ id: '2', side: 'sell', price: 1.2, qty: 40, levelKey: 'A' }),
+      trade({ id: '3', side: 'buy', price: 2, qty: 50, levelKey: 'B' }),
+    ];
+    const stats = computeStrategyTradeStats(trades, ['A', 'B']);
+    expect(stats.realized).toBeCloseTo(8);
+    expect(stats.openShares).toBe(110);
+    expect(stats.occupied).toBeCloseTo(160);
+    expect(computeLatestProfit(stats, 1.5)).toBeCloseTo(13);
+    expect(computeLatestProfit(stats, null)).toBeCloseTo(8);
+    const rates = {
+      buyCommissionRate: 0,
+      sellCommissionRate: 0,
+      minCommission: 0,
+      stampDutyRate: 0,
+      transferFeeRate: 0,
+    };
+    expect(computeOpenPositionQuote(stats, 1.5, trades, rates)).toEqual({
+      marketValue: 165,
+      openShares: 110,
+      costPrice: 152 / 110,
+    });
+    expect(computeOpenPositionQuote(stats, null, trades, rates).marketValue).toBeNull();
+    expect(computeDilutedCostPrice([], 0, rates)).toBeNull();
+  });
+
+  it('摊薄成本把买卖佣金和卖出税费计入剩余持仓', () => {
+    const trades = [
+      trade({ id: '1', side: 'buy', price: 1, qty: 10000, levelKey: 'A' }),
+      trade({ id: '2', side: 'sell', price: 1.2, qty: 4000, levelKey: 'A' }),
+    ];
+    const rates = {
+      buyCommissionRate: 0.0001,
+      sellCommissionRate: 0.0001,
+      minCommission: 5,
+      stampDutyRate: 0.0005,
+      transferFeeRate: 0.00001,
+    };
+    const cost = computeDilutedCostPrice(trades, 6000, rates);
+    const buyFee = Math.max(5, 10000 * 0.0001);
+    const sellAmount = 4800;
+    const sellFee = Math.max(5, sellAmount * 0.0001) + sellAmount * 0.00051;
+    expect(cost).toBeCloseTo((10000 + buyFee - sellAmount + sellFee) / 6000);
   });
 
   it('预计最大亏损粗估', () => {

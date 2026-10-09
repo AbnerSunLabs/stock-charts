@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>组合卡片历史探查 Demo</title>
+    <style>
+      :root {
+        --ink: #0a0b0d;
+        --muted: #5b616e;
+        --border: #dee1e6;
+        --surface: #f7f7f7;
+        --card: #ffffff;
+        --blue: #0052ff;
+        --blue-dark: #003ecc;
+        --green: #05b169;
+        --red: #cf202f;
+        --shadow: 0 14px 50px rgba(10, 11, 13, 0.14);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #fff;
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      }
+      button { font: inherit; }
+      button:focus-visible { outline: 3px solid rgba(0, 82, 255, 0.2); outline-offset: 2px; }
+      .shell { width: min(1180px, calc(100% - 32px)); margin: 36px auto 64px; }
+      h1 { margin: 0; font-size: 28px; letter-spacing: -0.02em; }
+      .lead { margin: 8px 0 24px; color: var(--muted); font-size: 14px; }
+      .tabs { display: flex; gap: 28px; border-bottom: 1px solid var(--border); }
+      .tab { position: relative; padding: 12px 2px; border: 0; background: transparent; color: var(--muted); }
+      .tab.active { color: var(--ink); font-weight: 600; }
+      .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--blue); }
+      .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 22px 0 14px; }
+      .toolbar small { color: var(--muted); }
+      .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .card { display: flex; flex-direction: column; min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 24px; background: var(--card); box-shadow: 0 4px 12px rgba(10, 11, 13, 0.04); }
+      .card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+      .card h2 { overflow: hidden; margin: 0; font-size: 17px; white-space: nowrap; text-overflow: ellipsis; }
+      .symbol { margin-left: 7px; color: var(--muted); font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .tag { flex: none; padding: 3px 9px; border-radius: 999px; background: #eaf1ff; color: var(--blue-dark); font-size: 12px; white-space: nowrap; }
+      .note { min-height: 22px; margin-top: 12px; color: var(--muted); font-size: 12px; }
+      .quotes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+      .quote { min-width: 0; padding: 10px 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--surface) 42%, #fff); }
+      .quote small { display: block; overflow: hidden; color: var(--muted); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+      .quote b { display: block; margin-top: 4px; font: 650 16px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: -0.03em; }
+      .metrics { margin: 2px 0 12px; font-size: 13px; }
+      .metric { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; }
+      .metric + .metric { border-top: 1px dashed var(--border); }
+      .metric span:first-child { color: var(--muted); }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+      .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+      .btn { min-height: 36px; padding: 0 16px; border: 1px solid var(--border); border-radius: 999px; background: #fff; color: var(--ink); cursor: pointer; transition: border-color 0.16s, color 0.16s, background 0.16s; }
+      .btn:hover { border-color: var(--blue); color: var(--blue); }
+      .btn.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+      .btn.history { display: inline-flex; align-items: center; gap: 7px; }
+      .btn.history svg { width: 15px; height: 15px; }
+
+      .backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; background: rgba(10, 11, 13, 0.42); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; }
+      .backdrop.open { opacity: 1; pointer-events: auto; }
+      .dialog { width: min(1060px, 100%); max-height: calc(100vh - 48px); overflow: auto; border-radius: 22px; background: #fff; box-shadow: var(--shadow); transform: translateY(8px) scale(0.995); transition: transform 0.18s ease; }
+      .backdrop.open .dialog { transform: translateY(0) scale(1); }
+      .dialog-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding: 24px 28px 18px; border-bottom: 1px solid var(--border); }
+      .eyebrow { margin-bottom: 5px; color: var(--blue); font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+      .dialog h2 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+      .dialog-sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+      .icon-btn { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 50%; background: #fff; cursor: pointer; font-size: 22px; line-height: 1; }
+      .chart-panel { padding: 20px 28px 28px; }
+      .chart-toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 12px; }
+      .segmented { display: inline-flex; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+      .scale-btn { min-width: 62px; height: 30px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+      .scale-btn.active { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 4px rgba(10, 11, 13, 0.1); }
+      .export-btn { width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 10px; background: #fff; cursor: pointer; }
+      .chart-wrap { position: relative; height: 390px; border-bottom: 1px solid var(--border); }
+      .chart-wrap svg { display: block; width: 100%; height: 100%; overflow: visible; }
+      .grid-line { stroke: #eceef1; stroke-width: 1; }
+      .axis-text { fill: #757b86; font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .area { fill: url(#area-fill); }
+      .line { fill: none; stroke: #111318; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+      .last-dot { fill: var(--blue); stroke: #fff; stroke-width: 3; }
+      .hover-line { stroke: #959ba6; stroke-width: 1; stroke-dasharray: 3 4; opacity: 0; }
+      .chart-hit { fill: transparent; cursor: crosshair; }
+      .tooltip { position: absolute; min-width: 142px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,.97); box-shadow: 0 8px 24px rgba(10,11,13,.1); pointer-events: none; opacity: 0; transform: translate(-50%, -110%); font-size: 12px; }
+      .tooltip strong { display: block; margin-top: 4px; font: 700 15px ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .metrics-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 14px; margin-top: 18px; overflow: hidden; }
+      .summary { min-width: 0; padding: 15px 16px; }
+      .summary + .summary { border-left: 1px solid var(--border); }
+      .summary small { display: block; color: var(--muted); font-size: 11px; }
+      .summary b { display: block; overflow: hidden; margin-top: 6px; font: 650 16px ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; text-overflow: ellipsis; }
+      .summary em { display: block; overflow: hidden; margin-top: 3px; color: var(--muted); font-size: 11px; font-style: normal; white-space: nowrap; text-overflow: ellipsis; }
+      .demo-note { margin-top: 14px; color: var(--muted); font-size: 12px; }
+      .toast { position: fixed; left: 50%; bottom: 24px; z-index: 40; padding: 10px 15px; border-radius: 999px; background: #111318; color: #fff; opacity: 0; transform: translate(-50%, 10px); transition: 0.18s ease; font-size: 13px; pointer-events: none; }
+      .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+      @media (max-width: 760px) {
+        .cards { grid-template-columns: 1fr; }
+        .dialog-head, .chart-panel { padding-left: 18px; padding-right: 18px; }
+        .chart-wrap { height: 300px; }
+        .metrics-strip { grid-template-columns: repeat(2, 1fr); }
+        .summary:nth-child(3) { border-left: 0; border-top: 1px solid var(--border); }
+        .summary:nth-child(4) { border-top: 1px solid var(--border); }
+      }
+      @media (max-width: 480px) {
+        .backdrop { padding: 0; place-items: end center; }
+        .dialog { max-height: 92vh; border-radius: 20px 20px 0 0; }
+        .chart-toolbar { justify-content: space-between; }
+        .scale-btn { min-width: 56px; }
+        .actions .btn { padding-inline: 13px; }
+      }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <h1>网格交易策略</h1>
+      <p class="lead">在组合卡片内探查当前 ETF 的完整历史行情，不离开组合上下文。</p>
+      <nav class="tabs" aria-label="网格策略视图">
+        <button class="tab active">组合看板</button><button class="tab">计算器</button><button class="tab">流水</button>
+      </nav>
+      <div class="toolbar"><small>按策略平铺</small><small>预计最大亏损　　搜索标的…</small></div>
+      <section class="cards" aria-label="组合策略">
+        <article class="card">
+          <div class="card-head"><h2>标普 500 网格<span class="symbol">513500</span></h2><span class="tag">持仓中 2/8，累计 3 轮</span></div>
+          <div class="note">跨境配置 · 长期仓位</div>
+          <div class="quotes"><div class="quote"><small>收盘 09/28</small><b>2.684</b></div><div class="quote"><small>下一买</small><b style="color:var(--red)">2.640</b></div><div class="quote"><small>下一卖</small><b style="color:var(--green)">2.730</b></div></div>
+          <div class="metrics"><div class="metric"><span>预计最大亏损</span><b class="mono" style="color:var(--red)">¥8,420.00</b></div><div class="metric"><span>已投入金额</span><b class="mono">¥18,960.00</b></div><div class="metric"><span>已实现收益</span><b class="mono" style="color:var(--green)">+¥626.00</b></div></div>
+          <div class="actions"><button class="btn primary">打开计算器</button><button class="btn">流水</button><button class="btn history" data-symbol="513500" data-name="博时标普500ETF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5m0 14h16M7 15l4-4 3 2 5-7"/></svg>历史探查</button></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><h2>沪深 300 网格<span class="symbol">510300</span></h2><span class="tag">持仓中 1/6，累计 1 轮</span></div>
+          <div class="note">核心宽基 · 低位加仓</div>
+          <div class="quotes"><div class="quote"><small>收盘 09/28</small><b>4.732</b></div><div class="quote"><small>下一买</small><b style="color:var(--red)">4.680</b></div><div class="quote"><small>下一卖</small><b style="color:var(--green)">4.820</b></div></div>
+          <div class="metrics"><div class="metric"><span>预计最大亏损</span><b class="mono" style="color:var(--red)">¥6,780.00</b></div><div class="metric"><span>已投入金额</span><b class="mono">¥12,160.00</b></div><div class="metric"><span>已实现收益</span><b class="mono" style="color:var(--green)">+¥240.00</b></div></div>
+          <div class="actions"><button class="btn primary">打开计算器</button><button class="btn">流水</button><button class="btn history" data-symbol="510300" data-name="华泰柏瑞沪深300ETF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5m0 14h16M7 15l4-4 3 2 5-7"/></svg>历史探查</button></div>
+        </article>
+      </section>
+      <p class="demo-note">交互：点击任一卡片的“历史探查”，切换价格 / 对数 / 百分比，移动鼠标查看历史点位。</p>
+    </main>
+
+    <div class="backdrop" id="history-modal" role="dialog" aria-modal="true" aria-labelledby="history-title">
+      <section class="dialog">
+        <header class="dialog-head">
+          <div><div class="eyebrow">ETF HISTORY EXPLORER</div><h2 id="history-title">博时标普500ETF <span class="symbol">513500</span></h2><p class="dialog-sub">自上市以来日线 · 数据来自 etf_daily · 最近交易日 2026-09-28</p></div>
+          <button class="icon-btn" id="close-modal" aria-label="关闭">×</button>
+        </header>
+        <div class="chart-panel">
+          <div class="chart-toolbar"><div class="segmented" aria-label="纵轴模式"><button class="scale-btn" data-scale="price">价格</button><button class="scale-btn active" data-scale="log">对数</button><button class="scale-btn" data-scale="pct">百分比</button></div><button class="export-btn" id="export" title="导出 PNG" aria-label="导出 PNG">⇩</button></div>
+          <div class="chart-wrap" id="chart-wrap">
+            <svg viewBox="0 0 960 390" preserveAspectRatio="none" role="img" aria-label="ETF 历史价格折线图">
+              <defs><linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0052ff" stop-opacity=".12"/><stop offset="1" stop-color="#0052ff" stop-opacity="0"/></linearGradient></defs>
+              <g><line class="grid-line" x1="54" y1="40" x2="930" y2="40"/><line class="grid-line" x1="54" y1="116" x2="930" y2="116"/><line class="grid-line" x1="54" y1="192" x2="930" y2="192"/><line class="grid-line" x1="54" y1="268" x2="930" y2="268"/><line class="grid-line" x1="54" y1="344" x2="930" y2="344"/></g>
+              <g id="y-labels"></g><g><text class="axis-text" x="54" y="374">2013</text><text class="axis-text" x="250" y="374">2016</text><text class="axis-text" x="460" y="374">2020</text><text class="axis-text" x="680" y="374">2023</text><text class="axis-text" x="900" y="374">2026</text></g>
+              <path class="area" id="chart-area"/><path class="line" id="chart-line"/><line class="hover-line" id="hover-line" y1="38" y2="344"/><circle class="last-dot" id="last-dot" r="5"/><rect class="chart-hit" id="chart-hit" x="54" y="38" width="876" height="306"/>
+            </svg>
+            <div class="tooltip" id="tooltip"><span id="tip-date">2026-09-28</span><strong id="tip-value">2.684</strong></div>
+          </div>
+          <div class="metrics-strip"><div class="summary"><small>数据起点</small><b id="start-value">2013-12-05 | 0.831</b><em>ETF 上市后首个交易日</em></div><div class="summary"><small>最新收盘</small><b id="latest-value">2.684</b><em>2026-09-28</em></div><div class="summary"><small>长期复合增速</small><b id="cagr-value">9.57%</b><em>上市至今年化</em></div><div class="summary"><small>最大回撤</small><b style="color:var(--red)">-41.28%</b><em>按历史收盘滚动高点计算</em></div></div>
+        </div>
+      </section>
+    </div>
+    <div class="toast" id="toast">Demo：正式版将导出当前图表 PNG</div>
+
+    <script>
+      const datasets = {
+        '513500': { name: '博时标普500ETF', start: '2013-12-05', end: '2026-09-28', first: .831, last: 2.684, cagr: '9.57%', dd: '-41.28%', points: [.831,.78,.91,.85,.99,1.07,1.02,1.15,1.08,1.22,1.31,1.27,1.39,1.46,1.41,1.55,1.72,1.63,1.78,1.91,1.82,1.98,2.13,1.89,2.06,2.22,2.08,2.31,2.42,2.28,2.48,2.37,2.55,2.44,2.61,2.684] },
+        '510300': { name: '华泰柏瑞沪深300ETF', start: '2012-05-28', end: '2026-09-28', first: 2.57, last: 4.732, cagr: '4.35%', dd: '-46.70%', points: [2.57,2.31,2.48,2.22,2.51,3.08,2.62,2.87,3.12,2.94,3.28,3.74,3.46,3.82,4.11,3.58,3.92,4.33,4.79,5.18,4.72,4.38,4.63,4.27,3.91,4.16,3.82,4.09,4.34,4.18,4.42,4.31,4.55,4.41,4.62,4.732] }
+      };
+      const modal = document.querySelector('#history-modal');
+      const title = document.querySelector('#history-title');
+      const line = document.querySelector('#chart-line');
+      const area = document.querySelector('#chart-area');
+      const dot = document.querySelector('#last-dot');
+      const labels = document.querySelector('#y-labels');
+      const hit = document.querySelector('#chart-hit');
+      const hoverLine = document.querySelector('#hover-line');
+      const tooltip = document.querySelector('#tooltip');
+      let current = datasets['513500'];
+      let scale = 'log';
+      let plotted = [];
+
+      function formatValue(value) { return scale === 'pct' ? `${value.toFixed(1)}%` : value.toFixed(3); }
+      function transform(values) {
+        if (scale === 'pct') return values.map(v => (v / values[0] - 1) * 100);
+        if (scale === 'log') return values.map(v => Math.log(v));
+        return values;
+      }
+      function draw() {
+        const values = transform(current.points);
+        const min = Math.min(...values), max = Math.max(...values), pad = (max - min || 1) * .12;
+        const lo = min - pad, hi = max + pad;
+        plotted = values.map((v, i) => ({ x: 54 + i * 876 / (values.length - 1), y: 344 - (v - lo) / (hi - lo) * 304, raw: current.points[i] }));
+        const d = plotted.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+        line.setAttribute('d', d); area.setAttribute('d', `${d} L930,344 L54,344 Z`);
+        const last = plotted.at(-1); dot.setAttribute('cx', last.x); dot.setAttribute('cy', last.y);
+        labels.innerHTML = Array.from({length: 5}, (_, i) => { const value = hi - (hi - lo) * i / 4; const shown = scale === 'log' ? Math.exp(value) : value; return `<text class="axis-text" x="46" y="${44 + i * 76}" text-anchor="end">${scale === 'pct' ? shown.toFixed(0) + '%' : shown.toFixed(2)}</text>`; }).join('');
+      }
+      function openHistory(symbol) {
+        current = datasets[symbol];
+        title.innerHTML = `${current.name} <span class="symbol">${symbol}</span>`;
+        document.querySelector('.dialog-sub').textContent = `自上市以来日线 · 数据来自 etf_daily · 最近交易日 ${current.end}`;
+        document.querySelector('#start-value').textContent = `${current.start} | ${current.first.toFixed(3)}`;
+        document.querySelector('#latest-value').textContent = current.last.toFixed(3);
+        document.querySelector('#latest-value').nextElementSibling.textContent = current.end;
+        document.querySelector('#cagr-value').textContent = current.cagr;
+        document.querySelector('.summary:last-child b').textContent = current.dd;
+        draw(); modal.classList.add('open'); document.body.style.overflow = 'hidden'; document.querySelector('#close-modal').focus();
+      }
+      function closeHistory() { modal.classList.remove('open'); document.body.style.overflow = ''; }
+      document.querySelectorAll('.history').forEach(button => button.addEventListener('click', () => openHistory(button.dataset.symbol)));
+      document.querySelector('#close-modal').addEventListener('click', closeHistory);
+      modal.addEventListener('click', event => { if (event.target === modal) closeHistory(); });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') closeHistory(); });
+      document.querySelectorAll('.scale-btn').forEach(button => button.addEventListener('click', () => { document.querySelectorAll('.scale-btn').forEach(item => item.classList.remove('active')); button.classList.add('active'); scale = button.dataset.scale; draw(); }));
+      hit.addEventListener('mousemove', event => {
+        const rect = hit.getBoundingClientRect(); const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)); const i = Math.round(ratio * (plotted.length - 1)); const point = plotted[i];
+        hoverLine.setAttribute('x1', point.x); hoverLine.setAttribute('x2', point.x); hoverLine.style.opacity = 1;
+        const chartRect = document.querySelector('#chart-wrap').getBoundingClientRect(); tooltip.style.left = `${(point.x / 960) * chartRect.width}px`; tooltip.style.top = `${(point.y / 390) * chartRect.height}px`; tooltip.style.opacity = 1;
+        document.querySelector('#tip-date').textContent = `${2013 + Math.round(i / (plotted.length - 1) * 13)} 年历史点`;
+        const shown = scale === 'pct' ? (point.raw / current.points[0] - 1) * 100 : point.raw; document.querySelector('#tip-value').textContent = formatValue(shown);
+      });
+      hit.addEventListener('mouseleave', () => { hoverLine.style.opacity = 0; tooltip.style.opacity = 0; });
+      document.querySelector('#export').addEventListener('click', () => { const toast = document.querySelector('#toast'); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 1800); });
+      draw();
+    </script>
+  </body>
+</html>

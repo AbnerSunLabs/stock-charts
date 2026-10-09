@@ -15,6 +15,7 @@ import {
   type BoardDistanceView,
 } from '@/lib/grid/grid-board-close-quote';
 import {
+  computeLatestProfit,
   computeStrategyTradeStats,
   estimateMaxLossFromSnapshot,
 } from '@/lib/grid/grid-strategy-trade-stats';
@@ -28,7 +29,7 @@ import type { SavedGridStrategyV1 } from '@/types/grid-strategy-storage';
 import { EditOutlined } from '@ant-design/icons';
 import { DsTooltip } from '@/components/shared/help-tooltip';
 import { Button, Card, Empty, Input, Select, Space, Tag } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export interface GridPortfolioBoardProps {
   strategies: SavedGridStrategyV1[];
@@ -64,6 +65,40 @@ function MarketCell({
         <div className="grid-portfolio-card__quote-sub">{sub}</div>
       ) : null}
     </div>
+  );
+}
+
+/** 备注被截断时才打开全文 tooltip */
+function NoteTag({ note }: { note: string }) {
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  const [open, setOpen] = useState(false);
+
+  const onOpenChange = (next: boolean) => {
+    if (!next) {
+      setOpen(false);
+      return;
+    }
+    const tag = wrapRef.current?.querySelector('.ant-tag');
+    const clipped =
+      tag instanceof HTMLElement && tag.scrollWidth > tag.clientWidth;
+    setOpen(clipped);
+  };
+
+  return (
+    <DsTooltip
+      title={note}
+      placement="topLeft"
+      maxWidth="20rem"
+      wrapBody
+      open={open}
+      onOpenChange={onOpenChange}
+    >
+      <span ref={wrapRef} className="grid-portfolio-card__note-text">
+        <Tag color="blue" className="m-0">
+          {note}
+        </Tag>
+      </span>
+    </DsTooltip>
   );
 }
 
@@ -147,6 +182,7 @@ export function GridPortfolioBoard({
           close == null ? '—' : formatGridPrice(close, priceUnit),
         buyView: describeBoardDistance(close, buyAnchor, priceUnit),
         sellView: describeBoardDistance(close, sellAnchor, priceUnit),
+        latestProfit: computeLatestProfit(st, close),
       };
     });
   }, [strategies, trades, closes]);
@@ -159,7 +195,7 @@ export function GridPortfolioBoard({
     for (const c of cards) {
       maxCapital += c.maxCapital;
       maxLoss += c.maxLoss;
-      realized += c.st.realized;
+      realized += c.latestProfit;
       buyCost += c.st.occupied;
     }
     const dd = maxCapital > 0 ? (maxLoss / maxCapital) * 100 : 0;
@@ -268,7 +304,16 @@ export function GridPortfolioBoard({
 
       <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visible.map(
-          ({ s, st, maxLoss, closeLabel, closeText, buyView, sellView }) => (
+          ({
+            s,
+            st,
+            maxLoss,
+            closeLabel,
+            closeText,
+            buyView,
+            sellView,
+            latestProfit,
+          }) => (
             <Card
               key={s.id}
               className="grid-portfolio-card"
@@ -302,20 +347,7 @@ export function GridPortfolioBoard({
             >
               <Space direction="vertical" size={8} className="w-full">
                 <div className="grid-portfolio-card__note">
-                  {s.note ? (
-                    <DsTooltip
-                      title={s.note}
-                      placement="topLeft"
-                      maxWidth="20rem"
-                      wrapBody
-                    >
-                      <span className="grid-portfolio-card__note-text">
-                        <Tag color="blue" className="m-0">
-                          {s.note}
-                        </Tag>
-                      </span>
-                    </DsTooltip>
-                  ) : null}
+                  {s.note ? <NoteTag note={s.note} /> : null}
                 </div>
                 <div className="grid-portfolio-card__quotes">
                   <MarketCell label={closeLabel} closeText={closeText} />
@@ -344,14 +376,14 @@ export function GridPortfolioBoard({
                       className="font-mono tabular-nums"
                       style={{
                         color:
-                          st.realized > 0
+                          latestProfit > 0
                             ? 'var(--profit)'
-                            : st.realized < 0
+                            : latestProfit < 0
                               ? 'var(--loss)'
                               : undefined,
                       }}
                     >
-                      {formatSignedGridAmount(st.realized)}
+                      {formatSignedGridAmount(latestProfit)}
                     </span>
                   </div>
                 </div>

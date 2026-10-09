@@ -1,3 +1,4 @@
+import { calculateCommission } from '@/lib/grid/trade-cost';
 import type { StressTest } from '@/types/grid';
 import type { GridStrategyTrade } from '@/types/grid-strategy-trade';
 
@@ -206,6 +207,90 @@ export function computeStrategyTradeStats(
     realized,
     openShares,
   };
+}
+
+/** 摊薄成本用的费率。成交价已是流水成交价，不含计划滑点。 */
+export interface DilutedCostRates {
+  buyCommissionRate: number;
+  sellCommissionRate: number;
+  minCommission: number;
+  stampDutyRate: number;
+  transferFeeRate: number;
+}
+
+/** 当前策略未平仓报价：市值、持仓股数、摊薄成本价 */
+export interface OpenPositionQuote {
+  marketValue: number | null;
+  openShares: number;
+  costPrice: number | null;
+}
+
+/**
+ * 券商摊薄成本价：（累计买入金额 + 买入佣金 − 累计卖出金额 + 卖出费用）÷ 持仓。
+ * 卖出费用含佣金、印花税、过户费。没有持仓时返回 null。
+ */
+export function computeDilutedCostPrice(
+  trades: GridStrategyTrade[],
+  openShares: number,
+  rates: DilutedCostRates
+): number | null {
+  if (openShares <= 0) return null;
+  let netCash = 0;
+  for (const t of trades) {
+    const amount = t.price * t.qty;
+    if (t.side === 'buy') {
+      netCash +=
+        amount +
+        calculateCommission(
+          t.price,
+          t.qty,
+          rates.buyCommissionRate,
+          rates.minCommission
+        );
+      continue;
+    }
+    const sellFee =
+      calculateCommission(
+        t.price,
+        t.qty,
+        rates.sellCommissionRate,
+        rates.minCommission
+      ) + amount * (rates.stampDutyRate + rates.transferFeeRate);
+    netCash -= amount - sellFee;
+  }
+  return netCash / openShares;
+}
+
+/**
+ * 由流水未平仓与最新收盘得到持仓报价。
+ * 没有持仓时三个数都空；有持仓但没有收盘时只缺市值。
+ */
+export function computeOpenPositionQuote(
+  stats: Pick<StrategyTradeStats, 'openShares'>,
+  close: number | null,
+  trades: GridStrategyTrade[],
+  rates: DilutedCostRates
+): OpenPositionQuote {
+  if (stats.openShares <= 0) {
+    return { marketValue: null, openShares: 0, costPrice: null };
+  }
+  return {
+    marketValue: close == null ? null : close * stats.openShares,
+    openShares: stats.openShares,
+    costPrice: computeDilutedCostPrice(trades, stats.openShares, rates),
+  };
+}
+
+/**
+ * 看板最新收益：已平仓 FIFO 盈亏 + 未平仓按最新收盘价盯市。
+ * 无收盘价或没有未平股数时，只返回已平仓盈亏。
+ */
+export function computeLatestProfit(
+  stats: Pick<StrategyTradeStats, 'realized' | 'openShares' | 'occupied'>,
+  close: number | null
+): number {
+  if (close == null || stats.openShares <= 0) return stats.realized;
+  return stats.realized + close * stats.openShares - stats.occupied;
 }
 
 /**

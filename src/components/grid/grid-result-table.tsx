@@ -39,12 +39,19 @@ export interface GridResultTradeActions {
   onTrade: (side: 'buy' | 'sell', levelKey: string) => void;
 }
 
+export interface GridPositionQuote {
+  marketValue: string;
+  openShares: string;
+  costPrice: string;
+}
+
 interface GridResultTableProps {
   aggregatedRows: AggregatedGridRow[];
   legs: GridLeg[];
   basePrice: number;
   priceDecimals: number;
   tradeActions?: GridResultTradeActions;
+  positionQuote: GridPositionQuote;
 }
 
 type GroupTableRow = {
@@ -497,12 +504,37 @@ function GridResultTableView({
   );
 }
 
+function PositionQuoteRow({
+  marketValue,
+  openShares,
+  costPrice,
+}: GridPositionQuote) {
+  const items = [
+    { label: '市值', value: marketValue },
+    { label: '持仓', value: openShares },
+    { label: '成本价', value: costPrice },
+  ];
+  return (
+    <div className="flex flex-wrap items-end gap-6 sm:gap-8">
+      {items.map(item => (
+        <div key={item.label}>
+          <div className="text-xs text-[var(--muted-foreground)]">{item.label}</div>
+          <div className="mt-1 font-mono text-xl font-semibold tabular-nums tracking-tight">
+            {item.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function GridResultTable({
   aggregatedRows,
   legs,
   basePrice,
   priceDecimals,
   tradeActions,
+  positionQuote,
 }: GridResultTableProps) {
   const visibleTableRef = useRef<HTMLDivElement>(null);
   const exportCaptureRef = useRef<HTMLDivElement>(null);
@@ -617,10 +649,8 @@ export function GridResultTable({
 
   return (
     <div className="mb-8">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
-          同价位小/中/大网已合并为聚合组；展开后可对各档记账
-        </p>
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <PositionQuoteRow {...positionQuote} />
         <button
           type="button"
           onClick={handleDownloadClick}
