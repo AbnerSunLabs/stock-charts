@@ -1,0 +1,32 @@
+src/components/grid/grid-portfolio-board.tsx
+  s_10e55bf47281d3::t_eaf24e02683547 286,290
+  s_10e55bf47281d3::t_bf75e6177f2899 282-285,287-289,291
+src/app/view/grid/grid.css
+  s_10e55bf47281d3::t_86c41c34ca70f5 1034-1043
+docs/superpowers/specs/2026-09-09-grid-portfolio-journal-design.md
+  s_10e55bf47281d3::t_ee613dd62d4571 51
+__tests__/grid/grid-trade-journal.test.ts
+  s_10e55bf47281d3::t_9a39fabb390aec 144-145
+  s_10e55bf47281d3::t_3521fa1196f85b 146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "535832b91949e92786afbaf5afe5e4333df0993f",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_10e55bf47281d3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a5833dbe-05ad-43a8-bf08-495eaaf57265",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
