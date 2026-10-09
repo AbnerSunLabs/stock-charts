@@ -141,6 +141,9 @@ describe('GridTradeJournal', () => {
     ).find(card => card.textContent?.includes('策略 B'));
     const cardButtons = strategyCard?.querySelectorAll('button');
     expect(cardButtons).toHaveLength(2);
+    expect(
+      container.querySelector('.grid-portfolio-board__ref')?.getAttribute('href')
+    ).toBe('https://ashare.laoqianriritan.com/#panel-valuation');
 
     act(() =>
       cardButtons?.[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))

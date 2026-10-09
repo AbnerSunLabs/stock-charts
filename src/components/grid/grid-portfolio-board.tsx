@@ -279,8 +279,16 @@ export function GridPortfolioBoard({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs text-[var(--muted-foreground)]">
-          按策略平铺
+        <span className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
+          <span>按策略平铺</span>
+          <a
+            className="grid-portfolio-board__ref"
+            href="https://ashare.laoqianriritan.com/#panel-valuation"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            宽基估值
+          </a>
         </span>
         <Space wrap>
           <Select

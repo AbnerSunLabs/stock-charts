@@ -1031,6 +1031,16 @@
   color: var(--border);
 }
 
+.grid-shell .grid-portfolio-board__ref {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.grid-shell .grid-portfolio-board__ref:hover {
+  color: var(--primary-active);
+  text-decoration: underline;
+}
+
 .grid-shell .grid-portfolio-card {
   height: 100%;
   min-width: 0;
