@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { isSettledAshareClose } from '@/lib/market/ashare-close';
+
 /** etf_daily 最新收盘（只读） */
 export interface EtfLatestClose {
   etfCode: string;
@@ -31,20 +33,24 @@ export async function fetchLatestEtfCloses(
     unique.map(async code => {
       const { data, error } = await client
         .from('etf_daily')
-        .select('etf_code, trade_date, close')
+        .select('etf_code, trade_date, close, updated_at')
         .eq('etf_code', code)
         .order('trade_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        // 最近几根里跳过 15:00 前写入的盘中 K
+        .limit(5);
       if (error || !data) return null;
-      const close = parseClose(data.close);
-      const tradeDate = String(data.trade_date ?? '').slice(0, 10);
-      if (close == null || !/^\d{4}-\d{2}-\d{2}$/.test(tradeDate)) return null;
-      return {
-        etfCode: String(data.etf_code),
-        tradeDate,
-        close,
-      };
+      for (const row of data) {
+        const close = parseClose(row.close);
+        const tradeDate = String(row.trade_date ?? '').slice(0, 10);
+        const updatedAt = String(row.updated_at ?? '');
+        if (close == null || !isSettledAshareClose(tradeDate, updatedAt)) continue;
+        return {
+          etfCode: String(row.etf_code),
+          tradeDate,
+          close,
+        };
+      }
+      return null;
     })
   );
 
