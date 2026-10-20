@@ -1,0 +1,30 @@
+src/lib/market/ashare-close.ts
+  s_291aaa9f7b3d83::t_15f25eab37a0cb 1-22
+src/lib/supabase/etf-daily-repository.ts
+  s_291aaa9f7b3d83::t_eeeb3452bced5a 39
+  s_291aaa9f7b3d83::t_5c1f5e3edf4a2c 3-4
+  s_291aaa9f7b3d83::t_cda44fb6882113 36,40,42-53
+__tests__/market/ashare-close.test.ts
+  s_291aaa9f7b3d83::t_7c8f68037a8b0f 1-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "500087a8a8a62359bb187b16fa387aeb7ceca2b1",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_291aaa9f7b3d83": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b7effcd1-2aa8-4e09-a305-00a35282cdd5",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
