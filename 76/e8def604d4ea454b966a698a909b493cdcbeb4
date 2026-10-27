@@ -1,0 +1,127 @@
+src/lib/index-levels/gauge.ts
+  s_0ddf3750cbee5f::t_dda33143684635 1-24,28-49
+  s_0ddf3750cbee5f::t_25dc741cbe5041 25-27
+src/components/index-levels/index-tracking-funds.tsx
+  s_0ddf3750cbee5f::t_7f1659808f97b3 1-12,14-16,18-21,25-36
+  s_0ddf3750cbee5f::t_1629d6f215dbe8 13,17,22-24
+src/components/navigation/view-breadcrumb.tsx
+  s_0ddf3750cbee5f::t_a6e7387d115e95 11
+src/app/view/index-levels/page.tsx
+  s_0ddf3750cbee5f::t_cfa90d37e79e26 1-3,5-7,10,12-13
+  s_16cb108fbec3f1::t_568d5f13e9f761 4,8-9,11
+__tests__/index-levels/position.test.ts
+  s_0ddf3750cbee5f::t_b59a6f444c1c46 1,3
+  s_0ddf3750cbee5f::t_b11f0a64030deb 2,4-13,36-71
+  s_0ddf3750cbee5f::t_5b55b1c8cf14d0 22-35
+  s_16cb108fbec3f1::t_c7da6bb0fabf71 14-21
+src/lib/index-levels/catalog.ts
+  s_0ddf3750cbee5f::t_ffc67454052498 1-13,17-32,37-49,52-56,58-62,64-67,206-216,218-229,231-234
+  s_0ddf3750cbee5f::t_bd50c1384d784e 33-36
+  s_0ddf3750cbee5f::t_8b65c8354625e5 68-137,139-205
+  s_0ddf3750cbee5f::t_18cdb16c880ed3 14-15
+  s_16cb108fbec3f1::t_313777652001d3 16
+  s_16cb108fbec3f1::t_a62cd3da130846 50,57,63
+  s_0ddf3750cbee5f::t_3f1306c5d72af4 138
+  s_16cb108fbec3f1::t_62f4cad3e7bbd8 217
+  s_16cb108fbec3f1::t_d5f70831044b82 51
+  s_16cb108fbec3f1::t_45f8d2a8f02aa5 230
+src/lib/index-levels/position.ts
+  s_16cb108fbec3f1::t_7b4448440302dc 25-47,59-60,65-68,70-72
+  s_16cb108fbec3f1::t_5f06ebdad78db9 69,73-75,77
+  s_0ddf3750cbee5f::t_dc484d4ddeced2 48-58
+  s_0ddf3750cbee5f::t_fa81f7bf8bfa7a 1-24,61-64,76,78-83
+docs/superpowers/specs/2026-10-20-index-level-sync.md
+  s_0ddf3750cbee5f::t_97736b1118433e 4,11-17
+  s_0ddf3750cbee5f::t_633b1a6034778e 29-30
+  s_0ddf3750cbee5f::t_fa198e0b8d3c12 37
+  s_0ddf3750cbee5f::t_95fa9e366bb8e8 36
+  h_245285a78fca97 9
+  s_0ddf3750cbee5f::t_df93c759543f72 32-35
+  s_0ddf3750cbee5f::t_c1ca03d30acb6c 1-3,5-8,10,18-28,31
+src/components/index-levels/index-quote-ledger.tsx
+  s_16cb108fbec3f1::t_678774f01f2308 6,9,13,41,68-70,72-75,83-87
+  s_0ddf3750cbee5f::t_942c71c34aeb22 80
+  s_16cb108fbec3f1::t_b1a3dbf1e3b21f 7-8,76-78,81-82
+  s_0ddf3750cbee5f::t_a93e5db82953b5 5
+  s_0ddf3750cbee5f::t_6c7e5155880d85 2-4
+  s_16cb108fbec3f1::t_f7f2ed8351c88a 10-12
+  s_16cb108fbec3f1::t_996af7f9e34434 14-16,38-40
+  s_16cb108fbec3f1::t_a749d0342589e6 42-44,65-67
+  s_16cb108fbec3f1::t_102cac5dc0d977 71
+  s_0ddf3750cbee5f::t_90de800b599cc4 1,17-37,45-64,79
+src/components/home/home-tool-grid.tsx
+  s_0ddf3750cbee5f::t_ac0f9aca46805d 35-36,38-45
+  s_0ddf3750cbee5f::t_35135bf765ce11 37
+  s_0ddf3750cbee5f::t_ac008b5c6f8d6c 34
+src/app/view/index-levels/index-levels.css
+  s_16cb108fbec3f1::t_4f0b5ad315f7d3 270-271
+  s_0ddf3750cbee5f::t_56c84821bdca5b 2,5,7-9,17,37-40,47-55,60-61,63,66-70,73-77,80-81,84-88,91-94,97-100,103-109,111-116,120-122,125-130,133-137,140-141,144-145,147,150-153,156-160,163-193,197-199,201,204-206,208,211-222,225-228,231-234,237-241,243,249,268,272-273,279-282,285-286,288-328,331
+  s_0ddf3750cbee5f::t_d8f4d20d84c1d9 43-44
+  s_16cb108fbec3f1::t_ed6ca75f71b990 265
+  s_0ddf3750cbee5f::t_89eff8381b3617 25-36
+  s_16cb108fbec3f1::t_6670f3418d03b2 1,3-4,6,10-16,18-24,41-42,45-46,56-59,62,64-65,71-72,78-79,82-83,89-90,95-96,101-102,110,117-119,123-124,131-132,138-139,142-143,146,148-149,154-155,161-162,194-196,200,202-203,207,209-210,223-224,229-230,235-236,242,244-248,250-264,266-267,269,274-278,283-284,287,329-330,332-335
+src/app/view/index-levels/layout.tsx
+  s_0ddf3750cbee5f::t_c14e69ef0b6699 22
+  s_16cb108fbec3f1::t_fe91a722a0ae0c 2,4,6-19,26,33
+  s_0ddf3750cbee5f::t_60b7bbd5ab32b0 1,3,5,20-21,23-25,27-32,34
+src/components/index-levels/index-level-picker.tsx
+  s_0ddf3750cbee5f::t_f6f25f16a68be7 37,43
+  s_0ddf3750cbee5f::t_301d902e83b3a0 1-2,5-9,11-23,25-31,33-36
+  s_0ddf3750cbee5f::t_16b00080f7ec57 24
+  s_0ddf3750cbee5f::t_927d910f39ff64 3-4
+  s_0ddf3750cbee5f::t_9207b4209e77e3 10
+  s_0ddf3750cbee5f::t_d0e595490967be 32
+  s_0ddf3750cbee5f::t_de9116b7f029b0 38-42
+src/lib/index-levels/close-series.ts
+  s_0ddf3750cbee5f::t_648211ef8fbb2d 1-28
+src/lib/supabase/etf-pool-repository.ts
+  s_0ddf3750cbee5f::t_35f7c9d07d9675 1-2,5-32
+  s_0ddf3750cbee5f::t_39dbce94d358cc 33-35,38-46
+  s_0ddf3750cbee5f::t_082e9344b6107c 3-4
+  s_0ddf3750cbee5f::t_33327e978a579c 36-37
+src/lib/supabase/index-daily-repository.ts
+  s_0ddf3750cbee5f::t_fa71145bb4e4ca 83-115
+  s_0ddf3750cbee5f::t_6cc95959c1cf4b 1-82
+src/components/index-levels/index-level-tracker.tsx
+  s_0ddf3750cbee5f::t_2558eaadf92f85 33-34
+  s_0ddf3750cbee5f::t_ecc23c7ab55188 68
+  s_0ddf3750cbee5f::t_71110ea08af2a9 1-4,10,12,15,17-18,20-21,28-29,31,43-44,46-49,51-52,54-55,70,72,85
+  s_0ddf3750cbee5f::t_97f711e3ed9fc1 5-6,9,11,13-14,19,23-25,30,32,35-37,39-41,50,53,60-61,65-67,69,73-84
+  s_16cb108fbec3f1::t_18b02308a9457e 8,16,26,38,42,45,56,59,71
+  s_0ddf3750cbee5f::t_ada3eb3eed2159 22,27
+  s_0ddf3750cbee5f::t_799cff5549cdb7 57-58,62-64
+  s_0ddf3750cbee5f::t_89654fab4f4bc6 7
+src/components/index-levels/index-level-gauge.tsx
+  s_0ddf3750cbee5f::t_474ab60718b1f3 1-198
+src/components/index-levels/index-level-chart.tsx
+  s_0ddf3750cbee5f::t_ab0d76d308d3e6 1-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "76e8def604d4ea454b966a698a909b493cdcbeb4",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_0ddf3750cbee5f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bcf02c2d-c154-4555-9470-ae94ff4e3b60",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_16cb108fbec3f1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a6128296-6351-46d1-a233-f95148ccbba9",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
