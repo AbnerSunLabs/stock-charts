@@ -29,7 +29,7 @@ export function IndexLevelPicker({
       optionFilterProp="label"
       options={INDEX_WATCHES.map(item => ({
         value: item.code,
-        label: `${item.name} ${item.code}`,
+        label: `${item.name} ${item.code.replace(/\.OTH$/, '')}`,
       }))}
       onChange={onChange}
     />

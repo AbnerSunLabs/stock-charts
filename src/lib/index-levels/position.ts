@@ -30,9 +30,13 @@ export function formatClose(value: number): string {
   });
 }
 
-/** 区间标签按下沿定位，展示时给数字加上千分位。 */
+/** 区间标签按下沿定位，展示时给整数加上千分位，小数原样保留。 */
 export function formatMarkLabel(label: string): string {
-  return label.replace(/\d+/g, digits => Number(digits).toLocaleString('zh-CN'));
+  return label.replace(/\d+(?:\.\d+)?/g, token => {
+    const [whole, fraction] = token.split('.');
+    const formatted = Number(whole).toLocaleString('zh-CN');
+    return fraction == null ? formatted : `${formatted}.${fraction}`;
+  });
 }
 
 /** 现价在刻度上的百分比。上下各留出区间的 22%，避免贴边。 */

@@ -22,7 +22,32 @@ export function closeAxisMax(max: number): number {
   return Math.max(step, Math.ceil(max / step) * step);
 }
 
+/** 指数从 0 起画。汇率的波动挤在个位数里，纵轴贴着这组收盘。 */
+export function closePlotDomain(points: IndexClosePoint[]): [number, number] {
+  const max = points.reduce((peak, row) => Math.max(peak, row.close), 0);
+  if (points.length === 0 || max >= 100) return [0, Math.max(max, 1)];
+  const min = points.reduce((floor, row) => Math.min(floor, row.close), max);
+  const pad = Math.max((max - min) * 0.08, max * 0.01);
+  return [Math.max(0, min - pad), max + pad];
+}
+
 export function formatCloseTick(value: number, max: number): string {
   if (max >= 1000) return `${Math.round(value / 1000)}K`;
+  if (max < 20) return value.toFixed(2);
   return String(Math.round(value));
+}
+
+/** 到当日为止的最高收盘。etf.run 的距前高用的就是这个滚动高点。 */
+export function withRunningHigh(points: IndexClosePoint[]): Array<IndexClosePoint & { maxClose: number }> {
+  let maxClose = 0;
+  return points.map(point => {
+    maxClose = Math.max(maxClose, point.close);
+    return { ...point, maxClose };
+  });
+}
+
+/** (现价 - 基准) / 基准，按百分比。基准为 0 时没有涨跌。 */
+export function changePercent(base: number, value: number): number | null {
+  if (!Number.isFinite(base) || base === 0) return null;
+  return ((value - base) / base) * 100;
 }

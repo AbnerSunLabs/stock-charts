@@ -17,9 +17,10 @@ function fitTwoLines(node: HTMLElement, text: string): string {
   const width = node.clientWidth;
   if (width <= 0) return text;
   const style = getComputedStyle(node);
-  const probe = node.cloneNode(false) as HTMLElement;
-  probe.style.cssText = `position:absolute;visibility:hidden;width:${width}px;font:${style.font};line-height:${style.lineHeight};margin:0;padding:0;height:auto;`;
-  node.parentElement?.appendChild(probe);
+  const probe = document.createElement('p');
+  // 放到滚动容器外面。挂在文章节点上时，探针高度会把列表撑开，ResizeObserver 再量一次，文章就来回抖。
+  probe.style.cssText = `position:fixed;left:-9999px;top:0;visibility:hidden;width:${width}px;font:${style.font};line-height:${style.lineHeight};margin:0;padding:0;height:auto;`;
+  document.body.appendChild(probe);
   const maxHeight = parseFloat(style.lineHeight) * 2 + 0.5;
   const fits = (value: string) => {
     probe.textContent = value;
@@ -49,9 +50,14 @@ function ArticlePreview({ text }: { text: string }) {
     const node = ref.current;
     if (!node) return undefined;
     let active = true;
+    let lastWidth = -1;
     const measure = () => {
-      if (!active) return;
-      const next = fitTwoLines(node, flat);
+      const currentNode = ref.current;
+      if (!active || !currentNode) return;
+      const width = currentNode.clientWidth;
+      if (Math.abs(width - lastWidth) < 1) return;
+      lastWidth = width;
+      const next = fitTwoLines(currentNode, flat);
       setPreview(current => (current === next ? current : next));
     };
     measure();

@@ -10,7 +10,7 @@ import type { IndexLatestClose } from '@/lib/supabase/index-daily-repository';
 type Phase = 'loading' | 'ready' | 'error';
 
 /**
- * 收盘在判断点位之间的位置。进度从弧线左端最低点画到现价。
+ * 收盘在判断点位之间的位置。灰色刻度留着，指针用蓝色。
  */
 export function IndexLevelGauge({
   levels,
@@ -36,11 +36,10 @@ export function IndexLevelGauge({
 
   return (
     <section className="card gauge-card" aria-label="点位仪表盘">
-      <svg ref={ref} className="gauge" viewBox="0 0 500 420" role="img">
+      <svg ref={ref} className="gauge" viewBox="-28 -52 556 500" role="img">
         <GaugeDefs />
         <circle className="face" cx={GAUGE.cx} cy={GAUGE.cy} r={GAUGE.face} />
         <path className="track" d={arcPath(GAUGE.r, GAUGE.start, GAUGE.start + GAUGE.sweep)} />
-        {ready && close ? <path className="gap" d={arcPath(GAUGE.r, GAUGE.start, at(close.close))} /> : null}
         <GaugeTicks levels={levels} close={ready ? close : null} bottom={bottom} top={top} />
         {levels.map(level => (
           <NamedMark key={level.name} level={level} angle={at(level.point)} />
@@ -55,10 +54,6 @@ export function IndexLevelGauge({
 function GaugeDefs() {
   return (
     <defs>
-      <linearGradient id="needle-fill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#ffffff" />
-        <stop offset="1" stopColor="#d7e3f0" />
-      </linearGradient>
       <linearGradient id="face-fill" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="#ffffff" />
         <stop offset="1" stopColor="#e4edf6" />
@@ -95,7 +90,7 @@ function GaugeTicks({
     const spot = polar(GAUGE.face + 14, angle);
     lines.push(
       <text key={`n-${value}`} className="num" x={spot[0]} y={spot[1]} textAnchor={textAnchor(angle)} dominantBaseline="middle">
-        {Math.round(value).toLocaleString('zh-CN')}
+        {step < 1 ? value.toFixed(2) : Math.round(value).toLocaleString('zh-CN')}
       </text>
     );
   }
@@ -175,18 +170,72 @@ function GaugeCaption({
 }
 
 function separateLabels(svg: SVGSVGElement) {
-  svg.querySelectorAll('text.num, text.rim').forEach(node => {
-    if (!(node instanceof SVGTextElement)) return;
-    for (let pass = 0; pass < 4; pass += 1) {
-      const box = node.getBBox();
-      const qx = Math.max(box.x, Math.min(GAUGE.cx, box.x + box.width));
-      const qy = Math.max(box.y, Math.min(GAUGE.cy, box.y + box.height));
-      const dist = Math.hypot(qx - GAUGE.cx, qy - GAUGE.cy) || 1;
-      if (dist >= GAUGE.face + 6) break;
-      const push = GAUGE.face + 6 - dist;
-      shiftText(node, ((qx - GAUGE.cx) / dist) * push, ((qy - GAUGE.cy) / dist) * push);
+  const nodes = Array.from(svg.querySelectorAll('text.num, text.rim')).filter(
+    (node): node is SVGTextElement => node instanceof SVGTextElement
+  );
+  nodes.forEach(pushOutside);
+  for (let pass = 0; pass < 12; pass += 1) {
+    let moved = false;
+    for (let i = 0; i < nodes.length; i += 1) {
+      for (let j = i + 1; j < nodes.length; j += 1) {
+        if (separatePair(nodes[i], nodes[j])) moved = true;
+      }
     }
-  });
+    if (!moved) break;
+  }
+}
+
+/** 两枚刻度叠在一起时，把离圆心更远的那枚沿重叠方向推开，再保持在表盘外面。 */
+function separatePair(first: SVGTextElement, second: SVGTextElement): boolean {
+  const a = first.getBBox();
+  const b = second.getBBox();
+  const gap = 4;
+  const ax = a.x + a.width / 2;
+  const ay = a.y + a.height / 2;
+  const bx = b.x + b.width / 2;
+  const by = b.y + b.height / 2;
+  const penX = (a.width + b.width) / 2 + gap - Math.abs(bx - ax);
+  const penY = (a.height + b.height) / 2 + gap - Math.abs(by - ay);
+  if (penX <= 0 || penY <= 0) return false;
+  const da = Math.hypot(ax - GAUGE.cx, ay - GAUGE.cy);
+  const db = Math.hypot(bx - GAUGE.cx, by - GAUGE.cy);
+  const moveSecond = db >= da;
+  const node = moveSecond ? second : first;
+  const signX = Math.sign((moveSecond ? bx - ax : ax - bx) || 1);
+  const signY = Math.sign((moveSecond ? by - ay : ay - by) || 1);
+  const tx = penX <= penY ? signX * (penX + 1) : 0;
+  const ty = penX <= penY ? 0 : signY * (penY + 1);
+  shiftText(node, tx, ty);
+  if (!insideView(node)) {
+    shiftText(node, -tx, -ty);
+    return false;
+  }
+  pushOutside(node);
+  return true;
+}
+
+const VIEW = { x: -28, y: -52, width: 556, height: 500 };
+
+function insideView(node: SVGTextElement): boolean {
+  const box = node.getBBox();
+  return (
+    box.x >= VIEW.x + 2 &&
+    box.y >= VIEW.y + 2 &&
+    box.x + box.width <= VIEW.x + VIEW.width - 2 &&
+    box.y + box.height <= VIEW.y + VIEW.height - 2
+  );
+}
+
+function pushOutside(node: SVGTextElement) {
+  for (let pass = 0; pass < 4; pass += 1) {
+    const box = node.getBBox();
+    const qx = Math.max(box.x, Math.min(GAUGE.cx, box.x + box.width));
+    const qy = Math.max(box.y, Math.min(GAUGE.cy, box.y + box.height));
+    const dist = Math.hypot(qx - GAUGE.cx, qy - GAUGE.cy) || 1;
+    if (dist >= GAUGE.face + 6) return;
+    const push = GAUGE.face + 6 - dist;
+    shiftText(node, ((qx - GAUGE.cx) / dist) * push, ((qy - GAUGE.cy) / dist) * push);
+  }
 }
 
 function shiftText(node: SVGTextElement, tx: number, ty: number) {

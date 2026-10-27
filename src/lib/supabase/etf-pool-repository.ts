@@ -1,7 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { extractEtfCode } from '@/lib/grid/grid-board-close-quote';
-
 /** 池子里跟踪某只指数的 ETF（只读） */
 export interface TrackingEtf {
   code: string;
@@ -29,18 +27,4 @@ export async function fetchTrackingEtfs(
     if (!code || !name || tracked !== indexCode) return [];
     return [{ code, name, indexCode: tracked }];
   });
-}
-
-/** 当前用户组合里出现过的 ETF 代码。未登录或读失败时为空。 */
-export async function fetchHeldEtfCodes(client: SupabaseClient): Promise<Set<string>> {
-  const { data: sessionData } = await client.auth.getSession();
-  if (!sessionData.session) return new Set();
-  const { data, error } = await client.from('grid_strategies').select('symbol');
-  if (error || !data) return new Set();
-  const codes = new Set<string>();
-  for (const row of data) {
-    const code = extractEtfCode(String(row.symbol ?? ''));
-    if (code) codes.add(code);
-  }
-  return codes;
 }

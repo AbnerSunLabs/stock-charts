@@ -1,5 +1,5 @@
 /**
- * 点位跟踪：左列收盘折线与原文，右列仪表盘与跟踪 ETF。
+ * 点位跟踪：左列收盘折线与原文，右列仪表盘与对应策略卡。
  */
 .index-levels {
   --paper: #ffffff;
@@ -57,17 +57,38 @@
 
 .index-levels .stage {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.78fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr);
+  grid-template-areas:
+    'chart gauge'
+    'ledger strategies';
   gap: 16px;
   align-items: start;
   margin-top: 20px;
 }
 
-.index-levels .col {
+.index-levels .chart-card {
+  grid-area: chart;
+  align-self: stretch;
+}
+
+.index-levels .gauge-card {
+  grid-area: gauge;
+  align-self: stretch;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  justify-content: center;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 8px 8px 12px;
+}
+
+.index-levels .ledger-card {
+  grid-area: ledger;
+}
+
+.index-levels .index-strategy-cards {
+  grid-area: strategies;
 }
 
 .index-levels .card {
@@ -79,6 +100,7 @@
 
 .index-levels .chart-card {
   padding: 18px 18px 8px;
+  min-width: 0;
 }
 
 .index-levels .chart-head {
@@ -130,6 +152,67 @@
   font-size: 14px;
 }
 
+.index-levels .etf-tip {
+  min-width: 180px;
+  padding: 8px 16px 10px 10px;
+  border: 1px solid #f3f2f2;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.index-levels .etf-tip__head,
+.index-levels .etf-tip__row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.index-levels .etf-tip__head {
+  margin-bottom: 8px;
+}
+
+.index-levels .etf-tip__head i,
+.index-levels .etf-tip__row i {
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: #4b5563;
+}
+
+.index-levels .etf-tip__row i.price {
+  background: #b5c4b1;
+}
+
+.index-levels .etf-tip b {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.index-levels .etf-tip b span,
+.index-levels .etf-tip em {
+  color: #94a3b8;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.index-levels .etf-tip em {
+  display: block;
+}
+
+.index-levels .etf-tip .up {
+  color: #e5484d;
+}
+
+.index-levels .etf-tip .down {
+  color: #558c6c;
+}
+
 .index-levels .asof {
   margin: 0 4px 8px 0;
   color: var(--muted);
@@ -137,14 +220,13 @@
   text-align: right;
 }
 
-.index-levels .gauge-card {
-  padding: 8px 8px 12px;
-}
-
 .index-levels .gauge {
-  width: 100%;
-  height: auto;
   display: block;
+  width: auto;
+  max-width: 100%;
+  /* 高度跟折线卡片走，不拿 viewBox 把这一行撑高 */
+  height: 0;
+  min-height: 100%;
 }
 
 .index-levels .face {
@@ -153,19 +235,11 @@
   filter: drop-shadow(0 12px 18px rgba(15, 23, 42, 0.08));
 }
 
-.index-levels .track,
-.index-levels .gap {
+.index-levels .track {
   fill: none;
+  stroke: #e7eef6;
   stroke-width: 16;
   stroke-linecap: round;
-}
-
-.index-levels .track {
-  stroke: #e7eef6;
-}
-
-.index-levels .gap {
-  stroke: var(--accent);
 }
 
 .index-levels .tick {
@@ -223,8 +297,8 @@
 }
 
 .index-levels .needle {
-  fill: url(#needle-fill);
-  stroke: rgba(148, 163, 184, 0.7);
+  fill: var(--accent);
+  stroke: #1d4ed8;
   stroke-width: 1;
 }
 
@@ -234,8 +308,7 @@
   stroke-width: 2;
 }
 
-.index-levels .ledger-card,
-.index-levels .funds-card {
+.index-levels .ledger-card {
   padding: 18px 20px;
 }
 
@@ -243,6 +316,7 @@
   max-height: 420px;
   overflow: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .index-levels .entry {
@@ -269,60 +343,28 @@
   line-height: 1.65;
 }
 
-.index-levels .entry a,
-.index-levels .fund a {
+.index-levels .entry a {
   display: inline-block;
+  margin-top: 8px;
   color: var(--accent);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
 }
 
-.index-levels .entry a {
-  margin-top: 8px;
-}
-
-.index-levels .entry a:hover,
-.index-levels .fund a:hover {
+.index-levels .entry a:hover {
   text-decoration: underline;
 }
 
-.index-levels .funds-card h2 {
-  margin: 0 0 4px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.index-levels .fund {
+.index-levels .index-strategy-cards {
   display: flex;
+  flex-direction: column;
   gap: 16px;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-top: 1px solid var(--rule);
-}
-
-.index-levels .fund b {
-  display: block;
-  font-weight: 600;
-}
-
-.index-levels .fund span,
-.index-levels .fund em,
-.index-levels .empty-funds {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: normal;
-}
-
-.index-levels .empty-funds {
-  margin: 8px 0 0;
-  font-size: 14px;
+  min-width: 0;
+  background: transparent;
 }
 
 .index-levels .entry a:focus-visible,
-.index-levels .fund a:focus-visible,
 .index-levels .ranges button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
@@ -331,5 +373,20 @@
 @media (max-width: 900px) {
   .index-levels .stage {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'chart'
+      'ledger'
+      'gauge'
+      'strategies';
+  }
+
+  .index-levels .gauge-card {
+    display: block;
+    height: auto;
+  }
+
+  .index-levels .gauge {
+    width: 100%;
+    height: auto;
   }
 }
