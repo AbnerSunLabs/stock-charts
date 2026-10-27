@@ -1,0 +1,120 @@
+__tests__/index-levels/position.test.ts
+  s_706e37f6c3825e::t_08702cdd3941b9 17
+  s_706e37f6c3825e::t_a4ab6dcc65e99e 1
+  s_0ddf3750cbee5f::t_b24de6d0ce8f81 35-38
+  s_706e37f6c3825e::t_0e108d6524d6b8 41-50
+  s_0ddf3750cbee5f::t_41b93f2d4e470d 39-40
+src/lib/index-levels/position.ts
+  s_706e37f6c3825e::t_6d86b63bcbec0d 33,35-39
+src/components/index-levels/index-strategy-cards.tsx
+  s_0ddf3750cbee5f::t_4eb85d73a127f6 3-4,6-9,11-14,17,19-41,43-50,52,55-81
+src/app/view/index-levels/index-levels.css
+  s_0ddf3750cbee5f::t_6948791aff5c36 78-79,83
+  s_0ddf3750cbee5f::t_dc35e8782aeb4a 319
+  s_0ddf3750cbee5f::t_7b7d63038327a2 300-301
+  s_0ddf3750cbee5f::t_a7c1e575a53ed3 363
+  s_0ddf3750cbee5f::t_a1bc55c273ca22 61-63,69-70,72-76,84-91
+  s_0ddf3750cbee5f::t_021da7b380142f 238,240
+  s_0ddf3750cbee5f::t_01b7a3a13051a2 2
+  s_0ddf3750cbee5f::t_ceb982736c56ec 71
+  s_0ddf3750cbee5f::t_533a74273ba6d9 227-229
+  s_0ddf3750cbee5f::t_fe4f087f53d09c 155-215
+  s_0ddf3750cbee5f::t_c7de41abf9fec6 81-82
+  s_0ddf3750cbee5f::t_7022301cb3205b 346,348,355
+  s_0ddf3750cbee5f::t_b965b302f95a8f 384-385
+  s_0ddf3750cbee5f::t_5242628dce55f6 225-226
+  s_0ddf3750cbee5f::t_fa8650c349ac68 103
+  s_0ddf3750cbee5f::t_17407baeab2a28 376-383,386-390
+  s_0ddf3750cbee5f::t_0e1e4295ff6918 60
+  s_0ddf3750cbee5f::t_fdf36e99904c32 311
+  s_0ddf3750cbee5f::t_104e662790bdcb 359,361,364
+docs/superpowers/specs/2026-10-20-index-level-sync.md
+  s_706e37f6c3825e::t_478bb5f2cda21b 40-41
+  s_706e37f6c3825e::t_5f5d11db7f06f0 21
+  s_0ddf3750cbee5f::t_4291ab25b1d2c7 42
+  s_706e37f6c3825e::t_f18ae0d336a903 13
+  s_706e37f6c3825e::t_89bba54d23b728 25-26
+src/components/index-levels/index-level-tracker.tsx
+  s_0ddf3750cbee5f::t_6af87625d8c502 9
+  s_0ddf3750cbee5f::t_b5330e577630ee 35-36
+  s_0ddf3750cbee5f::t_685429cab5c085 19
+  s_0ddf3750cbee5f::t_91266d1951c581 58
+  s_0ddf3750cbee5f::t_01928694440b0e 59-63
+  s_0ddf3750cbee5f::t_db6d089a42368c 13
+src/components/index-levels/index-level-gauge.tsx
+  s_706e37f6c3825e::t_00b2ffa01ee64c 206-208,215-226
+  s_706e37f6c3825e::t_5f73b2e40c029a 209-212,214
+  s_706e37f6c3825e::t_9b765066e0f918 93
+  s_706e37f6c3825e::t_9bd836729d3802 173-182,184-205,213,227-238
+  s_0ddf3750cbee5f::t_ad89e85c13f4d8 13
+  s_706e37f6c3825e::t_0d0b271846bcff 39
+src/components/index-levels/index-level-picker.tsx
+  s_706e37f6c3825e::t_b03835a6c5b83e 32
+src/lib/index-levels/catalog.ts
+  s_706e37f6c3825e::t_2b18817b60fa4f 106-135
+  s_706e37f6c3825e::t_823f3917591122 105,265-311
+src/components/index-levels/index-quote-ledger.tsx
+  s_0ddf3750cbee5f::t_2a2945474cebb4 53,55-60
+  s_0ddf3750cbee5f::t_7e5a44b7472ef9 20-23
+src/components/index-levels/index-level-chart.tsx
+  s_706e37f6c3825e::t_a13234e6598adf 8
+  s_0ddf3750cbee5f::t_56bed93428e7ec 97-102
+  s_0ddf3750cbee5f::t_f47570cb2ca2f6 167
+  s_706e37f6c3825e::t_0f725388e7baea 53
+  s_0ddf3750cbee5f::t_e0ae7d1367da86 7,11
+  s_0ddf3750cbee5f::t_0cac58302e4686 134-157,159-166,168-190
+  s_0ddf3750cbee5f::t_4527e6479d6eb9 77-79,82,85-87,92,96,103,108-109,113,117,122-125,128
+  s_706e37f6c3825e::t_269e6168dbf165 158
+  s_706e37f6c3825e::t_ced9d573ca23d9 46
+  s_706e37f6c3825e::t_34e622e58e11db 41-44
+  s_706e37f6c3825e::t_7a5babfe397985 66
+  s_0ddf3750cbee5f::t_691a0422f2b2d4 16-19,22-23,25-26,30,35,40
+  s_706e37f6c3825e::t_414f026b48e671 75,83
+  s_706e37f6c3825e::t_dcd8910dba05a2 114-115
+  s_0ddf3750cbee5f::t_ffa45c6ecaed96 127
+src/components/grid/grid-portfolio-board.tsx
+  s_0ddf3750cbee5f::t_9e6e33f6b2f0da 197-205
+  s_0ddf3750cbee5f::t_2d35a45070f461 3-5,7,10-11
+  s_0ddf3750cbee5f::t_0208506aad333a 67-69
+src/components/grid/grid-portfolio-card.tsx
+  s_0ddf3750cbee5f::t_3cb823b4bf5679 1-204
+src/lib/index-levels/close-series.ts
+  s_706e37f6c3825e::t_65ccdb607f1837 25-33,36
+  s_0ddf3750cbee5f::t_8d0caf6ed43a86 39-53
+src/app/view/grid/page.tsx
+  s_0ddf3750cbee5f::t_08964b46c0c6b6 196-197
+  s_0ddf3750cbee5f::t_2c6a352a781d1b 49
+  s_0ddf3750cbee5f::t_7e15d961ba764b 195
+  s_0ddf3750cbee5f::t_791bbf080e234d 198,201-202
+  s_0ddf3750cbee5f::t_df8d09a0aa2d7d 203-215
+  s_0ddf3750cbee5f::t_b01b90e907a924 199-200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7fb875af78ad5bc3a7bb5c58c0b818f48c5d9693",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_0ddf3750cbee5f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bcf02c2d-c154-4555-9470-ae94ff4e3b60",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_706e37f6c3825e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b05bda65-f841-4137-b056-f9005af09770",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
