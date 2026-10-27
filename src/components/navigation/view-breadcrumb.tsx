@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 const ROUTES: Record<string, string> = {
   '/view/sunburst': '资产旭日图',
   '/view/grid': '网格交易策略',
+  '/view/index-levels': '点位跟踪',
   '/view/family': '家庭财务总览',
   '/view/family/ledger': '资产记账',
   '/view/family/policies': '保单管理',

@@ -32,6 +32,18 @@ const TOOLS = [
     ),
   },
   {
+    id: 'index-levels',
+    title: '点位跟踪',
+    description: '用官方收盘对照跟踪指数的判断点位',
+    href: '/view/index-levels',
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+        <path d="M4 16h16M4 12h10M4 8h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="17" cy="8" r="2" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    ),
+  },
+  {
     id: 'coming-soon-2',
     title: '持仓分析',
     description: '多维度分析股票持仓结构，行业分布、市值风格一键洞察',
