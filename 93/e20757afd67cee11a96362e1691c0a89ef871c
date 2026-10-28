@@ -1,0 +1,43 @@
+src/app/view/index-levels/index-levels.css
+  s_706e37f6c3825e::t_dc98aaecb18a10 367-395
+src/lib/index-levels/catalog.ts
+  s_706e37f6c3825e::t_3f10ea90f13d4a 185-214
+  s_58ec8a9e7c3b59::t_a93738d8898253 184
+src/components/index-levels/index-strategy-cards.tsx
+  s_706e37f6c3825e::t_9ce47433b50f88 22,29,33,36-39,46-48,51-64,69-81
+  s_706e37f6c3825e::t_65a2d64af5c826 82-84
+docs/superpowers/specs/2026-10-20-index-level-sync.md
+  s_706e37f6c3825e::t_48a7ff6ab0750f 16
+  s_706e37f6c3825e::t_9bbf46e30ef461 29-30
+  s_706e37f6c3825e::t_1a968c088139b2 47
+  s_706e37f6c3825e::t_25d837a254d32b 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "93e20757afd67cee11a96362e1691c0a89ef871c",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_58ec8a9e7c3b59": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "741f694a-738d-4ea0-befa-ea5ed686c9df",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_706e37f6c3825e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b05bda65-f841-4137-b056-f9005af09770",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
