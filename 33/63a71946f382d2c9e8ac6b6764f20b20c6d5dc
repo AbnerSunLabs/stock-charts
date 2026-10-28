@@ -1,0 +1,29 @@
+src/lib/index-levels/catalog.ts
+  s_706e37f6c3825e::t_4b45b2afd675ef 266-307
+  s_706e37f6c3825e::t_a943cd2b349b2d 265
+docs/superpowers/specs/2026-10-20-index-level-sync.md
+  s_706e37f6c3825e::t_36f95dbc4fbcab 44
+  s_706e37f6c3825e::t_63df534fd7d892 28-29
+  s_706e37f6c3825e::t_6b1357693ab803 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3363a71946f382d2c9e8ac6b6764f20b20c6d5dc",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_706e37f6c3825e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b05bda65-f841-4137-b056-f9005af09770",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
