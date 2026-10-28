@@ -19,37 +19,66 @@ import '@/app/view/grid/grid.css';
 export function IndexStrategyCards({ funds }: { funds: TrackingEtf[] }) {
   const router = useRouter();
   const [views, setViews] = useState<PortfolioCardView[]>([]);
+  const [ready, setReady] = useState(false);
   const codes = funds.map(fund => fund.code).join(',');
 
   useEffect(() => {
     const watched = new Set(codes.split(',').filter(Boolean));
     if (watched.size === 0) {
       setViews([]);
+      setReady(true);
       return undefined;
     }
     let cancelled = false;
+    setReady(false);
     const client = createBrowserSupabaseClient();
     void loadStrategyCards(client, watched).then(next => {
-      if (!cancelled) setViews(next);
+      if (!cancelled) {
+        setViews(next);
+        setReady(true);
+      }
     });
     return () => {
       cancelled = true;
     };
   }, [codes]);
 
-  if (views.length === 0) return null;
+  const held = new Set(views.map(view => extractEtfCode(view.s.symbol)).filter(Boolean));
+  const unmatched = ready ? funds.filter(fund => !held.has(fund.code)) : [];
+  if (views.length === 0 && unmatched.length === 0) return null;
 
   return (
-    <div className="grid-shell index-strategy-cards">
-      {views.map(view => (
-        <GridPortfolioCard
-          key={view.s.id}
-          view={view}
-          onOpenCalculator={id => router.push(`/view/grid?tab=calc&strategy=${id}`)}
-          onOpenJournal={id => router.push(`/view/grid?tab=journal&strategy=${id}`)}
-        />
-      ))}
+    <div className="index-strategy-cards">
+      {views.length > 0 ? (
+        <div className="grid-shell">
+          {views.map(view => (
+            <GridPortfolioCard
+              key={view.s.id}
+              view={view}
+              onOpenCalculator={id => router.push(`/view/grid?tab=calc&strategy=${id}`)}
+              onOpenJournal={id => router.push(`/view/grid?tab=journal&strategy=${id}`)}
+            />
+          ))}
+        </div>
+      ) : null}
+      {unmatched.length > 0 ? <TrackingFundCard funds={unmatched} /> : null}
     </div>
+  );
+}
+
+function TrackingFundCard({ funds }: { funds: TrackingEtf[] }) {
+  return (
+    <section className="card funds-card" aria-label="跟踪这只指数的 ETF">
+      <h2>跟踪这只指数的 ETF</h2>
+      {funds.map(fund => (
+        <div className="fund" key={fund.code}>
+          <div>
+            <b>{fund.name}</b>
+            <span>{fund.code}</span>
+          </div>
+        </div>
+      ))}
+    </section>
   );
 }
 
