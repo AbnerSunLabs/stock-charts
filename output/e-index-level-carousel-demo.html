@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>指数点位跟踪 Demo</title>
+    <style>
+      :root {
+        --ink: #0a0b0d;
+        --muted: #5b616e;
+        --line: #dee1e6;
+        --paper: #ffffff;
+        --panel: #ffffff;
+        --accent: #0052ff;
+        --accent-soft: #eaf1ff;
+        --up: #05b169;
+        --down: #cf202f;
+        --radius: 24px;
+        --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        background: var(--paper);
+        color: var(--ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Microsoft YaHei", sans-serif;
+      }
+
+      button {
+        font: inherit;
+        color: inherit;
+      }
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 64px;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 24px;
+        margin-bottom: 22px;
+      }
+
+      .crumb {
+        margin: 0 0 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+      }
+
+      .lead {
+        max-width: 46ch;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .stamp {
+        flex: none;
+        margin: 0;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .stage {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .rail,
+      .board,
+      .carousel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+        box-shadow: 0 4px 12px rgba(10, 11, 13, 0.04);
+      }
+
+      .rail {
+        padding: 6px;
+      }
+
+      .index-btn {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 2px 12px;
+        width: 100%;
+        padding: 12px 12px 12px 14px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.2s var(--ease);
+      }
+
+      .index-btn + .index-btn {
+        box-shadow: inset 0 1px 0 var(--line);
+      }
+
+      .index-btn:hover {
+        background: #f7f7f7;
+      }
+      .index-btn:active {
+        transform: scale(0.99);
+      }
+
+      .index-btn.active {
+        background: var(--accent-soft);
+        box-shadow: inset 3px 0 0 var(--accent);
+      }
+
+      .index-name {
+        font-size: 15px;
+        font-weight: 650;
+        white-space: nowrap;
+      }
+      .index-code {
+        margin-left: 6px;
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .gap {
+        grid-column: 1 / -1;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .last {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-variant-numeric: tabular-nums;
+        font-size: 15px;
+        font-weight: 650;
+        letter-spacing: -0.03em;
+      }
+
+      .chg {
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      .chg.up {
+        color: var(--up);
+      }
+      .chg.down {
+        color: var(--down);
+      }
+
+      .detail {
+        display: grid;
+        gap: 16px;
+      }
+
+      .board {
+        padding: 22px 22px 8px;
+      }
+
+      .board-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .board h2 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -0.03em;
+      }
+
+      .asof {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .hero-num {
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-variant-numeric: tabular-nums;
+        font-size: 40px;
+        font-weight: 650;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        text-align: right;
+      }
+
+      .hero-chg {
+        margin: 6px 0 0;
+        font-size: 13px;
+        text-align: right;
+      }
+
+      .nearest {
+        margin: 14px 0 0;
+        font-size: 14px;
+      }
+
+      .nearest b {
+        font-weight: 650;
+      }
+
+      .ladder {
+        position: relative;
+        height: 280px;
+        margin: 18px 0 8px;
+      }
+
+      .ladder svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .level-label,
+      .axis-note {
+        font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+        font-size: 12px;
+      }
+
+      .level-point {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+      }
+
+      .carousel {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        min-height: 220px;
+        padding: 18px 20px 16px;
+      }
+
+      .carousel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .carousel-head p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .controls {
+        display: flex;
+        gap: 8px;
+      }
+
+      .ctrl {
+        min-height: 32px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 13px;
+        transition:
+          border-color 0.16s var(--ease),
+          transform 0.16s var(--ease);
+      }
+
+      .ctrl:hover {
+        border-color: var(--ink);
+      }
+      .ctrl:active {
+        transform: scale(0.98);
+      }
+      .ctrl[aria-pressed="true"] {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .slide-frame {
+        position: relative;
+        margin: 16px 0 12px;
+        min-height: 108px;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        opacity: 0;
+        transform: translateY(8px);
+        pointer-events: none;
+        transition:
+          opacity 0.35s var(--ease),
+          transform 0.35s var(--ease);
+      }
+
+      .slide.on {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+      }
+
+      .slide q {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 560;
+        letter-spacing: -0.02em;
+        line-height: 1.45;
+        quotes: none;
+      }
+
+      .slide footer {
+        display: flex;
+        gap: 16px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .dots {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .dot {
+        position: relative;
+        width: 28px;
+        height: 4px;
+        border-radius: 999px;
+        background: #eef0f3;
+        overflow: hidden;
+      }
+
+      .dot i {
+        display: block;
+        height: 100%;
+        width: 100%;
+        background: var(--accent);
+        transform: scaleX(0);
+        transform-origin: left center;
+      }
+
+      .dot.on i {
+        transform: scaleX(1);
+      }
+
+      .dot.on.playing i {
+        animation: fill var(--dur, 7s) linear forwards;
+      }
+
+      @keyframes fill {
+        from {
+          transform: scaleX(0);
+        }
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .slide,
+        .index-btn,
+        .ctrl {
+          transition: none;
+        }
+        .dot.on.playing i {
+          animation: none;
+          transform: scaleX(1);
+        }
+      }
+
+      @media (max-width: 767px) {
+        .shell {
+          width: min(100% - 24px, 1120px);
+          padding-top: 20px;
+        }
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        h1 {
+          font-size: 26px;
+        }
+        .stage {
+          grid-template-columns: 1fr;
+        }
+        .rail {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding: 8px;
+        }
+        .carousel-head {
+          align-items: flex-start;
+          flex-wrap: wrap;
+        }
+        .index-btn {
+          flex: none;
+          width: max-content;
+          box-shadow: none;
+          border: 1px solid var(--line);
+        }
+        .index-btn + .index-btn {
+          box-shadow: none;
+        }
+        .hero-num {
+          font-size: 32px;
+        }
+        .slide q {
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div>
+          <p class="crumb">工具集 / 点位跟踪</p>
+          <h1>点位跟踪</h1>
+          <p class="lead">
+            选中一只指数，对照 E
+            大标过的判断点位，看现价落在哪一档。下面轮播的是围绕这些点位的示意发言。
+          </p>
+        </div>
+        <p class="stamp">示意数据，不是原文，也不是实时行情</p>
+      </header>
+
+      <div class="stage">
+        <section class="rail" id="rail" aria-label="指数列表"></section>
+        <div class="detail">
+          <section class="board" id="board" aria-live="polite"></section>
+          <section
+            class="carousel"
+            id="carousel"
+            aria-roledescription="轮播"
+            aria-label="点位发言"
+          ></section>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      /** 点位和发言都是演示用的示意，不是 E 大原文，也不是行情接口。 */
+      const INDICES = [
+        {
+          code: "000300",
+          name: "沪深300",
+          last: 3862.41,
+          change: -0.62,
+          asOf: "2026-10-20 15:00",
+          levels: [
+            { name: "不再收集", point: 4500 },
+            { name: "观察上沿", point: 4100 },
+            { name: "中性", point: 3700 },
+            { name: "开始收集", point: 3300 },
+            { name: "重点看", point: 2900 },
+          ],
+          quotes: [
+            {
+              date: "2026-09-02",
+              level: "中性 3700",
+              text: "示意。三千七附近先看位置，不按一天的涨跌做决定。",
+            },
+            {
+              date: "2026-08-18",
+              level: "观察上沿 4100",
+              text: "示意。四千一再往上，继续收集的理由就薄了。",
+            },
+            {
+              date: "2026-07-09",
+              level: "开始收集 3300",
+              text: "示意。三千三是这轮想多看一眼的地方。",
+            },
+          ],
+        },
+        {
+          code: "000905",
+          name: "中证500",
+          last: 5724.18,
+          change: 0.84,
+          asOf: "2026-10-20 15:00",
+          levels: [
+            { name: "不再收集", point: 6800 },
+            { name: "观察上沿", point: 6200 },
+            { name: "中性", point: 5600 },
+            { name: "开始收集", point: 5000 },
+            { name: "重点看", point: 4400 },
+          ],
+          quotes: [
+            {
+              date: "2026-09-21",
+              level: "中性 5600",
+              text: "示意。五千六上下先当中性看，不急着加码。",
+            },
+            {
+              date: "2026-06-30",
+              level: "开始收集 5000",
+              text: "示意。五千以下才开始有收集的意思。",
+            },
+            {
+              date: "2026-05-14",
+              level: "观察上沿 6200",
+              text: "示意。六千二之上，这只指数先放一边。",
+            },
+          ],
+        },
+        {
+          code: "399006",
+          name: "创业板指",
+          last: 2186.55,
+          change: -1.24,
+          asOf: "2026-10-20 15:00",
+          levels: [
+            { name: "不再收集", point: 2800 },
+            { name: "观察上沿", point: 2500 },
+            { name: "中性", point: 2200 },
+            { name: "开始收集", point: 1900 },
+            { name: "重点看", point: 1600 },
+          ],
+          quotes: [
+            {
+              date: "2026-10-08",
+              level: "中性 2200",
+              text: "示意。两千二附近波动大，点位比故事重要。",
+            },
+            {
+              date: "2026-04-22",
+              level: "开始收集 1900",
+              text: "示意。一千九往下，才值得单独拿出来说。",
+            },
+            {
+              date: "2026-03-03",
+              level: "观察上沿 2500",
+              text: "示意。两千五之上，先停止往里加。",
+            },
+          ],
+        },
+        {
+          code: "HSI",
+          name: "恒生指数",
+          last: 20842,
+          change: 0.37,
+          asOf: "2026-10-20 16:00",
+          levels: [
+            { name: "不再收集", point: 26000 },
+            { name: "观察上沿", point: 23000 },
+            { name: "中性", point: 20000 },
+            { name: "开始收集", point: 17000 },
+            { name: "重点看", point: 15000 },
+          ],
+          quotes: [
+            {
+              date: "2026-09-11",
+              level: "中性 20000",
+              text: "示意。两万是一条心里的线，过了先看稳不稳。",
+            },
+            {
+              date: "2026-07-28",
+              level: "开始收集 17000",
+              text: "示意。一万七附近才重新有兴趣。",
+            },
+            {
+              date: "2026-02-16",
+              level: "观察上沿 23000",
+              text: "示意。两万三之上，这轮先不追。",
+            },
+          ],
+        },
+        {
+          code: "NDX",
+          name: "纳斯达克100",
+          last: 20118.4,
+          change: 0.21,
+          asOf: "2026-10-17 16:00",
+          levels: [
+            { name: "不再收集", point: 23000 },
+            { name: "观察上沿", point: 21000 },
+            { name: "中性", point: 19000 },
+            { name: "开始收集", point: 17000 },
+            { name: "重点看", point: 15000 },
+          ],
+          quotes: [
+            {
+              date: "2026-10-11",
+              level: "观察上沿 21000",
+              text: "示意。两万一千近了，收集可以停一停。",
+            },
+            {
+              date: "2026-08-04",
+              level: "中性 19000",
+              text: "示意。一万九当中性，不因为新高改口径。",
+            },
+            {
+              date: "2026-04-07",
+              level: "开始收集 17000",
+              text: "示意。一万七是愿意重新看的位置。",
+            },
+          ],
+        },
+      ];
+
+      const DURATION = 7000;
+      const rail = document.getElementById("rail");
+      const board = document.getElementById("board");
+      const carousel = document.getElementById("carousel");
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+
+      let active = 0;
+      let slide = 0;
+      let paused = false;
+      let timer = 0;
+
+      function formatPoint(value) {
+        return value.toLocaleString("zh-CN", {
+          maximumFractionDigits: value >= 10000 ? 0 : 2,
+        });
+      }
+
+      function nearestLevel(index) {
+        return index.levels.reduce((best, level) => {
+          const gap = Math.abs(index.last - level.point);
+          if (!best || gap < best.gap) return { level, gap };
+          return best;
+        }, null);
+      }
+
+      function gapText(index) {
+        const found = nearestLevel(index);
+        const delta = index.last - found.level.point;
+        const side = delta > 0 ? "高出" : delta < 0 ? "低于" : "贴着";
+        const points = Math.abs(delta);
+        const pct = (points / found.level.point) * 100;
+        return (
+          side +
+          found.level.name +
+          " " +
+          formatPoint(points) +
+          " 点，" +
+          pct.toFixed(1) +
+          "%"
+        );
+      }
+
+      function renderRail() {
+        rail.innerHTML = INDICES.map((item, i) => {
+          const cls = item.change > 0 ? "up" : "down";
+          const sign = item.change > 0 ? "+" : "";
+          return (
+            '<button class="index-btn' +
+            (i === active ? " active" : "") +
+            '" type="button" data-index="' +
+            i +
+            '" aria-pressed="' +
+            (i === active) +
+            '">' +
+            '<span class="index-name">' +
+            item.name +
+            '<span class="index-code">' +
+            item.code +
+            "</span></span>" +
+            '<span class="last">' +
+            formatPoint(item.last) +
+            "</span>" +
+            '<span class="gap">' +
+            gapText(item) +
+            "</span>" +
+            '<span class="chg ' +
+            cls +
+            '">' +
+            sign +
+            item.change.toFixed(2) +
+            "%</span>" +
+            "</button>"
+          );
+        }).join("");
+      }
+
+      function ladderSvg(index) {
+        const values = index.levels
+          .map((level) => level.point)
+          .concat(index.last);
+        const max = Math.max.apply(null, values);
+        const min = Math.min.apply(null, values);
+        const pad = (max - min) * 0.14;
+        const top = max + pad;
+        const bottom = min - pad;
+        const yOf = (value) => 18 + ((top - value) / (top - bottom)) * 244;
+        const lines = index.levels
+          .map((level) => {
+            const y = yOf(level.point);
+            return (
+              '<line x1="132" y1="' +
+              y +
+              '" x2="248" y2="' +
+              y +
+              '" stroke="#dee1e6" stroke-width="1"/>' +
+              '<text class="level-point" x="260" y="' +
+              (y + 4) +
+              '" fill="#0a0b0d">' +
+              formatPoint(level.point) +
+              "</text>" +
+              '<text class="level-label" x="332" y="' +
+              (y + 4) +
+              '" fill="#5b616e">' +
+              level.name +
+              "</text>"
+            );
+          })
+          .join("");
+        const y = yOf(index.last);
+        return (
+          '<svg viewBox="0 0 420 280" role="img" aria-label="判断点位与现价">' +
+          lines +
+          '<line x1="132" y1="' +
+          y +
+          '" x2="248" y2="' +
+          y +
+          '" stroke="#0052ff" stroke-width="2"/>' +
+          '<text class="level-point" x="8" y="' +
+          (y + 4) +
+          '" fill="#0052ff">现价 ' +
+          formatPoint(index.last) +
+          "</text>" +
+          "</svg>"
+        );
+      }
+
+      function renderBoard() {
+        const item = INDICES[active];
+        const cls = item.change > 0 ? "up" : "down";
+        const sign = item.change > 0 ? "+" : "";
+        board.innerHTML =
+          '<div class="board-top">' +
+          "<div><h2>" +
+          item.name +
+          '</h2><p class="asof">' +
+          item.code +
+          " · " +
+          item.asOf +
+          "</p></div>" +
+          '<div><p class="hero-num">' +
+          formatPoint(item.last) +
+          "</p>" +
+          '<p class="hero-chg chg ' +
+          cls +
+          '">' +
+          sign +
+          item.change.toFixed(2) +
+          "%</p></div>" +
+          "</div>" +
+          '<p class="nearest">现价' +
+          gapText(item) +
+          "。</p>" +
+          '<div class="ladder">' +
+          ladderSvg(item) +
+          "</div>";
+      }
+
+      function renderCarousel() {
+        const quotes = INDICES[active].quotes;
+        const slides = quotes
+          .map(
+            (quote, i) =>
+              '<article class="slide' +
+              (i === slide ? " on" : "") +
+              '">' +
+              "<q>" +
+              quote.text +
+              "</q>" +
+              "<footer><time>" +
+              quote.date +
+              "</time><span>对应 " +
+              quote.level +
+              "</span><span>示意发言</span></footer>" +
+              "</article>",
+          )
+          .join("");
+        const dots = quotes
+          .map(
+            (_, i) =>
+              '<span class="dot' +
+              (i === slide ? " on" : "") +
+              (i === slide && !paused && !reduceMotion ? " playing" : "") +
+              '" style="--dur:' +
+              DURATION / 1000 +
+              's">' +
+              "<i></i></span>",
+          )
+          .join("");
+        carousel.innerHTML =
+          '<div class="carousel-head"><p>发言自动轮播</p></div>' +
+          '<div class="slide-frame">' +
+          slides +
+          "</div>" +
+          '<div class="dots" aria-hidden="true">' +
+          dots +
+          "</div>";
+      }
+
+      function render() {
+        renderRail();
+        renderBoard();
+        renderCarousel();
+      }
+
+      function restartTimer() {
+        window.clearTimeout(timer);
+        if (paused || reduceMotion) return;
+        timer = window.setTimeout(() => {
+          const count = INDICES[active].quotes.length;
+          slide = (slide + 1) % count;
+          render();
+          restartTimer();
+        }, DURATION);
+      }
+
+      rail.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-index]");
+        if (!button) return;
+        active = Number(button.dataset.index);
+        slide = 0;
+        render();
+        restartTimer();
+      });
+
+      carousel.addEventListener("mouseenter", () => {
+        if (paused) return;
+        paused = true;
+        render();
+        restartTimer();
+        carousel.dataset.hoverPaused = "1";
+      });
+
+      carousel.addEventListener("mouseleave", () => {
+        if (carousel.dataset.hoverPaused !== "1") return;
+        paused = false;
+        delete carousel.dataset.hoverPaused;
+        render();
+        restartTimer();
+      });
+
+      render();
+      restartTimer();
+    </script>
+  </body>
+</html>

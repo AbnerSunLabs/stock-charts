@@ -8,7 +8,7 @@ export interface IndexClosePoint {
 export type CloseSpan = 'all' | '10' | '5';
 
 /** 近 N 年从最后一根收盘往前切，按日期字符串比较，避开时区。 */
-export function filterCloseSpan(points: IndexClosePoint[], span: CloseSpan): IndexClosePoint[] {
+export function filterCloseSpan<T extends IndexClosePoint>(points: T[], span: CloseSpan): T[] {
   if (span === 'all' || points.length === 0) return points;
   const end = points[points.length - 1]?.tradeDate ?? '';
   const [year, month, day] = end.split('-');

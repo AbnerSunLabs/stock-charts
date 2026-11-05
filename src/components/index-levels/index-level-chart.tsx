@@ -120,8 +120,16 @@ function ChartBody({
           />
           <Tooltip
             cursor={{ stroke: PRICE, strokeWidth: 1 }}
-            content={props => (
-              <CloseTip {...props} name={name} code={code} spanWord={spanWord} base={base} />
+            content={({ active, payload, label }) => (
+              <CloseTip
+                active={active}
+                payload={payload}
+                label={label}
+                name={name}
+                code={code}
+                spanWord={spanWord}
+                base={base}
+              />
             )}
           />
           <Area dataKey="close" stroke="none" fill="url(#close-fill)" isAnimationActive={false} />
@@ -142,8 +150,8 @@ function CloseTip({
   base,
 }: {
   active?: boolean;
-  payload?: Array<{ value?: number; payload?: { maxClose?: number } }>;
-  label?: string | number;
+  payload?: ReadonlyArray<{ value?: unknown; payload?: { maxClose?: number } }>;
+  label?: unknown;
   name: string;
   code: string;
   spanWord: string;

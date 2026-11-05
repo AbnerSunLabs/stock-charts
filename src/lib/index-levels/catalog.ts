@@ -337,6 +337,97 @@ export const INDEX_WATCHES: IndexWatch[] = [
     ],
   },
   {
+    code: '399006.SZ',
+    name: '创业板指',
+    levels: [
+      { name: '大压力', point: 2570, label: '2570' },
+      { name: '买入', point: 1700, label: '1700–1750' },
+    ],
+    quotes: [
+      {
+        postId: 4980251461685267,
+        date: '2023-12-18',
+        level: '买入 1700–1750',
+        text: '放个明牌，创业板指1700-1750之间会买入一笔。\n之后不出意外不会再买。',
+        url: 'https://weibo.com/7519797263/NxFHQ74pJ',
+      },
+      {
+        postId: 4858613828948825,
+        date: '2023-01-16',
+        level: '大压力 2570',
+        text: '创业板在2570附近有个大压力。\n但毕竟只有S持仓一份，并不是大问题。所以我不准备减仓。\n跌了没卖别骂我。',
+        url: 'https://weibo.com/7519797263/MoAOqBxZT',
+      },
+    ],
+  },
+  {
+    code: 'HSHCI.HI',
+    name: '恒生医疗',
+    levels: [
+      { name: '中级压力', point: 3630, label: '3630–3650' },
+      { name: '中等支撑', point: 3530, label: '3530' },
+      { name: '下一线', point: 2800, label: '2800–2900' },
+    ],
+    quotes: [
+      {
+        postId: 5175935990499279,
+        date: '2025-06-10',
+        level: '中级压力 3630–3650',
+        text: '3630－3650。中级压力。',
+        url: 'https://weibo.com/7519797263/PvRrp25ST',
+      },
+      {
+        postId: 4877395365203981,
+        date: '2023-03-09',
+        level: '中等支撑 3530 / 下一线 2800–2900',
+        text: '恒生医疗大概在3530左右有个力度中等的支撑。\n再往下就会到2800-2900一线了。\n如果再守不住，跌破前低，那下面就不知道了。可以考虑继续回归右侧买入。',
+        url: 'https://weibo.com/7519797263/MwtpelPNb',
+      },
+    ],
+  },
+  {
+    code: '000300.SH',
+    name: '沪深300',
+    levels: [{ name: '买入', point: 3450, label: '3450–3500' }],
+    quotes: [
+      {
+        postId: 4856670851962864,
+        date: '2023-01-11',
+        level: '买入 3450–3500',
+        text: '如果今年因为什么突发利空导致沪深300跌至3450-3500一线，那么在那个位置买入，未来1-2年的收益将可以保证。',
+        url: 'https://weibo.com/7519797263/MnMgB8eD6',
+      },
+    ],
+  },
+  {
+    code: '000852.SH',
+    name: '中证1000',
+    levels: [{ name: '共振区', point: 5400, label: '5400–5500' }],
+    quotes: [
+      {
+        postId: 4938669517178352,
+        date: '2023-08-25',
+        level: '共振区 5400–5500',
+        text: '中证1000共振区大致在5400-5500附近。',
+        url: 'https://weibo.com/7519797263/NgdYbu7pS',
+      },
+    ],
+  },
+  {
+    code: 'SPX.OTH',
+    name: '标普500',
+    levels: [{ name: '建仓', point: 3000, label: '3000以下' }],
+    quotes: [
+      {
+        postId: 4878889685354817,
+        date: '2023-03-13',
+        level: '建仓 3000以下',
+        text: '个人认为，如果标普500能因为这次银行的问题打到3000点以下，应该是是非常好的建仓区间。\n越低越好。\n等吧。',
+        url: 'https://weibo.com/7519797263/Mx6hqmt21',
+      },
+    ],
+  },
+  {
     code: 'USDCNH.OTH',
     name: '美元兑人民币',
     levels: [

@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>点位跟踪与组合看板</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #ffffff;
+        --ink: #0f172a;
+        --ink-soft: rgba(15, 23, 42, 0.72);
+        --muted: rgba(15, 23, 42, 0.52);
+        --accent: #2563eb;
+        --up: #0b7a56;
+        --down: #cf202f;
+        --track: #e7eef6;
+        --line: rgba(15, 23, 42, 0.12);
+        --sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+        --serif: "Noto Serif SC", "Songti SC", serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      .page {
+        width: min(1120px, calc(100% - 48px));
+        margin: 32px auto 64px;
+      }
+
+      .sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .crumb {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 28px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .crumb a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      .crumb a:hover {
+        color: var(--accent);
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      select {
+        width: min(360px, 100%);
+        height: 40px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+      }
+
+      .stage {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
+        gap: 56px;
+        align-items: start;
+        margin-top: 28px;
+      }
+
+      .ledger {
+        max-height: 560px;
+        overflow: auto;
+      }
+
+      .entry {
+        padding: 20px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .entry:first-child {
+        padding-top: 0;
+        border-top: 0;
+      }
+
+      .entry time {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .entry p {
+        display: -webkit-box;
+        margin: 8px 0 0;
+        overflow: hidden;
+        color: var(--ink-soft);
+        font-size: 16px;
+        line-height: 1.65;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .entry a {
+        display: inline-block;
+        margin-top: 10px;
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      .entry a:hover {
+        text-decoration: underline;
+      }
+
+      .staff svg {
+        width: min(520px, 100%);
+        height: auto;
+        display: block;
+      }
+
+      .face {
+        filter: drop-shadow(0 12px 18px rgba(15, 23, 42, 0.08));
+      }
+      .track {
+        fill: none;
+        stroke: var(--track);
+        stroke-width: 16;
+        stroke-linecap: round;
+      }
+      .gap {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 16;
+        stroke-linecap: round;
+      }
+      .tick {
+        stroke: rgba(71, 85, 105, 0.35);
+        stroke-width: 1.4;
+      }
+      .tick.major {
+        stroke: rgba(51, 65, 85, 0.62);
+        stroke-width: 2;
+      }
+      .tick.named {
+        stroke: var(--ink);
+        stroke-width: 2.4;
+      }
+      .num {
+        fill: var(--muted);
+        font-size: 12px;
+        font-family: var(--sans);
+      }
+      .mark {
+        fill: var(--ink);
+        font-size: 13px;
+        font-weight: 600;
+        font-family: var(--sans);
+      }
+      .mark-name {
+        fill: var(--muted);
+        font-size: 13px;
+        font-weight: 600;
+        font-family: var(--serif);
+      }
+      .price {
+        fill: var(--ink);
+        font-size: 36px;
+        font-weight: 600;
+        font-family: var(--sans);
+        letter-spacing: -0.04em;
+      }
+      .delta,
+      .meta {
+        fill: var(--muted);
+        font-size: 13px;
+        font-family: var(--sans);
+      }
+      .up {
+        fill: var(--up);
+      }
+      .down {
+        fill: var(--down);
+      }
+      .needle {
+        fill: url(#needle-fill);
+        stroke: rgba(148, 163, 184, 0.7);
+        stroke-width: 1;
+      }
+      .hub {
+        fill: #fff;
+        stroke: var(--accent);
+        stroke-width: 2;
+      }
+
+      .funds {
+        margin-top: 8px;
+      }
+
+      .funds h2 {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .fund {
+        display: flex;
+        gap: 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .fund b {
+        display: block;
+        font-weight: 600;
+      }
+
+      .fund span {
+        color: var(--muted);
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .fund button,
+      .card button {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--accent);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .fund button:hover,
+      .card button:hover {
+        text-decoration: underline;
+      }
+
+      .fund em,
+      .card em {
+        color: var(--muted);
+        font-size: 13px;
+        font-style: normal;
+      }
+
+      .empty-funds {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .board {
+        display: grid;
+        gap: 0;
+        margin-top: 8px;
+      }
+
+      .card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px 24px;
+        align-items: center;
+        padding: 18px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .card strong {
+        font-weight: 600;
+      }
+
+      .card p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .card.is-target {
+        background: rgba(37, 99, 235, 0.08);
+        margin: 0 -12px;
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      @media (max-width: 760px) {
+        .stage {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page" id="index-page">
+      <nav class="crumb" aria-label="面包屑">
+        <a href="/">工具集</a><span>/</span><span>点位跟踪</span>
+      </nav>
+      <h1 class="sr">点位跟踪</h1>
+      <label for="pick">指数</label>
+      <select id="pick" aria-label="指数"></select>
+      <div class="stage">
+        <div>
+          <section
+            class="staff"
+            id="staff"
+            aria-label="现价在判断点位中的位置"
+          ></section>
+          <div class="funds" id="funds"></div>
+        </div>
+        <div class="ledger" id="ledger"></div>
+      </div>
+    </div>
+    <div class="page" id="board-page" hidden>
+      <nav class="crumb" aria-label="面包屑">
+        <a href="/">工具集</a><span>/</span><span>组合看板</span>
+      </nav>
+      <h1 class="sr">组合看板</h1>
+      <div class="board" id="board"></div>
+    </div>
+    <script>
+      const CX = 250;
+      const CY = 210;
+      const R = 148;
+      const FACE = 178;
+      const START = 150;
+      const SWEEP = 240;
+      const NS = "http://www.w3.org/2000/svg";
+
+      const watches = [
+        {
+          name: "中证500",
+          code: "000905.SH",
+          close: 6814.44,
+          change: 2.39,
+          date: "2026-10-23",
+          levels: [
+            { name: "外太空", point: 8500, label: "8500" },
+            { name: "钻石坑", point: 4800, label: "4800" },
+          ],
+          quotes: [
+            {
+              date: "2026-10-20",
+              text: "2023年2月，我估算的中证500外太空点位是8100点。\n\n当时是6200点，后来最低跌到了4200点。\n\n2026年1月，中证500在2015年以后首次突破8100点。由于时间已经过了3年多，点位每年会有些许上浮，所以我又等了一等。\n\n再涨几百点后，我开始按照3年多前的预判果断减仓。\n\n知行合一。\n\n现在，中证500从最高9100点，跌回了6800点。\n\n今天，我再给一个钻石坑点位。如果能到，我会在那个附近把宽基仓位配置完毕。\n\n以今天的指数看，中证500在4800点左右，又是一个完美配置位置。不是说必然到，而是说到了的话，不要犹豫。\n\n注意，这个点位大概每年会增加200点，因为通胀及利润增长。\n\n不知道几年后才有机会见到？",
+              postId: 92515,
+            },
+            {
+              date: "2026-01-21",
+              text: "500眼看就要阶段新高。\n\n未来会按照计划，在8500附近一线（外太空分界线）减持。\n\n但是减持力度会比之前预想的要弱一些，因为目前看行情还比较温柔。\n\n总之未来涨跌都有预案，等行情自己走就可以。",
+              postId: 63985,
+            },
+            {
+              date: "2026-01-12",
+              text: "我在5、6000点说，中证500外太空基本是8000多，8500/8600左右。\n\n有人说我画饼，骗人买指数基金。\n\n等我未来8500/8600多卖点，之后如果继续涨，又会有人说我卖飞了，赚不到大钱。\n\n甚至两波人可能是一波。\n\n其实大多数人，对于这个世界以及各种各样的事情，并没有一个理性的、客观的、不变的标准。他们看待事物，只有随波逐流，只有因时而异。牛市看涨，熊市看跌。\n\n我不想成为那样的人。\n\n所以，致敬点位我就买，外太空点位我就卖。所有点位都是几个月几年前明牌的。这就叫做——知行合一。\n\n我管你这那的呢。我赚到了钱，你得到了嘲笑我的机会。大家都有收获，多好。",
+              postId: 61657,
+            },
+          ],
+        },
+        {
+          name: "中证红利",
+          code: "000922.SH",
+          close: 5398.82,
+          change: null,
+          date: "2026-10-23",
+          levels: [{ name: "补仓", point: 4650, label: "4650–4750" }],
+          quotes: [
+            {
+              date: "2025-01-22",
+              text: "中证红利（000922）技术方面以今天点位看，4650-4750区域是不错的补仓位置。",
+              url: "https://weibo.com/7519797263/PaK0U1ZJG",
+              postId: 5125601600475644,
+            },
+          ],
+        },
+        {
+          name: "中证医疗",
+          code: "399989.SZ",
+          close: 6600.14,
+          change: null,
+          date: "2026-10-23",
+          levels: [
+            { name: "压力", point: 8600, label: "8600" },
+            { name: "共振支撑", point: 8100, label: "8100" },
+          ],
+          quotes: [
+            {
+              date: "2023-10-31",
+              text: "医疗能突破8600一线的压力，那么下一个压力位就是C类波段减仓的位置。",
+              url: "https://weibo.com/7519797263/Nqo6xuog4",
+              postId: 4962891897243092,
+            },
+            {
+              date: "2023-09-12",
+              text: "中证医疗目前的共振支撑底部大致是8100左右。这个点位每年会增加500-600点左右。",
+              url: "https://weibo.com/7519797263/NiVciwYh4",
+              postId: 4945097747858194,
+            },
+          ],
+        },
+        {
+          name: "全指消费",
+          code: "000990.SH",
+          close: 10545.39,
+          change: null,
+          date: "2026-10-23",
+          levels: [
+            { name: "大气层", point: 17300, label: "17300" },
+            { name: "目标成本", point: 13000, label: "13000" },
+          ],
+          quotes: [
+            {
+              date: "2024-01-17",
+              text: "在我已经在几年前就预定好的医药9400点，消费13000点不买甚至清仓吗？",
+              url: "https://weibo.com/7519797263/NCfXsimOT",
+              postId: 4991178104377627,
+            },
+            {
+              date: "2023-05-24",
+              text: "在现在这个时间点，内地消费11000，全指消费17300，是正常区间与外太空的分界线。这个点位会随着时间推移不断上移。",
+              url: "https://weibo.com/7519797263/N22oQjztb",
+              postId: 4904858844664581,
+            },
+          ],
+        },
+        {
+          name: "内地消费",
+          code: "000942.SH",
+          close: 8314,
+          change: null,
+          date: "2026-10-23",
+          levels: [
+            { name: "大气层", point: 11000, label: "11000" },
+            { name: "大支撑", point: 7700, label: "7700–7800" },
+          ],
+          quotes: [
+            {
+              date: "2023-05-24",
+              text: "在现在这个时间点，内地消费11000，全指消费17300，是正常区间与外太空的分界线。这个点位会随着时间推移不断上移。",
+              url: "https://weibo.com/7519797263/N22oQjztb",
+              postId: 4904858844664581,
+            },
+            {
+              date: "2022-10-24",
+              text: "另外增加一个内地消费的大支撑，在7700-7800左右。",
+              url: "https://weibo.com/5687069307/MbLBxAmUk",
+              postId: 4828046038667868,
+            },
+          ],
+        },
+        {
+          name: "中证传媒",
+          code: "399971.SZ",
+          close: 1157.63,
+          change: null,
+          date: "2026-10-23",
+          levels: [{ name: "压力", point: 1220, label: "1220" }],
+          quotes: [
+            {
+              date: "2023-03-21",
+              text: "传媒的压力位在1220左右。",
+              url: "https://weibo.com/7519797263/MygDjbINi",
+              postId: 4881670932793800,
+            },
+          ],
+        },
+        {
+          name: "全指信息",
+          code: "000993.SH",
+          close: 8546.59,
+          change: null,
+          date: "2026-10-23",
+          levels: [{ name: "压力", point: 7000, label: "7000" }],
+          quotes: [
+            {
+              date: "2021-06-15",
+              text: "信息7000点左右压力位，能有效冲过去就能爽一波。",
+              url: "https://weibo.com/5687069307/KkhDvo18Z",
+              postId: 4648343575724273,
+            },
+          ],
+        },
+        {
+          name: "证券公司",
+          code: "399975.SZ",
+          close: 701.34,
+          change: 1.43,
+          date: "2026-10-23",
+          levels: [
+            { name: "补仓", point: 600, label: "600" },
+            { name: "极限底", point: 360, label: "360–400" },
+          ],
+          quotes: [
+            {
+              date: "2017-12-20",
+              text: "证券公司跌破753就是700见了。然后就是我们的补仓点位，600。",
+              url: "https://weibo.com/5687069307/FAwqr40hD",
+              postId: 4187044550954405,
+            },
+            {
+              date: "2017-12-15",
+              text: "证券公司我认为360-400点应该是极限底部了。",
+              url: "https://weibo.com/5687069307/FzKHjmTLY",
+              postId: 4185209895457610,
+            },
+          ],
+        },
+        {
+          name: "中证红利低波动100",
+          code: "930955.CSI",
+          close: 11292.06,
+          change: -0.04,
+          date: "2026-10-23",
+          levels: [
+            { name: "第一支撑", point: 11200, label: "11200–11300" },
+            { name: "第二支撑", point: 10500, label: "10500–10800" },
+          ],
+          quotes: [
+            {
+              date: "2025-12-18",
+              text: "这几天多说了两句红利，是因为我们之前这车发的红利，所以多说了几句。\n\n有朋友问，红利哪里是低估呢。或者说，哪里可以多买点呢。\n\n未来如果大跌，计划肯定会多买。那如果计划不买，或者你想买更多，或者你已经没有跟计划了，那么我给你几个点位，你自己关注一下。\n\n我就用我们发车的红利100低波指数来说，其它的红利大差不差都是这个幅度。\n\n这个指数代码是930955。我们就用这个价格指数，不用全收益指数说。\n\n目前是11920点。\n\n在下面第一个比较大的支撑是11200-11300左右。距离目前跌幅大概是6.4%左右。\n\n再下面一个比较大的支撑大概是10500-10800左右。这个支撑更加扎实。距离目前跌幅12%左右。\n\n那你说是不是铁底，还会不会更低。经过去年恒生跌破30年铁底，你还相信有什么铁底么，我都不信了。\n\n但是，虽然不是绝对不会跌破的铁底，这两个位置应该是很不错的加仓位置。你可以看到时候计划买不买。\n\n至于说如果实质性跌破，下面还有没有支撑，从技术角度看意义不是很大了。如果碰上金融危机级别的调整，我想，极限就不好说了。25%？35%？再多我就不敢想了。\n\n注意，这两个区间是目前的点位。都会随着时间上移。每年上移4.5%左右。\n\n这么清晰的明牌不多见吧。",
+              postId: 58345,
+            },
+          ],
+        },
+        {
+          name: "创业板R",
+          code: "399606.SZ",
+          close: null,
+          change: null,
+          date: null,
+          levels: [{ name: "压力测试", point: 2100, label: "2100" }],
+          quotes: [
+            {
+              date: "2026-10-16",
+              text: "创业板的压力测试点位。\n\n我个人根据各方面资料综合估计，这次创业板的极限跌幅应该不会到7080，除非发生08年级别的危机。\n\n极限应该在最高点下跌60%左右，取整的话就是2100左右。随着时间推移，这个点位每年也会增加一些。\n\n我说的是创业板R（399606）\n\n不是说一定跌到，而是各位如果有布局计划，用这个点位作为压力测试以及布局策略规划位置，我觉得应该是比较合理以及足够保守的。",
+              postId: 92155,
+            },
+          ],
+        },
+      ];
+
+      const funds = [
+        { code: "510500", name: "中证500ETF", index: "000905.SH" },
+        { code: "159939", name: "广发中证全指信息技术ETF", index: "000993.SH" },
+        { code: "512980", name: "传媒ETF", index: "399971.SZ" },
+        { code: "512880", name: "证券ETF", index: "399975.SZ" },
+        {
+          code: "512170",
+          name: "华宝中证医疗ETF",
+          index: "399989.SZ",
+          strategy: "医疗ETF",
+        },
+        { code: "159307", name: "博时中证红利低波100ETF", index: "930955.CSI" },
+      ];
+
+      const board = [
+        { strategy: "A500ETF", code: "563360", indexName: "中证A500指数" },
+        {
+          strategy: "中概互联ETF",
+          code: "513050",
+          indexName: "中证海外中国互联网50",
+        },
+        {
+          strategy: "医疗ETF",
+          code: "512170",
+          indexName: "中证医疗",
+          index: "399989.SZ",
+        },
+        { strategy: "医药卫生ETF", code: "159938", indexName: "全指医药" },
+        { strategy: "恒生消费ETF", code: "513970", indexName: "恒生消费指数" },
+        { strategy: "消费ETF", code: "159928", indexName: "中证主要消费" },
+      ];
+
+      const pick = document.getElementById("pick");
+      const staff = document.getElementById("staff");
+      const ledger = document.getElementById("ledger");
+      const fundsBox = document.getElementById("funds");
+      const indexPage = document.getElementById("index-page");
+      const boardPage = document.getElementById("board-page");
+      const boardBox = document.getElementById("board");
+
+      watches.forEach((item, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = item.name + " " + item.code;
+        pick.appendChild(option);
+      });
+      pick.addEventListener("change", () => draw(Number(pick.value)));
+      const opened = watches.findIndex(
+        (item) => item.code === location.hash.slice(1),
+      );
+      draw(opened >= 0 ? opened : 0);
+      if (opened >= 0) pick.value = String(opened);
+
+      function draw(index) {
+        const item = watches[index];
+        const points = item.levels.map((level) => level.point);
+        if (item.close != null) points.push(item.close);
+        const span = Math.max(Math.max(...points) - Math.min(...points), 1);
+        const top = Math.max(...points) + span * 0.16;
+        const bottom = Math.min(...points) - span * 0.16;
+        const step = majorStep(top - bottom);
+        const deg = (value) =>
+          START + ((value - bottom) / (top - bottom)) * SWEEP;
+
+        const svg = svgEl("svg", { viewBox: "0 0 500 420", role: "img" });
+        const defs = svgEl("defs", {});
+        const fill = svgEl("linearGradient", {
+          id: "needle-fill",
+          x1: "0",
+          y1: "0",
+          x2: "0",
+          y2: "1",
+        });
+        fill.append(svgEl("stop", { offset: "0", "stop-color": "#ffffff" }));
+        fill.append(svgEl("stop", { offset: "1", "stop-color": "#d7e3f0" }));
+        const faceFill = svgEl("linearGradient", {
+          id: "face-fill",
+          x1: "0",
+          y1: "0",
+          x2: "1",
+          y2: "1",
+        });
+        faceFill.append(
+          svgEl("stop", { offset: "0", "stop-color": "#ffffff" }),
+        );
+        faceFill.append(
+          svgEl("stop", { offset: "0.6", "stop-color": "#f5f9fd" }),
+        );
+        faceFill.append(
+          svgEl("stop", { offset: "1", "stop-color": "#e4edf6" }),
+        );
+        defs.append(fill, faceFill);
+        svg.append(defs);
+
+        svg.append(
+          svgEl("circle", {
+            class: "face",
+            cx: CX,
+            cy: CY,
+            r: 178,
+            fill: "url(#face-fill)",
+            stroke: "#d5e2ef",
+          }),
+        );
+        svg.append(
+          svgEl("path", { class: "track", d: arc(R, START, START + SWEEP) }),
+        );
+        if (item.close != null) {
+          const gapStart = START;
+          const gapEnd = deg(item.close);
+          svg.append(
+            svgEl("path", { class: "gap", d: arc(R, gapStart, gapEnd) }),
+          );
+        }
+
+        for (
+          let value = Math.ceil(bottom / (step / 5)) * (step / 5);
+          value <= top;
+          value += step / 5
+        ) {
+          const onMajor =
+            Math.abs(value / step - Math.round(value / step)) < 1e-6;
+          if (
+            item.levels.some(
+              (level) => Math.abs(level.point - value) < step * 0.08,
+            )
+          )
+            continue;
+          const angle = deg(value);
+          const inner = onMajor ? R - 8 : R - 2;
+          const outer = onMajor ? R + 14 : R + 7;
+          const a = polar(inner, angle);
+          const b = polar(outer, angle);
+          svg.append(
+            svgEl("line", {
+              class: onMajor ? "tick major" : "tick",
+              x1: a[0],
+              y1: a[1],
+              x2: b[0],
+              y2: b[1],
+            }),
+          );
+          if (!onMajor) continue;
+          if (
+            nearAny(value, item.levels, step) ||
+            (item.close != null && Math.abs(value - item.close) < step * 0.35)
+          )
+            continue;
+          const spot = polar(FACE + 14, angle);
+          const num = svgEl("text", {
+            class: "num",
+            x: spot[0],
+            y: spot[1],
+            "text-anchor": anchor(angle),
+            "dominant-baseline": "middle",
+          });
+          num.textContent = formatTick(value);
+          svg.append(num);
+        }
+
+        item.levels.forEach((level) => {
+          const angle = deg(level.point);
+          const a = polar(R - 8, angle);
+          const b = polar(R + 18, angle);
+          svg.append(
+            svgEl("line", {
+              class: "tick named",
+              x1: a[0],
+              y1: a[1],
+              x2: b[0],
+              y2: b[1],
+            }),
+          );
+          const spot = polar(FACE + 22, angle);
+          const text = svgEl("text", {
+            class: "rim",
+            x: spot[0],
+            y: spot[1],
+            "text-anchor": anchor(angle),
+            "dominant-baseline": "middle",
+          });
+          const point = svgEl("tspan", {
+            class: "mark",
+            x: spot[0],
+            dy: "-0.55em",
+          });
+          point.textContent = level.label.replace(/\d+/g, (digits) =>
+            Number(digits).toLocaleString("zh-CN"),
+          );
+          const name = svgEl("tspan", {
+            class: "mark-name",
+            x: spot[0],
+            dy: "1.25em",
+          });
+          name.textContent = level.name;
+          text.append(point, name);
+          svg.append(text);
+        });
+
+        if (item.close != null) {
+          const tip = polar(R - 24, deg(item.close));
+          const left = polar(11, deg(item.close) + 96);
+          const right = polar(11, deg(item.close) - 96);
+          const tail = polar(16, deg(item.close) + 180);
+          svg.append(
+            svgEl("polygon", {
+              class: "needle",
+              points: [tip, right, tail, left]
+                .map((p) => p.map((n) => n.toFixed(1)).join(","))
+                .join(" "),
+            }),
+          );
+          svg.append(svgEl("circle", { class: "hub", cx: CX, cy: CY, r: 8 }));
+          const price = svgEl("text", {
+            class: "price",
+            x: CX,
+            y: CY + 58,
+            "text-anchor": "middle",
+          });
+          price.textContent = formatClose(item.close);
+          const delta = svgEl("text", {
+            class: "delta",
+            x: CX,
+            y: CY + 82,
+            "text-anchor": "middle",
+          });
+          delta.textContent = gapPhrase(item);
+          const meta = svgEl("text", {
+            class: "meta",
+            x: CX,
+            y: CY + 102,
+            "text-anchor": "middle",
+          });
+          meta.append(document.createTextNode(item.date + " 收盘"));
+          if (item.change != null) {
+            const change = svgEl("tspan", {
+              class: item.change >= 0 ? "up" : "down",
+            });
+            change.textContent =
+              " " +
+              (item.change >= 0 ? "+" : "") +
+              item.change.toFixed(2) +
+              "%";
+            meta.append(change);
+          }
+          svg.append(price, delta, meta);
+        } else {
+          const missing = svgEl("text", {
+            class: "delta",
+            x: CX,
+            y: CY + 64,
+            "text-anchor": "middle",
+          });
+          missing.textContent = "暂无收盘";
+          svg.append(missing);
+        }
+        staff.replaceChildren(svg);
+        separateLabels(svg);
+        renderLedger(item);
+        renderFunds(item);
+      }
+
+      function renderLedger(item) {
+        const quotes = item.quotes
+          .slice()
+          .sort((a, b) => (a.date < b.date ? 1 : -1));
+        ledger.replaceChildren(
+          ...quotes.map((quote) => {
+            const entry = el("article", "entry");
+            const time = el("time", "", quote.date);
+            time.dateTime = quote.date;
+            const text = el("p", "", quote.text.replace(/\s*\n+\s*/g, " "));
+            const link = el("a", "", "查看原文");
+            link.href =
+              quote.url ||
+              "https://qieman.com/content/content-detail?postId=" +
+                quote.postId;
+            link.target = "_blank";
+            link.rel = "noreferrer";
+            entry.append(time, text, link);
+            return entry;
+          }),
+        );
+      }
+
+      function renderFunds(item) {
+        const rows = funds.filter((fund) => fund.index === item.code);
+        const title = el("h2", "", "跟踪这只指数的 ETF");
+        if (rows.length === 0) {
+          fundsBox.replaceChildren(
+            title,
+            el("p", "empty-funds", "池子里还没有跟踪这只指数的 ETF"),
+          );
+          return;
+        }
+        fundsBox.replaceChildren(
+          title,
+          ...rows.map((fund) => {
+            const row = el("div", "fund");
+            const name = document.createElement("div");
+            name.append(el("b", "", fund.name), el("span", "", fund.code));
+            row.append(name);
+            if (fund.strategy) {
+              const link = el("button", "", "组合看板");
+              link.type = "button";
+              link.addEventListener("click", () => showBoard(fund.code));
+              row.append(link);
+            } else {
+              row.append(el("em", "", "未纳入组合"));
+            }
+            return row;
+          }),
+        );
+      }
+
+      function showBoard(code) {
+        const back = el("button", "", "返回点位跟踪");
+        back.type = "button";
+        back.addEventListener("click", () => showIndex(null));
+        boardBox.replaceChildren(
+          back,
+          ...board.map((item) => {
+            const card = el(
+              "article",
+              item.code === code ? "card is-target" : "card",
+            );
+            const copy = document.createElement("div");
+            copy.append(el("strong", "", item.strategy));
+            const meta = el("p", "", item.code + " · 跟踪 " + item.indexName);
+            copy.append(meta);
+            card.append(copy);
+            if (item.index) {
+              const link = el("button", "", "点位跟踪");
+              link.type = "button";
+              link.addEventListener("click", () => showIndex(item.index));
+              card.append(link);
+            } else {
+              card.append(el("em", "", "不在点位跟踪里"));
+            }
+            return card;
+          }),
+        );
+        indexPage.hidden = true;
+        boardPage.hidden = false;
+        window.scrollTo(0, 0);
+      }
+
+      function showIndex(code) {
+        boardPage.hidden = true;
+        indexPage.hidden = false;
+        if (code) {
+          const index = watches.findIndex((item) => item.code === code);
+          if (index >= 0) {
+            pick.value = String(index);
+            draw(index);
+          }
+        }
+        window.scrollTo(0, 0);
+      }
+
+      function separateLabels(svg) {
+        const gap = 6;
+        svg.querySelectorAll("text.num, text.rim").forEach((node) => {
+          for (let pass = 0; pass < 4; pass += 1) {
+            const box = node.getBBox();
+            const qx = Math.max(box.x, Math.min(CX, box.x + box.width));
+            const qy = Math.max(box.y, Math.min(CY, box.y + box.height));
+            let dx = qx - CX;
+            let dy = qy - CY;
+            let dist = Math.hypot(dx, dy);
+            if (dist < 1) {
+              dx = Number(node.getAttribute("x")) - CX;
+              dy = Number(node.getAttribute("y")) - CY;
+              dist = Math.hypot(dx, dy) || 1;
+            }
+            if (dist >= FACE + gap) break;
+            shiftText(
+              node,
+              (dx / dist) * (FACE + gap - dist),
+              (dy / dist) * (FACE + gap - dist),
+            );
+          }
+        });
+        let minX = CX - FACE - 20;
+        let minY = CY - FACE - 20;
+        let maxX = CX + FACE + 20;
+        let maxY = CY + FACE + 20;
+        svg.querySelectorAll("text").forEach((node) => {
+          const box = node.getBBox();
+          minX = Math.min(minX, box.x);
+          minY = Math.min(minY, box.y);
+          maxX = Math.max(maxX, box.x + box.width);
+          maxY = Math.max(maxY, box.y + box.height);
+        });
+        const pad = 18;
+        svg.setAttribute(
+          "viewBox",
+          [minX - pad, minY - pad, maxX - minX + pad * 2, maxY - minY + pad * 2]
+            .map((n) => n.toFixed(1))
+            .join(" "),
+        );
+      }
+
+      function shiftText(node, tx, ty) {
+        node.setAttribute("x", Number(node.getAttribute("x")) + tx);
+        node.setAttribute("y", Number(node.getAttribute("y")) + ty);
+        node.querySelectorAll("tspan").forEach((part) => {
+          if (part.hasAttribute("x")) {
+            part.setAttribute("x", Number(part.getAttribute("x")) + tx);
+          }
+        });
+      }
+
+      function polar(radius, deg) {
+        const rad = (deg * Math.PI) / 180;
+        return [CX + radius * Math.cos(rad), CY + radius * Math.sin(rad)];
+      }
+
+      function arc(radius, from, to) {
+        const [x0, y0] = polar(radius, from);
+        const [x1, y1] = polar(radius, to);
+        const large = to - from > 180 ? 1 : 0;
+        return `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${radius} ${radius} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+      }
+
+      function anchor(deg) {
+        const cos = Math.cos((deg * Math.PI) / 180);
+        if (cos < -0.4) return "end";
+        if (cos > 0.4) return "start";
+        return "middle";
+      }
+
+      function majorStep(span) {
+        const rough = span / 8;
+        const pow = 10 ** Math.floor(Math.log10(rough));
+        const steps = [1, 2, 5, 10].map((mult) => mult * pow);
+        return (
+          steps.find((step) => span / step <= 11) || steps[steps.length - 1]
+        );
+      }
+
+      function nearAny(value, levels, step) {
+        return levels.some(
+          (level) => Math.abs(level.point - value) < step * 0.45,
+        );
+      }
+
+      function gapPhrase(item) {
+        const level = item.levels.reduce((best, current) => {
+          return Math.abs(item.close - current.point) <
+            Math.abs(item.close - best.point)
+            ? current
+            : best;
+        });
+        const delta = item.close - level.point;
+        const side = delta > 0 ? "高出" : delta < 0 ? "低于" : "贴着";
+        if (delta === 0) return side + level.name;
+        const pct = (Math.abs(delta) / level.point) * 100;
+        return side + level.name + " " + pct.toFixed(1) + "%";
+      }
+
+      function formatTick(value) {
+        return value.toLocaleString("zh-CN", {
+          maximumFractionDigits: value >= 100 ? 0 : 1,
+        });
+      }
+
+      function formatClose(value) {
+        return value.toLocaleString("zh-CN", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      }
+
+      function svgEl(tag, attrs) {
+        const node = document.createElementNS(NS, tag);
+        Object.entries(attrs).forEach(([key, value]) =>
+          node.setAttribute(key, value),
+        );
+        return node;
+      }
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text) node.textContent = text;
+        return node;
+      }
+    </script>
+  </body>
+</html>
