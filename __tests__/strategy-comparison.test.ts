@@ -1,9 +1,11 @@
+import { legsToGridRows } from '@/lib/grid/legacy-adapter';
+import { calculateGridStrategyV2 } from '@/lib/grid/grid-strategy';
 import {
   buildStrategyComparisonData,
   computeBreakEvenRise,
   computeTooltipMetrics,
 } from '@/lib/strategy-comparison';
-import type { GridRow } from '@/types/grid';
+import { DEFAULT_GRID_PARAMS, type GridRow } from '@/types/grid';
 
 /** 构造测试用网格行，未关注字段填充默认值 */
 function makeRow(partial: Partial<GridRow>): GridRow {
@@ -124,6 +126,40 @@ describe('buildStrategyComparisonData', () => {
     expect(points[1].gridBuyShares).toBe(600);
     expect(points[1].gridAverageCost).toBeCloseTo(40000 / 700);
     expect(points[1].lumpSumFloatingLossRate).toBeCloseTo(-50);
+  });
+
+  it('滑点抬高成交额时，首档两条浮亏率仍同为 0', () => {
+    const slipped: GridRow[] = [
+      makeRow({ buyPrice: 100, buyAmount: 10050, buyShares: 100, position: 1 }),
+      makeRow({ buyPrice: 80, buyAmount: 8040, buyShares: 100, position: 0.8 }),
+    ];
+    const points = buildStrategyComparisonData(slipped, 100, 2);
+
+    expect(points[0].lumpSumFloatingLossRate).toBeCloseTo(0);
+    expect(points[0].gridFloatingLossRate).toBeCloseTo(0);
+    expect(points[0].gridAverageCost).toBeCloseTo(100);
+    expect(points[1].gridAverageCost).toBeCloseTo(90);
+    expect(points[1].gridFloatingLossRate).toBeCloseTo(-10);
+    expect(points[1].lumpSumFloatingLossRate).toBeCloseTo(-20);
+  });
+
+  it('默认滑点下，真实策略首档两条线起点一致', () => {
+    const result = calculateGridStrategyV2(DEFAULT_GRID_PARAMS, {
+      dynamicGridEnabled: false,
+      dynamicGridMode: 'stable',
+    });
+    const rows = legsToGridRows(result.legs, DEFAULT_GRID_PARAMS.basePrice);
+    const points = buildStrategyComparisonData(
+      rows,
+      DEFAULT_GRID_PARAMS.basePrice,
+      3
+    );
+
+    expect(points.length).toBeGreaterThan(1);
+    expect(points[0].gridFloatingLossRate).toBeCloseTo(
+      points[0].lumpSumFloatingLossRate
+    );
+    expect(points[0].lumpSumFloatingLossRate).toBeCloseTo(0);
   });
 
   it('toFixed 后标签相同的价位也应合并', () => {

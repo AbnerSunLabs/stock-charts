@@ -46,22 +46,30 @@ function formatPriceLabel(price: number, priceDecimals: number): string {
   return `¥${price.toFixed(priceDecimals)}`;
 }
 
+/**
+ * 对比图按名义买入价计成本。成交额含滑点时首档成本会高于基准价，
+ * 本策略会从 0% 下方起步，和一次全仓死拿的起点错开。
+ */
+function sumBuyNotional(rows: GridRow[]): number {
+  return rows.reduce((sum, row) => sum + row.buyPrice * row.buyShares, 0);
+}
+
 function toComparisonPoint(
   row: GridRow,
   clusterBuyAmount: number,
   clusterBuyShares: number,
-  gridBoughtAmount: number,
+  gridBoughtNotional: number,
   gridBoughtShares: number,
-  totalBuyAmount: number,
+  totalNotional: number,
   basePrice: number,
   priceDecimals: number
 ): StrategyComparisonPoint {
   const price = row.buyPrice;
   const lumpSumDropRate = ((basePrice - price) / basePrice) * 100;
-  const lumpSumFloatingLoss = totalBuyAmount * (lumpSumDropRate / 100);
-  const gridAverageCost = gridBoughtAmount / gridBoughtShares;
+  const lumpSumFloatingLoss = totalNotional * (lumpSumDropRate / 100);
+  const gridAverageCost = gridBoughtNotional / gridBoughtShares;
   const gridDropRate = ((basePrice - gridAverageCost) / basePrice) * 100;
-  const gridFloatingLoss = gridBoughtAmount * (gridDropRate / 100);
+  const gridFloatingLoss = gridBoughtNotional * (gridDropRate / 100);
 
   return {
     price,
@@ -91,9 +99,9 @@ export function buildStrategyComparisonData(
 ): StrategyComparisonPoint[] {
   if (gridData.length === 0 || basePrice <= 0) return [];
 
-  const totalBuyAmount = gridData.reduce((sum, row) => sum + row.buyAmount, 0);
+  const totalNotional = sumBuyNotional(gridData);
   const dataPoints: StrategyComparisonPoint[] = [];
-  let gridBoughtAmount = 0;
+  let gridBoughtNotional = 0;
   let gridBoughtShares = 0;
   let cluster: GridRow[] = [];
   let clusterLabel: string | null = null;
@@ -102,16 +110,16 @@ export function buildStrategyComparisonData(
     if (cluster.length === 0) return;
     const clusterBuyAmount = cluster.reduce((sum, row) => sum + row.buyAmount, 0);
     const clusterBuyShares = cluster.reduce((sum, row) => sum + row.buyShares, 0);
-    gridBoughtAmount += clusterBuyAmount;
+    gridBoughtNotional += sumBuyNotional(cluster);
     gridBoughtShares += clusterBuyShares;
     dataPoints.push(
       toComparisonPoint(
         cluster[cluster.length - 1],
         clusterBuyAmount,
         clusterBuyShares,
-        gridBoughtAmount,
+        gridBoughtNotional,
         gridBoughtShares,
-        totalBuyAmount,
+        totalNotional,
         basePrice,
         priceDecimals
       )
