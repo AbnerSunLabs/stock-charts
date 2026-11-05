@@ -1,0 +1,28 @@
+__tests__/strategy-comparison.test.ts
+  s_e724e11b93e1e4::t_8e5b734f9dff97 131-164
+  s_e724e11b93e1e4::t_f9cf35c78eba81 1-2,8
+src/lib/strategy-comparison.ts
+  s_e724e11b93e1e4::t_15f3959b8635bb 102,104,113,120,122
+  s_e724e11b93e1e4::t_91e5dfcd71a9ce 49-56,61,63,69-70,72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5c86612f3f49515dfa8bce13f90715847b34fe0c",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_e724e11b93e1e4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5cf5c8f2-2818-47ae-8b4f-43ca5eee857d",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
