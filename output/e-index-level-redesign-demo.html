@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>点位跟踪</title>
+    <style>
+      html,
+      body,
+      #root {
+        margin: 0;
+        min-height: 100dvh;
+        background: #ffffff;
+      }
+
+      .crumb {
+        margin: 0 0 16px;
+      }
+
+      .level-tabs.ant-tabs > .ant-tabs-nav {
+        margin-top: 0;
+      }
+
+      .alt,
+      .quotes {
+        height: 520px;
+      }
+
+      .alt {
+        position: relative;
+        margin-top: 8px;
+      }
+
+      .quotes {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        background: #f7f7f7;
+        border-radius: 12px;
+        padding: 4px 12px;
+      }
+
+      .quotes .ant-list-item {
+        background: transparent;
+      }
+
+      .stem {
+        position: absolute;
+        top: 28px;
+        bottom: 28px;
+        left: 8px;
+        width: 1px;
+        background: #dee1e6;
+      }
+
+      .level {
+        position: absolute;
+        left: 8px;
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        transform: translateY(-50%);
+        white-space: nowrap;
+      }
+
+      .level::before {
+        content: "";
+        width: 14px;
+        height: 1px;
+        background: #dee1e6;
+      }
+
+      .rail {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border-top: 2px solid #0052ff;
+        transition: top 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .chip {
+        position: absolute;
+        left: 120px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 8px 16px;
+        background: #0052ff;
+        border-radius: 12px;
+        transform: translateY(-50%);
+        transition: top 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .chip-price {
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .chip-split {
+        width: 1px;
+        align-self: stretch;
+        margin: 2px 0;
+        background: rgba(255, 255, 255, 0.35);
+      }
+
+      .chip-note {
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+
+      .chip-meta {
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 12px;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 860px) {
+        .alt,
+        .quotes {
+          height: 420px;
+        }
+        .chip {
+          left: 36px;
+          max-width: calc(100% - 48px);
+          flex-wrap: wrap;
+        }
+        .chip-note,
+        .chip-meta {
+          white-space: normal;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .rail,
+        .chip {
+          transition: none;
+        }
+      }
+    </style>
+    <script>
+      window.process = { env: { NODE_ENV: "production" } };
+    </script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://unpkg.com/dayjs@1.11.13/dayjs.min.js"></script>
+    <script src="https://unpkg.com/antd@5.22.0/dist/antd.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.0/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { useState } = React;
+      const {
+        Breadcrumb,
+        Button,
+        Col,
+        ConfigProvider,
+        List,
+        Row,
+        Tabs,
+        Typography,
+      } = antd;
+      const { Paragraph, Text } = Typography;
+
+      const THEME = {
+        token: {
+          borderRadius: 12,
+          colorPrimary: "#0052ff",
+          colorPrimaryHover: "#003ecc",
+          colorPrimaryActive: "#003ecc",
+          colorText: "#0a0b0d",
+          colorTextSecondary: "#5b616e",
+          colorBorder: "#dee1e6",
+          colorBgContainer: "#ffffff",
+          colorBgLayout: "#ffffff",
+          colorSuccess: "#05b169",
+          colorError: "#cf202f",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+        },
+      };
+
+      const INDICES = [
+        {
+          name: "中证500",
+          code: "000905",
+          last: 6800.66,
+          prev: 6754.2,
+          asOf: "2026-10-19",
+          levels: [
+            { name: "外太空", point: 8500, label: "8,500" },
+            { name: "钻石坑", point: 4800, label: "4,800" },
+          ],
+          quotes: [
+            {
+              date: "2026-10-20",
+              level: "钻石坑 4800",
+              postId: 92515,
+              text: "以今天的指数看，中证500在4800点左右。这个点位大概每年会增加200点。",
+            },
+            {
+              date: "2026-01-21",
+              level: "外太空 8500",
+              postId: 63985,
+              text: "未来会按照计划，在8500附近一线（外太空分界线）减持。",
+            },
+            {
+              date: "2026-01-12",
+              level: "外太空 8500/8600",
+              postId: 61657,
+              text: "中证500外太空基本是8000多，8500/8600左右。",
+            },
+          ],
+        },
+        {
+          name: "中证红利低波动100",
+          code: "930955",
+          last: 11630.21,
+          prev: 11588,
+          asOf: "2026-10-19",
+          levels: [
+            { name: "第一支撑", point: 11200, label: "11,200–11,300" },
+            { name: "第二支撑", point: 10500, label: "10,500–10,800" },
+          ],
+          quotes: [
+            {
+              date: "2025-12-18",
+              level: "两档支撑",
+              postId: 58345,
+              text: "当时 11920。下面第一支撑约 11200–11300，再下面约 10500–10800。每年上移约 4.5%。",
+            },
+          ],
+        },
+        {
+          name: "创业板R",
+          code: "399606",
+          last: 3061.17,
+          prev: 3094.4,
+          asOf: "2026-10-20",
+          levels: [{ name: "压力测试", point: 2100, label: "2,100" }],
+          quotes: [
+            {
+              date: "2026-10-16",
+              level: "压力测试 2100",
+              postId: 92155,
+              text: "创业板R 极限大约是最高点下跌 60%，取整约 2100。不是说一定跌到。",
+            },
+          ],
+        },
+      ];
+
+      function nearest(index) {
+        return index.levels.reduce((best, level) => {
+          const gap = Math.abs(index.last - level.point);
+          if (!best || gap < best.gap) return level;
+          return best;
+        }, null);
+      }
+
+      function yOf(index) {
+        const values = index.levels
+          .map((level) => level.point)
+          .concat(index.last);
+        const max = Math.max.apply(null, values);
+        const min = Math.min.apply(null, values);
+        const span = Math.max(max - min, 1);
+        const top = max + span * 0.22;
+        const bottom = min - span * 0.22;
+        return (value) => ((top - value) / (top - bottom)) * 100;
+      }
+
+      /** 同一天只保留一行，后出现的发言并进这一天。 */
+      function groupQuotesByDate(quotes) {
+        const sorted = quotes
+          .slice()
+          .sort((a, b) => b.date.localeCompare(a.date));
+        const groups = [];
+        sorted.forEach((quote) => {
+          const current = groups[groups.length - 1];
+          if (current && current.date === quote.date) {
+            current.quotes.push(quote);
+            return;
+          }
+          groups.push({ date: quote.date, quotes: [quote] });
+        });
+        return groups;
+      }
+
+      function Page() {
+        const [active, setActive] = useState(INDICES[0].code);
+        const item = INDICES.find((row) => row.code === active) || INDICES[0];
+        const quotes = groupQuotesByDate(item.quotes);
+        const level = nearest(item);
+        const delta = item.last - level.point;
+        const side = delta > 0 ? "高出" : delta < 0 ? "低于" : "贴着";
+        const points = Math.abs(delta).toLocaleString("zh-CN", {
+          maximumFractionDigits: 0,
+        });
+        const change = ((item.last - item.prev) / item.prev) * 100;
+        const up = change >= 0;
+        const y = yOf(item);
+
+        return (
+          <ConfigProvider theme={THEME}>
+            <main
+              style={{
+                width: "min(1120px, calc(100% - 48px))",
+                margin: "0 auto",
+                padding: "24px 0 64px",
+                background: "#ffffff",
+              }}
+            >
+              <nav className="crumb" aria-label="面包屑">
+                <Breadcrumb
+                  items={[{ title: "工具集" }, { title: "点位跟踪" }]}
+                />
+              </nav>
+              <Tabs
+                className="level-tabs"
+                type="card"
+                activeKey={active}
+                onChange={setActive}
+                items={INDICES.map((row) => ({
+                  key: row.code,
+                  label: row.name,
+                }))}
+              />
+              <Row gutter={[32, 24]} align="top">
+                <Col xs={24} lg={12}>
+                  <section className="alt" aria-label="现价在判断点位中的位置">
+                    <div className="stem" />
+                    {item.levels.map((mark) => (
+                      <div
+                        className="level"
+                        key={mark.name}
+                        style={{ top: y(mark.point) + "%" }}
+                      >
+                        <Text strong>{mark.label}</Text>
+                        <Text type="secondary">{mark.name}</Text>
+                      </div>
+                    ))}
+                    <div className="rail" style={{ top: y(item.last) + "%" }} />
+                    <div className="chip" style={{ top: y(item.last) + "%" }}>
+                      <div className="chip-price">
+                        {item.last.toLocaleString("zh-CN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                      <div className="chip-split" />
+                      <div>
+                        <div className="chip-note">
+                          {side + level.name + " " + points + " 点"}
+                        </div>
+                        <div className="chip-meta">
+                          {item.asOf + " 收盘 "}
+                          <span style={{ color: up ? "#b6f3d4" : "#ffc9ce" }}>
+                            {(up ? "+" : "") + change.toFixed(2) + "%"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </Col>
+                <Col xs={24} lg={12}>
+                  <div className="quotes">
+                    <List
+                      dataSource={quotes}
+                      renderItem={(group) => (
+                        <List.Item
+                          actions={group.quotes.map((quote) => (
+                            <Button
+                              key={quote.postId}
+                              type="link"
+                              href={
+                                "https://qieman.com/content/content-detail?postId=" +
+                                quote.postId
+                              }
+                              target="_blank"
+                            >
+                              查看原文
+                            </Button>
+                          ))}
+                        >
+                          <List.Item.Meta
+                            title={
+                              group.quotes.length === 1
+                                ? group.date + " · " + group.quotes[0].level
+                                : group.date
+                            }
+                            description={group.quotes
+                              .map((quote) =>
+                                group.quotes.length === 1
+                                  ? quote.text
+                                  : quote.level + "：" + quote.text,
+                              )
+                              .join("\n")}
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </div>
+                </Col>
+              </Row>
+              <Text
+                type="secondary"
+                style={{ display: "block", marginTop: 28 }}
+              >
+                预览里的收盘是示意。正式页用库里的收盘。
+              </Text>
+            </main>
+          </ConfigProvider>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+    </script>
+  </body>
+</html>

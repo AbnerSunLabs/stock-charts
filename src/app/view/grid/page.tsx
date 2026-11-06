@@ -46,7 +46,7 @@ import type {
   SavedGridStrategyV1,
 } from '@/types/grid-strategy-storage';
 import { App, Button, Card, Drawer, Empty, Grid, Tabs, message } from 'antd';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * 网格交易策略页（Coinbase 双态布局 + 云端保存）。
@@ -191,6 +191,27 @@ function GridStrategyPageInner() {
       setBoardLoading(false);
     }
   }, [persistence.user, strategyRepo]);
+
+  useLayoutEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'board' || tab === 'journal' || tab === 'calc') setMainTab(tab);
+    const strategyId = params.get('strategy');
+    if (tab === 'journal' && strategyId) setJournalStrategyFilter(strategyId);
+  }, []);
+
+  const openedStrategyQuery = useRef(false);
+  useEffect(() => {
+    if (!persistence.user || openedStrategyQuery.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('strategy');
+    const tab = params.get('tab');
+    if (!id || tab === 'journal' || tab === 'board') return;
+    openedStrategyQuery.current = true;
+    void persistence.openStrategy(id).catch(error => {
+      message.error(error instanceof Error ? error.message : '打开失败');
+    });
+  }, [persistence.user, persistence.openStrategy]);
 
   useEffect(() => {
     if (mainTab === 'board' || mainTab === 'journal') {

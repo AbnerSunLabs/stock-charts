@@ -1,35 +1,14 @@
 'use client';
 
-import {
-  formatGridAmount,
-  formatGridPrice,
-  formatSignedGridAmount,
-} from '@/lib/grid/format-grid-amount';
-import {
-  buildBoardQuoteLevels,
-  describeBoardDistance,
-  extractEtfCode,
-  formatCloseMonthDay,
-  pickLatestAwaitingSellPrice,
-  pickNearestUnboughtBuyPrice,
-  type BoardDistanceView,
-} from '@/lib/grid/grid-board-close-quote';
-import {
-  computeLatestProfit,
-  computeStrategyTradeStats,
-  estimateMaxLossFromSnapshot,
-} from '@/lib/grid/grid-strategy-trade-stats';
+import { GridPortfolioCard, toPortfolioCardView } from '@/components/grid/grid-portfolio-card';
+import { formatGridAmount, formatSignedGridAmount } from '@/lib/grid/format-grid-amount';
+import { extractEtfCode } from '@/lib/grid/grid-board-close-quote';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
-import {
-  fetchLatestEtfCloses,
-  type EtfLatestClose,
-} from '@/lib/supabase/etf-daily-repository';
+import { fetchLatestEtfCloses, type EtfLatestClose } from '@/lib/supabase/etf-daily-repository';
 import type { GridStrategyTrade } from '@/types/grid-strategy-trade';
 import type { SavedGridStrategyV1 } from '@/types/grid-strategy-storage';
-import { EditOutlined } from '@ant-design/icons';
-import { DsTooltip } from '@/components/shared/help-tooltip';
-import { Button, Card, Empty, Input, Select, Space, Tag } from 'antd';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Card, Empty, Input, Select, Space } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 
 export interface GridPortfolioBoardProps {
   strategies: SavedGridStrategyV1[];
@@ -41,66 +20,6 @@ export interface GridPortfolioBoardProps {
 }
 
 type BoardSort = 'maxLoss' | 'occupied';
-
-function MarketCell({
-  label,
-  view,
-  closeText,
-}: {
-  label: string;
-  view?: BoardDistanceView;
-  closeText?: string;
-}) {
-  const tone = view?.tone ?? 'empty';
-  const main = closeText ?? view?.main ?? '—';
-  const sub = view?.sub;
-  const mainClass = closeText
-    ? 'grid-portfolio-card__quote-main'
-    : `grid-portfolio-card__quote-main grid-portfolio-card__quote-main--${tone}`;
-  return (
-    <div className="grid-portfolio-card__quote-cell">
-      <div className="grid-portfolio-card__quote-k">{label}</div>
-      <div className={mainClass}>{main}</div>
-      {sub ? (
-        <div className="grid-portfolio-card__quote-sub">{sub}</div>
-      ) : null}
-    </div>
-  );
-}
-
-/** 备注被截断时才打开全文 tooltip */
-function NoteTag({ note }: { note: string }) {
-  const wrapRef = useRef<HTMLSpanElement>(null);
-  const [open, setOpen] = useState(false);
-
-  const onOpenChange = (next: boolean) => {
-    if (!next) {
-      setOpen(false);
-      return;
-    }
-    const tag = wrapRef.current?.querySelector('.ant-tag');
-    const clipped =
-      tag instanceof HTMLElement && tag.scrollWidth > tag.clientWidth;
-    setOpen(clipped);
-  };
-
-  return (
-    <DsTooltip
-      title={note}
-      placement="topLeft"
-      maxWidth="20rem"
-      wrapBody
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <span ref={wrapRef} className="grid-portfolio-card__note-text">
-        <Tag color="blue" className="m-0">
-          {note}
-        </Tag>
-      </span>
-    </DsTooltip>
-  );
-}
 
 /**
  * 组合看板：KPI + 策略卡片。
@@ -145,45 +64,9 @@ export function GridPortfolioBoard({
   }, [strategies]);
 
   const cards = useMemo(() => {
-    return strategies.map(s => {
-      const levelKeys = s.resultSnapshot.legs.map(l => l.id);
-      const strategyTrades = trades.filter(t => t.strategyId === s.id);
-      const st = computeStrategyTradeStats(strategyTrades, levelKeys);
-      const stress = s.resultSnapshot.stressTest;
-      const maxCapital =
-        stress?.v2?.totalBudgetRequired ?? stress?.totalBuyAmount ?? 0;
-      const maxLoss = estimateMaxLossFromSnapshot(
-        stress,
-        s.config.params.minPrice
-      );
-      const priceUnit = s.config.params.priceUnit;
-      const quoteCode = extractEtfCode(s.symbol);
-      const quote = quoteCode ? closes.get(quoteCode) : undefined;
-      const close = quote?.close ?? null;
-      const levels = buildBoardQuoteLevels(
-        s.resultSnapshot.legs,
-        strategyTrades
-      );
-      const buyAnchor =
-        close == null ? null : pickNearestUnboughtBuyPrice(close, levels);
-      const sellAnchor =
-        close == null
-          ? null
-          : pickLatestAwaitingSellPrice(levels, strategyTrades);
-      return {
-        s,
-        st,
-        maxCapital,
-        maxLoss,
-        closeLabel: quote
-          ? `收盘 ${formatCloseMonthDay(quote.tradeDate)}`
-          : '收盘',
-        closeText:
-          close == null ? '—' : formatGridPrice(close, priceUnit),
-        buyView: describeBoardDistance(close, buyAnchor, priceUnit),
-        sellView: describeBoardDistance(close, sellAnchor, priceUnit),
-        latestProfit: computeLatestProfit(st, close),
-      };
+    return strategies.map(strategy => {
+      const code = extractEtfCode(strategy.symbol);
+      return toPortfolioCardView(strategy, trades, code ? closes.get(code) : undefined);
     });
   }, [strategies, trades, closes]);
 
@@ -311,106 +194,15 @@ export function GridPortfolioBoard({
       </div>
 
       <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {visible.map(
-          ({
-            s,
-            st,
-            maxLoss,
-            closeLabel,
-            closeText,
-            buyView,
-            sellView,
-            latestProfit,
-          }) => (
-            <Card
-              key={s.id}
-              className="grid-portfolio-card"
-              title={
-                <span className="grid-portfolio-card__title">
-                  <span className="grid-portfolio-card__title-text">
-                    {s.name}
-                    {s.symbol ? (
-                      <span className="ml-2 font-mono text-sm font-normal text-[var(--muted-foreground)]">
-                        {s.symbol}
-                      </span>
-                    ) : null}
-                  </span>
-                  {onEdit ? (
-                    <Button
-                      type="text"
-                      size="small"
-                      className="grid-portfolio-card__edit"
-                      icon={<EditOutlined />}
-                      aria-label="编辑"
-                      onClick={() => onEdit(s)}
-                    />
-                  ) : null}
-                </span>
-              }
-              extra={
-                <Tag color="processing" className="m-0">
-                  持仓中 {st.openLevels}/{st.totalLevels}，累计 {st.rounds} 轮
-                </Tag>
-              }
-            >
-              <Space direction="vertical" size={8} className="w-full">
-                <div className="grid-portfolio-card__note">
-                  {s.note ? <NoteTag note={s.note} /> : null}
-                </div>
-                <div className="grid-portfolio-card__quotes">
-                  <MarketCell label={closeLabel} closeText={closeText} />
-                  <MarketCell label="下一买" view={buyView} />
-                  <MarketCell label="下一卖" view={sellView} />
-                </div>
-                <div className="grid-portfolio-card__kpis">
-                  <div className="grid-portfolio-card__kpi">
-                    <span>预计最大亏损</span>
-                    <span
-                      className="font-mono tabular-nums"
-                      style={{ color: 'var(--loss)' }}
-                    >
-                      {formatGridAmount(maxLoss)}
-                    </span>
-                  </div>
-                  <div className="grid-portfolio-card__kpi">
-                    <span>已投入金额</span>
-                    <span className="font-mono tabular-nums">
-                      {formatGridAmount(st.occupied)}
-                    </span>
-                  </div>
-                  <div className="grid-portfolio-card__kpi">
-                    <span>已实现收益</span>
-                    <span
-                      className="font-mono tabular-nums"
-                      style={{
-                        color:
-                          latestProfit > 0
-                            ? 'var(--profit)'
-                            : latestProfit < 0
-                              ? 'var(--loss)'
-                              : undefined,
-                      }}
-                    >
-                      {formatSignedGridAmount(latestProfit)}
-                    </span>
-                  </div>
-                </div>
-                <Space className="grid-portfolio-card__actions">
-                  <Button
-                    type="primary"
-                    shape="round"
-                    onClick={() => onOpenCalculator(s.id)}
-                  >
-                    打开计算器
-                  </Button>
-                  <Button shape="round" onClick={() => onOpenJournal(s.id)}>
-                    流水
-                  </Button>
-                </Space>
-              </Space>
-            </Card>
-          )
-        )}
+        {visible.map(view => (
+          <GridPortfolioCard
+            key={view.s.id}
+            view={view}
+            onOpenCalculator={onOpenCalculator}
+            onOpenJournal={onOpenJournal}
+            onEdit={onEdit}
+          />
+        ))}
       </div>
     </Space>
   );

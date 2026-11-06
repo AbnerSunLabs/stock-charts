@@ -59,3 +59,59 @@ export async function fetchLatestEtfCloses(
   }
   return result;
 }
+
+interface EtfCloseRow {
+  trade_date: unknown;
+  close: unknown;
+  updated_at: unknown;
+}
+
+const SERIES_PAGE = 1000;
+
+/** 丢掉 15:00 前写入的盘中价。调用方按日期正序传入。 */
+export function settledEtfClosePoints(
+  rows: EtfCloseRow[]
+): Array<{ tradeDate: string; close: number }> {
+  const points: Array<{ tradeDate: string; close: number }> = [];
+  for (const row of rows) {
+    const close = parseClose(row.close);
+    const tradeDate = String(row.trade_date ?? '').slice(0, 10);
+    const updatedAt = String(row.updated_at ?? '');
+    if (close == null || !isSettledAshareClose(tradeDate, updatedAt)) continue;
+    points.push({ tradeDate, close });
+  }
+  return points;
+}
+
+/**
+ * 读取一只 ETF 的全部已收盘，按日期从早到晚。
+ * 共享表只读；分页是为了越过接口默认的单页上限。
+ */
+export async function fetchEtfCloseSeries(
+  client: SupabaseClient,
+  etfCode: string
+): Promise<Array<{ tradeDate: string; close: number }>> {
+  const points: Array<{ tradeDate: string; close: number }> = [];
+  for (let offset = 0; offset < 20000; offset += SERIES_PAGE) {
+    const page = await readEtfClosePage(client, etfCode, offset);
+    points.push(...settledEtfClosePoints(page.rows));
+    if (page.rows.length < SERIES_PAGE) break;
+  }
+  return points;
+}
+
+async function readEtfClosePage(
+  client: SupabaseClient,
+  etfCode: string,
+  offset: number
+): Promise<{ rows: EtfCloseRow[] }> {
+  const { data, error } = await client
+    .from('etf_daily')
+    .select('trade_date, close, updated_at')
+    .eq('etf_code', etfCode)
+    .not('close', 'is', null)
+    .order('trade_date', { ascending: true })
+    .range(offset, offset + SERIES_PAGE - 1);
+  if (error) throw error;
+  return { rows: data ?? [] };
+}
