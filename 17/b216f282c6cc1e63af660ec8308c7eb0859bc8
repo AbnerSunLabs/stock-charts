@@ -1,0 +1,199 @@
+output/index-levels-399971-v2.html
+  s_e724e11b93e1e4::t_04cd016acc15ce 1-8,16-27,46-50,65-67,69,71-84,90,99,104-147,149-153,155-156,158-159,173-174,177,188-198,200-204,206-210,212-216,218-221,223-326,328-366,370-419,424-471,473-485,488-523,539-636
+  s_e724e11b93e1e4::t_2d6dbd471664a7 9-11,13-15
+  s_e724e11b93e1e4::t_ba0dd855d0ef1b 28-30,43-45
+  s_e724e11b93e1e4::t_e21ee59cb0c1dd 51-53,62-64
+  s_e724e11b93e1e4::t_8b0d477b8a6ed4 68
+  s_e724e11b93e1e4::t_864ba142c6e205 70
+  s_e724e11b93e1e4::t_47bc4ef7f714bf 85-89
+  s_e724e11b93e1e4::t_b6b0407d4b8812 91-93,96-98
+  s_e724e11b93e1e4::t_589c36e1cae4ce 100-103
+  s_e724e11b93e1e4::t_57c5d939bf0275 148
+  s_e724e11b93e1e4::t_045f9f1e43e6bd 154
+  s_e724e11b93e1e4::t_86c997792bffc3 157
+  s_e724e11b93e1e4::t_b11b72b36b5d2e 160-162,170-172
+  s_e724e11b93e1e4::t_f94553dbf16df3 175-176
+  s_e724e11b93e1e4::t_a543cea870673b 178-180,185-187
+  s_e724e11b93e1e4::t_17b344089bf2ea 199
+  s_e724e11b93e1e4::t_2fd2365427f9ed 205
+  s_e724e11b93e1e4::t_3082b25313ca65 211
+  s_e724e11b93e1e4::t_8000ecb7542b37 217
+  s_e724e11b93e1e4::t_b72a7729babcb3 222
+  s_e724e11b93e1e4::t_5dda4ee696ffde 327
+  s_e724e11b93e1e4::t_e4cc8d6f5be4cc 367-369
+  s_e724e11b93e1e4::t_b5de4cfa114e03 420-423
+  s_e724e11b93e1e4::t_c625b604877f19 472
+  s_e724e11b93e1e4::t_24419717bba4c5 486-487
+  s_e724e11b93e1e4::t_5141042f6b5724 524-526,536-538
+docs/superpowers/specs/2026-10-20-index-level-sync.md
+  s_e724e11b93e1e4::t_b02d0419b11924 54
+  s_e724e11b93e1e4::t_b9b7a97a1806de 52
+  s_e724e11b93e1e4::t_e71d92818d1d78 55
+  s_e724e11b93e1e4::t_0517954750f132 45
+  s_e724e11b93e1e4::t_8bb0325abf68a0 53
+src/components/index-levels/index-level-chart.tsx
+  s_e724e11b93e1e4::t_d073e1f22f3b09 357-358,427-428,433,460,512-513
+  s_e724e11b93e1e4::t_0f28e9341043ca 227
+  s_e724e11b93e1e4::t_1a40935f583517 45-47,53-54,56
+  s_e724e11b93e1e4::t_d83dcaefceafb7 18,32
+  s_e724e11b93e1e4::t_1a5e619d5628b3 15-17
+  s_e724e11b93e1e4::t_fdea4a20e84606 19-21,29-31
+  s_e724e11b93e1e4::t_f02e378b52e515 33-34
+  s_e724e11b93e1e4::t_8002aad5dd635f 55
+  s_e724e11b93e1e4::t_88acd9fc849245 57-58
+  s_e724e11b93e1e4::t_200ed10bc1d960 224-226
+  s_e724e11b93e1e4::t_b5a2374397e2f0 228-230
+  s_e724e11b93e1e4::t_269b4b0831431d 354-356
+  s_e724e11b93e1e4::t_582dd82b799eaf 359-361,424-426
+  s_e724e11b93e1e4::t_fb67850356f83a 429-432
+  s_e724e11b93e1e4::t_c6622e11e223f4 434-436,457-459
+  s_e724e11b93e1e4::t_6cc539d91c1758 461-463,509-511
+  s_e724e11b93e1e4::t_bdf0a011799f79 514-515
+src/lib/index-levels/position.ts
+  s_e724e11b93e1e4::t_d293f648298d06 1
+  s_e724e11b93e1e4::t_54c3564e9fe217 33-50
+src/lib/index-levels/close-series.ts
+  s_e724e11b93e1e4::t_321902148015d5 25-33,38-41
+  s_e724e11b93e1e4::t_8283d5bb13103c 45-48
+  s_e724e11b93e1e4::t_535f5b8f2b6e10 42-43
+src/lib/index-levels/media-etf-trades.ts
+  s_e724e11b93e1e4::t_d66a94b91449c5 73,75,77,79-83,93,98
+  s_e724e11b93e1e4::t_7263365b46bdc5 1-72,74,76,78,84-92,94-97,99-106
+src/lib/index-levels/fund-nav.ts
+  s_e724e11b93e1e4::t_c59643b1cf60e7 1-49
+src/app/view/index-levels/page.tsx
+  s_e724e11b93e1e4::t_d567cbb4ce7642 1-2,7
+src/app/view/index-levels/index-levels.css
+  s_e724e11b93e1e4::t_d48688246604c6 376,382,477
+  s_e724e11b93e1e4::t_0cfde031d8b2d7 29,50,55,62,67,70,76,106,135,139,173,178,181,183,194,198,202,209,214,217,227-228,231,233,289,312,334,337,340,343,375,418,489,494,521,525,537,567
+  s_e724e11b93e1e4::t_ca7e871e63cec5 27-28
+  s_e724e11b93e1e4::t_3156eafeade76e 30-32
+  s_e724e11b93e1e4::t_f891f402022667 49
+  s_e724e11b93e1e4::t_ea9cbc51290612 51-54
+  s_e724e11b93e1e4::t_eb1ccac9fa4799 56-61
+  s_e724e11b93e1e4::t_27dfe92e5e41a3 63-64
+  s_e724e11b93e1e4::t_af8cfe503f1290 66
+  s_e724e11b93e1e4::t_bd762eea82f76c 68-69
+  s_e724e11b93e1e4::t_6996436c0b7696 71-72
+  s_e724e11b93e1e4::t_0cd517dbc260cf 75
+  s_e724e11b93e1e4::t_ea56e76380c0f4 77
+  s_e724e11b93e1e4::t_0bc661c40d0c82 103-105
+  s_e724e11b93e1e4::t_2332617ba8d291 107-109
+  s_e724e11b93e1e4::t_4d280d1088cdcd 132-134
+  s_e724e11b93e1e4::t_6a60128bccbfcc 136-138
+  s_e724e11b93e1e4::t_1f416a6b36e109 140-141
+  s_e724e11b93e1e4::t_106e481b28d544 170-172
+  s_e724e11b93e1e4::t_9fb76022bfa47d 174-177
+  s_e724e11b93e1e4::t_9e1af0d8902c30 179-180
+  s_e724e11b93e1e4::t_521274ad5ca37b 182
+  s_e724e11b93e1e4::t_94c43010e0abb2 184-186
+  s_e724e11b93e1e4::t_559033f9d13549 191-193
+  s_e724e11b93e1e4::t_6883f6730cd43e 195-197
+  s_e724e11b93e1e4::t_98970d4d0c4950 199-201
+  s_e724e11b93e1e4::t_7355d47206170f 203-204
+  s_e724e11b93e1e4::t_5cf3e6da7921fa 206-208
+  s_e724e11b93e1e4::t_5b880a64314968 210-213
+  s_e724e11b93e1e4::t_20ca0073e092a1 215-216
+  s_e724e11b93e1e4::t_ca220f68c6bc8c 224-226
+  s_e724e11b93e1e4::t_93f698a93b9237 229-230
+  s_e724e11b93e1e4::t_ea16a984579c31 232
+  s_e724e11b93e1e4::t_dbf56913aa26fb 286-288
+  s_e724e11b93e1e4::t_a2c7ddec79cb9e 311
+  s_e724e11b93e1e4::t_c5e9cd5a4db704 313-315
+  s_e724e11b93e1e4::t_afe09a9a4b1084 333
+  s_e724e11b93e1e4::t_5c87ed642dd964 335-336
+  s_e724e11b93e1e4::t_24fcba7751ffd5 338-339
+  s_e724e11b93e1e4::t_313a0bfe1b7c2c 341-342
+  s_e724e11b93e1e4::t_f2b213e29de0be 344-346
+  s_e724e11b93e1e4::t_7b56de48648625 373-374
+  s_e724e11b93e1e4::t_e0aa7c49cb4113 379-381
+  s_e724e11b93e1e4::t_1ea169638c00ad 417
+  s_e724e11b93e1e4::t_84d5c34f6453ae 419-421
+  s_e724e11b93e1e4::t_011371d747b256 475-476
+  s_e724e11b93e1e4::t_ed314b46d5021c 478
+  s_e724e11b93e1e4::t_8181b64d249adf 486-488
+  s_e724e11b93e1e4::t_856063989300b3 490-493
+  s_e724e11b93e1e4::t_acd7cb9e196d9b 495-496
+  s_e724e11b93e1e4::t_b1ed3cb641c4e7 519-520
+  s_e724e11b93e1e4::t_6f6c4649b95872 522-524
+  s_e724e11b93e1e4::t_a50f0275ea8764 526-528
+  s_e724e11b93e1e4::t_1614af4dc3209b 536
+  s_e724e11b93e1e4::t_e426defca1451b 538-540
+  s_e724e11b93e1e4::t_74d8b8d0675f5a 564-566
+  s_e724e11b93e1e4::t_0b291cd204eb4f 568-570
+src/app/api/index-levels/fund-nav/route.ts
+  s_e724e11b93e1e4::t_9136e33a118b03 1-15
+__tests__/etf-daily-close-series.test.ts
+  s_e724e11b93e1e4::t_a6435afd1778ce 1-25
+__tests__/index-levels/position.test.ts
+  s_e724e11b93e1e4::t_8047da4e169c3b 9,11-16
+  s_e724e11b93e1e4::t_3f80e9bfb79fb6 40-47
+  s_e724e11b93e1e4::t_9174c9f430c499 93-94
+  s_e724e11b93e1e4::t_00afccaeae5670 6-8,10,17-39
+  s_e724e11b93e1e4::t_cb9849ff8bb822 1
+  s_e724e11b93e1e4::t_da87145db7f4d3 3
+src/lib/supabase/etf-daily-repository.ts
+  s_e724e11b93e1e4::t_ec6456baa91518 62-117
+src/components/index-levels/index-level-gauge.tsx
+  s_e724e11b93e1e4::t_a9a11bb5d55341 5
+  s_e724e11b93e1e4::t_90f0947614e0f0 27,30,33
+  s_e724e11b93e1e4::t_e77bb0c79dc679 6
+__tests__/index-levels/media-etf-trades.test.ts
+  s_e724e11b93e1e4::t_2a032c1012fdd6 1-21,23-24,26-29
+  s_e724e11b93e1e4::t_93544d6a28c5d6 22,25
+src/components/index-levels/index-level-tracker.tsx
+  s_e724e11b93e1e4::t_9d674651aed41d 16
+  s_e724e11b93e1e4::t_ecfa54c7b913ba 11
+  s_e724e11b93e1e4::t_d2c6d3d372a9c1 21-44,50
+  s_e724e11b93e1e4::t_72facb2d6d3c7b 130,132-134,145
+  s_e724e11b93e1e4::t_0b03a337aff37f 65,68-87
+  s_e724e11b93e1e4::t_3aec8c584e8fc4 142-144,149,161
+  s_e724e11b93e1e4::t_3558b05ce5ce3a 136,154-160
+  s_e724e11b93e1e4::t_e1a589ba3da9b4 60,88-91
+  s_e724e11b93e1e4::t_270db713f5934a 208-209
+  s_e724e11b93e1e4::t_500a3cf943696a 12
+  s_e724e11b93e1e4::t_743dfb4cffd5b2 3-4,10
+  s_e724e11b93e1e4::t_a66206b8bfb2f0 52,64,67,95
+  s_e724e11b93e1e4::t_030b37056e0c88 146-148
+  s_e724e11b93e1e4::t_0aa9bcc4a2106d 53-54
+  s_e724e11b93e1e4::t_fbc01fac2929d4 92
+  s_e724e11b93e1e4::t_fa4ae81f4e13ef 131
+  s_e724e11b93e1e4::t_80f5aa39e0a213 135
+  s_e724e11b93e1e4::t_4f087940689a57 137-141
+  s_e724e11b93e1e4::t_7dad7fbc771274 150-153
+  s_e724e11b93e1e4::t_ae5d6985ea4c7e 162-164
+  s_e724e11b93e1e4::t_b4c0b4ecba639d 205-207
+src/lib/index-levels/media-link-trades.ts
+  s_e724e11b93e1e4::t_0149bc51239141 1-22
+__tests__/index-levels/fund-nav.test.ts
+  s_e724e11b93e1e4::t_fdb6327306acfa 1-23
+src/lib/index-levels/catalog.ts
+  s_e724e11b93e1e4::t_52ee619773b7c4 19-23,29-32
+  s_e724e11b93e1e4::t_13bbe9fffc1386 230
+  s_e724e11b93e1e4::t_3d11d782d04ead 232-241,243-270,274-275,278-305
+  s_e724e11b93e1e4::t_14d45df43cc2e1 557-562
+  s_e724e11b93e1e4::t_3383d3b5f33c37 229
+  s_e724e11b93e1e4::t_31ff3dc3ed340a 33-34
+  s_e724e11b93e1e4::t_4e48c03b09750e 231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "17b216f282c6cc1e63af660ec8308c7eb0859bc8",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_e724e11b93e1e4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5cf5c8f2-2818-47ae-8b4f-43ca5eee857d",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
