@@ -1,4 +1,4 @@
-import type { IndexLevelMark } from '@/lib/index-levels/catalog';
+import type { IndexLevelMark, IndexQuote } from '@/lib/index-levels/catalog';
 
 export interface NearestLevel {
   level: IndexLevelMark;
@@ -28,6 +28,24 @@ export function formatClose(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+/**
+ * 这个点位第一次被写进发言的日期。
+ * 用点位标签对齐，避免 8500 误配到 18500。
+ */
+export function levelMentionDate(level: IndexLevelMark, quotes: IndexQuote[]): string | null {
+  const dates = quotes
+    .filter(quote => quoteMentionsLevel(quote.level, level.label))
+    .map(quote => quote.date)
+    .sort();
+  return dates[0] ?? null;
+}
+
+function quoteMentionsLevel(text: string, label: string): boolean {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`(?:^|[^0-9.])${escaped}(?:[^0-9.]|$)`);
+  return text.split(' / ').some(segment => pattern.test(segment.trim()));
 }
 
 /** 区间标签按下沿定位，展示时给整数加上千分位，小数原样保留。 */

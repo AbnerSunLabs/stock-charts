@@ -22,17 +22,30 @@ export function closeAxisMax(max: number): number {
   return Math.max(step, Math.ceil(max / step) * step);
 }
 
-/** 指数从 0 起画。汇率的波动挤在个位数里，纵轴贴着这组收盘。 */
-export function closePlotDomain(points: IndexClosePoint[]): [number, number] {
-  const max = points.reduce((peak, row) => Math.max(peak, row.close), 0);
-  if (points.length === 0 || max >= 100) return [0, Math.max(max, 1)];
-  const min = points.reduce((floor, row) => Math.min(floor, row.close), max);
+/**
+ * 指数从 0 起画。汇率和 ETF 的波动挤在个位数里，纵轴贴着这组价格。
+ * extras 用来把买卖点位包进纵轴，避免点画在图外。
+ */
+export function closePlotDomain(points: IndexClosePoint[], extras: number[] = []): [number, number] {
+  const values = [...points.map(row => row.close), ...extras.filter(value => Number.isFinite(value))];
+  const max = values.reduce((peak, value) => Math.max(peak, value), 0);
+  if (values.length === 0 || max >= 100) return [0, Math.max(max, 1)];
+  const min = values.reduce((floor, value) => Math.min(floor, value), max);
   const pad = Math.max((max - min) * 0.08, max * 0.01);
   return [Math.max(0, min - pad), max + pad];
 }
 
+/** 悬停收盘。指定位数时固定小数，否则保持原样。 */
+export function formatHoverClose(value: number, digits?: number): string {
+  if (digits == null) return String(value);
+  return value.toFixed(digits);
+}
+
 export function formatCloseTick(value: number, max: number): string {
-  if (max >= 1000) return `${Math.round(value / 1000)}K`;
+  if (max >= 1000) {
+    const thousands = Math.round(value / 1000);
+    return thousands === 0 ? '0' : `${thousands}K`;
+  }
   if (max < 20) return value.toFixed(2);
   return String(Math.round(value));
 }

@@ -16,11 +16,22 @@ export interface IndexQuote {
   image?: string;
 }
 
+export interface IndexChartEtf {
+  code: string;
+  name: string;
+}
+
 export interface IndexWatch {
   code: string;
   name: string;
   levels: IndexLevelMark[];
   quotes: IndexQuote[];
+  /** 仪表盘的中枢点位。缺省时取最贴近区间中值的那个点位；弧线两端始终是最低与最高点位。 */
+  gauge?: { mid: number };
+  /** 指数折线之外，再加这只 ETF 的全部收盘。 */
+  chartEtf?: IndexChartEtf;
+  /** 再加一只场外基金的单位净值。 */
+  chartFund?: IndexChartEtf;
 }
 
 const POST = (postId: number) =>
@@ -215,14 +226,82 @@ export const INDEX_WATCHES: IndexWatch[] = [
   {
     code: '399971.SZ',
     name: '中证传媒',
-    levels: [{ name: '压力', point: 1220, label: '1220' }],
+    chartEtf: { code: '512980', name: '传媒ETF' },
+    chartFund: { code: '004752', name: '广发中证传媒ETF联接A' },
+    gauge: { mid: 1400 },
+    levels: [
+      { name: '前低', point: 931, label: '931' },
+      { name: '80位置', point: 950, label: '950' },
+      { name: '梭哈', point: 1000, label: '1000' },
+      { name: '压力', point: 1220, label: '1220' },
+      { name: '减持', point: 1400, label: '1400' },
+      { name: '压力线', point: 1605, label: '1605–1610' },
+      { name: '上方压力', point: 1630, label: '1630' },
+      { name: '再减持', point: 1700, label: '1700' },
+    ],
     quotes: [
+      {
+        postId: 4247112000095319,
+        date: '2018-06-04',
+        level: '梭哈 1000',
+        text: '950-1200点左右。大概率是1000点梭哈。到不了就给常规仓位。',
+        url: 'https://weibo.com/7519797263/GjLB60oNp',
+      },
+      {
+        postId: 4458115770509850,
+        date: '2020-01-07',
+        level: '上方压力 1630',
+        text: '传媒上面的压力位在1630。',
+        url: 'https://weibo.com/7519797263/IonR728Do',
+      },
+      {
+        postId: 4475430252274069,
+        date: '2020-02-24',
+        level: '压力线 1605–1610',
+        text: '传媒上方压力线1605-1610',
+        url: 'https://weibo.com/7519797263/IvEhH9xAx',
+      },
+      {
+        postId: 4759554443185415,
+        date: '2022-04-18',
+        level: '前低 931',
+        text: '对霉霉感兴趣的朋友，请关注后续是否会跌破前低931。如果不跌破，那么这里就是一个极其标准的80%+双底。',
+        url: 'https://weibo.com/7519797263/LoZhydmFF',
+      },
       {
         postId: 4881670932793800,
         date: '2023-03-21',
-        level: '压力 1220',
-        text: '传媒的压力位在1220左右。',
+        level: '压力 1220 / 减持 1400 / 再减持 1700',
+        text: '传媒的压力位在1220左右。如果能突破，那么我们下一步减持位在1400左右，再下一步在1700左右。',
         url: 'https://weibo.com/7519797263/MygDjbINi',
+      },
+      {
+        postId: 4884573396140154,
+        date: '2023-03-29',
+        level: '压力 1220',
+        text: '注意，传媒开始回踩1220关键位。之前的压力位已经转变为支撑位，能否实质性的撑住，就能看出这波行情是否结束了。',
+        url: 'https://weibo.com/7519797263/Mzu8HpLkK',
+      },
+      {
+        postId: 4886738386555137,
+        date: '2023-04-04',
+        level: '突破 1403',
+        text: '所以，美美1403点如果能突破，那就真的够强。我们下一个卖出目标位可能性就更大了一些。',
+        url: 'https://weibo.com/7519797263/MAosCrvi1',
+      },
+      {
+        postId: 4958126765769530,
+        date: '2023-10-18',
+        level: '80位置 950',
+        text: '传媒继续调整新低。80位置在950点左右。',
+        url: 'https://weibo.com/7519797263/Noo8QocUW',
+      },
+      {
+        postId: 4960000675680912,
+        date: '2023-10-23',
+        level: '跌破 1000',
+        text: '传媒即将跌破1000点。谁能想到四个月前它还在1500多，我们甚至还想着1700清仓利润。',
+        url: 'https://weibo.com/7519797263/NpaThnPRC',
       },
     ],
   },
@@ -475,3 +554,9 @@ export const INDEX_WATCHES: IndexWatch[] = [
     ],
   },
 ];
+
+/** 地址栏里的指数代码。对不上名单时用第一只。 */
+export function resolveWatchedIndex(raw: string | null): string {
+  if (raw && INDEX_WATCHES.some(item => item.code === raw)) return raw;
+  return INDEX_WATCHES[0]?.code ?? '';
+}

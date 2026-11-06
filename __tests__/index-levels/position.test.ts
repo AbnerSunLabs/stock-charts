@@ -1,7 +1,49 @@
+import { INDEX_WATCHES, resolveWatchedIndex } from '@/lib/index-levels/catalog';
 import { changePercent, closePlotDomain, filterCloseSpan, formatCloseTick, withRunningHigh } from '@/lib/index-levels/close-series';
-import { INDEX_WATCHES } from '@/lib/index-levels/catalog';
-import { changePct, formatMarkLabel, gapPercentPhrase, gapPhrase, gapText, nearestLevel, scalePercent } from '@/lib/index-levels/position';
+import { changePct, formatMarkLabel, gapPercentPhrase, gapPhrase, gapText, levelMentionDate, nearestLevel, scalePercent } from '@/lib/index-levels/position';
 import { pickLatestClose } from '@/lib/supabase/index-daily-repository';
+
+describe('levelMentionDate', () => {
+  it('用点位标签对齐发言日期，同一点位取最早一次', () => {
+    const media = INDEX_WATCHES.find(item => item.code === '399971.SZ');
+    const pressure = media?.levels.find(level => level.name === '压力');
+    expect(pressure && media ? levelMentionDate(pressure, media.quotes) : null).toBe('2023-03-21');
+    const priorLow = media?.levels.find(level => level.name === '前低');
+    expect(priorLow && media ? levelMentionDate(priorLow, media.quotes) : null).toBe('2022-04-18');
+    const eighty = media?.levels.find(level => level.name === '80位置');
+    expect(eighty && media ? levelMentionDate(eighty, media.quotes) : null).toBe('2023-10-18');
+    const clear = media?.levels.find(level => level.name === '梭哈');
+    expect(clear && media ? levelMentionDate(clear, media.quotes) : null).toBe('2018-06-04');
+
+    const csi500 = INDEX_WATCHES.find(item => item.code === '000905.SH');
+    const space = csi500?.levels.find(level => level.name === '外太空');
+    expect(space && csi500 ? levelMentionDate(space, csi500.quotes) : null).toBe('2026-01-12');
+  });
+
+  it('8500 不会配到含 18500 的发言', () => {
+    expect(
+      levelMentionDate(
+        { name: '外太空', point: 8500, label: '8500' },
+        [
+          {
+            postId: 1,
+            date: '2022-04-05',
+            level: '价值区 18500–22000',
+            text: '',
+          },
+        ]
+      )
+    ).toBeNull();
+  });
+});
+
+describe('resolveWatchedIndex', () => {
+  it('名单里的代码原样返回，其余用第一只', () => {
+    expect(resolveWatchedIndex('399971.SZ')).toBe('399971.SZ');
+    expect(resolveWatchedIndex(null)).toBe(INDEX_WATCHES[0]?.code);
+    expect(resolveWatchedIndex('not-an-index')).toBe(INDEX_WATCHES[0]?.code);
+  });
+});
 
 describe('index level position', () => {
   const csi500 = INDEX_WATCHES[0];
@@ -48,6 +90,8 @@ describe('index level position', () => {
     expect(max).toBeGreaterThan(6.6676);
     expect(closePlotDomain([{ tradeDate: '2026-10-26', close: 6712.73 }])[0]).toBe(0);
     expect(formatCloseTick(6.67, 7.4)).toBe('6.67');
+    expect(formatCloseTick(0, 5000)).toBe('0');
+    expect(formatCloseTick(2000, 5000)).toBe('2K');
   });
 
   it('用前一收盘算涨跌幅', () => {

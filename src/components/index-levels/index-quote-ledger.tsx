@@ -74,17 +74,17 @@ function ArticlePreview({ text }: { text: string }) {
 }
 
 /**
- * 一篇且慢帖列成一条。列表里只露两行，省略号接在末字后面。
+ * 一篇且慢帖列成一条，两列排布、超高滚动。列表里只露两行，省略号接在末字后面。
  */
 export function IndexQuoteLedger({ quotes }: { quotes: IndexQuote[] }) {
   return (
-    <div className="ledger">
+    <div className="notes-list">
       {byNewest(quotes).map(quote => (
-        <article className="entry" key={quote.postId}>
+        <article className="note" key={quote.postId}>
           <time dateTime={quote.date}>{quote.date}</time>
           <ArticlePreview text={quote.text} />
           <a href={quoteHref(quote)} target="_blank" rel="noreferrer">
-            查看原文
+            查看原文 ↗
           </a>
         </article>
       ))}
