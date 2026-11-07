@@ -193,7 +193,7 @@ export function GridPortfolioBoard({
         </Space>
       </div>
 
-      <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {visible.map(view => (
           <GridPortfolioCard
             key={view.s.id}

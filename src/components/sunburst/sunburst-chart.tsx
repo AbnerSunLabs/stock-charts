@@ -34,7 +34,8 @@ const DEFAULT_SECTOR_COLOR = '#fff';
 const L1_ORDER = ['A股', '海外新兴', '现金', '海外成熟', '债券'] as const;
 
 const CHART_MIN_SIZE = 200;
-const CHART_MAX_SIZE = 920;
+/* 与容器 max-w 分档（920/1024/1160/1280）对齐：图随视口放大但仍为正方形 */
+const CHART_MAX_SIZE = 1280;
 
 function resolveChartSize(width: number, height: number): number {
   const available = Math.floor(Math.min(width, height, CHART_MAX_SIZE));
@@ -218,7 +219,7 @@ export function SunburstChart({
 
   return (
     <div
-      className="sunburst-chart-wrap relative mx-auto aspect-square w-full max-w-[920px] bg-[var(--bg-card)] rounded-2xl p-2 border border-[var(--border-subtle)] shadow-[var(--shadow-elevated)] animate-[viewFadeIn_0.6s_var(--ease-out-expo)_0.08s_both] flex items-center justify-center overflow-hidden"
+      className="sunburst-chart-wrap relative mx-auto aspect-square w-full max-w-[920px] xl:max-w-[1024px] 2xl:max-w-[1160px] min-[1920px]:max-w-[1280px] bg-[var(--bg-card)] rounded-2xl p-2 border border-[var(--border-subtle)] shadow-[var(--shadow-elevated)] animate-[viewFadeIn_0.6s_var(--ease-out-expo)_0.08s_both] flex items-center justify-center overflow-hidden"
       ref={chartWrapRef}
     >
       <Sunburst {...config} />

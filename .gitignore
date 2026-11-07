@@ -36,3 +36,6 @@ __pycache__/
 
 # Claude / Cursor 本地配置
 .claude/
+
+# 本地生产验证构建（PROD_DIST=1 next build 时使用，避免与 dev 的 .next 冲突）
+.next-prod/

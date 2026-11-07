@@ -38,6 +38,40 @@
   --duration-normal: 0.35s;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08);
+  /* 自适应页面宽度体系：
+     --page-max 为内容型页面上限，--page-max-wide 为数据密集型页面（表格/看板）上限。
+     随视口分档放大（见下方媒体查询），解决大屏两侧留白过多的问题。 */
+  --page-max: 1200px;
+  --page-max-wide: 1440px;
+}
+
+/* 大屏自适应：视口越宽，容器上限越高（内容页保留适度留白，数据密集页更充分利用空间） */
+@media (min-width: 1280px) {
+  :root {
+    --page-max: 1440px;
+    --page-max-wide: 1600px;
+  }
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --page-max: 1600px;
+    --page-max-wide: 1840px;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --page-max: 1800px;
+    --page-max-wide: 2048px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --page-max: 2080px;
+    --page-max-wide: 2400px;
+  }
 }
 
 * {
@@ -513,7 +547,7 @@ body::after {
   --family-surface-strong: #eef0f3;
   --family-positive: #05b169;
   --family-negative: #cf202f;
-  max-width: 1200px;
+  max-width: var(--page-max);
   margin-inline: auto;
   padding: 40px 24px 64px;
   color: var(--family-ink);
@@ -856,6 +890,12 @@ body::after {
 @media (min-width: 992px) {
   .family-finance-page.family-overview-page .family-mental-accounts-waterfall {
     column-count: 2;
+  }
+}
+
+@media (min-width: 1600px) {
+  .family-finance-page.family-overview-page .family-mental-accounts-waterfall {
+    column-count: 3;
   }
 }
 

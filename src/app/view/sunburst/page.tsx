@@ -144,7 +144,7 @@ export default function SunburstPage() {
   }, []);
 
   return (
-    <div className="sunburst-page min-h-[60vh] flex flex-col text-[var(--text-primary)]">
+    <div className="sunburst-page min-h-[60vh] flex flex-col w-full max-w-[var(--page-max)] mx-auto text-[var(--text-primary)]">
       <PositionConfigForm
         totalInvestment={totalInvestment}
         onTotalInvestmentChange={handleTotalInvestmentChange}

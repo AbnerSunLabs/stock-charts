@@ -16,7 +16,7 @@ export default function ViewLayout({
 }) {
   return (
     <div className="flex min-h-screen bg-[var(--bg-main)]" id="view-layout-root">
-      <main className="flex-1 w-full overflow-auto py-6 px-4 sm:py-8 sm:px-6 lg:px-10">
+      <main className="flex-1 w-full overflow-auto py-6 px-4 sm:py-8 sm:px-6 lg:px-10 2xl:px-12">
         <Suspense fallback={null}>
           <ViewBreadcrumb />
         </Suspense>

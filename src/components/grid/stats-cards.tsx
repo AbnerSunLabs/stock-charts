@@ -181,7 +181,7 @@ export function StatsCards({
             className={
               compact
                 ? 'grid grid-cols-2 gap-3'
-                : 'grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4'
+                : 'grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6'
             }
           >
             {section.cards.map((item, i) => (

@@ -269,7 +269,7 @@ export function FamilyOverviewPage() {
         {pageHeader}
 
         <Row gutter={[16, 16]} className="family-overview-kpi-trend-row">
-          <Col xs={24} lg={8}>
+          <Col xs={24} lg={8} xxl={6}>
             <div className="family-overview-kpi-stack">
               <FamilyFinanceMetricCard
                 label="总资产"
@@ -294,7 +294,7 @@ export function FamilyOverviewPage() {
               />
             </div>
           </Col>
-          <Col xs={24} lg={16}>
+          <Col xs={24} lg={16} xxl={18}>
             <FamilyBalanceTrendChart points={balanceSnapshots} loading={loading} />
           </Col>
         </Row>

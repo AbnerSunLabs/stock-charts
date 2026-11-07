@@ -6,8 +6,8 @@ import { HomeFamilyFinanceSection } from '@/components/home/home-family-finance-
  */
 export default function HomePage() {
   return (
-    <main className="min-h-screen py-8 px-4 sm:py-12 sm:px-6 lg:px-10">
-      <div className="max-w-[1200px] mx-auto animate-[pageFadeIn_0.5s_var(--ease-out-expo)_both]">
+    <main className="min-h-screen py-8 px-4 sm:py-12 sm:px-6 lg:px-10 2xl:px-12">
+      <div className="w-full max-w-[var(--page-max)] mx-auto animate-[pageFadeIn_0.5s_var(--ease-out-expo)_both]">
         <header className="mb-6 sm:mb-10 pb-4 sm:pb-6 border-b border-[var(--border-subtle)] animate-[pageFadeIn_0.5s_var(--ease-out-expo)_both] pr-12 sm:pr-0">
           <h1 className="font-[var(--font-display)] text-xl sm:text-[1.625rem] font-semibold tracking-tight text-[var(--text-primary)] m-0 mb-2">
             投资研究工具集
