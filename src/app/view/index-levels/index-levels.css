@@ -348,6 +348,33 @@
   width: 100%;
   max-width: 450px;
   margin: 4px auto 0;
+  /* 容器查询锚点：数值文字随表盘宽度等比缩放 */
+  container-type: inline-size;
+}
+
+/* 大屏：表盘随容器分档放大（SVG viewBox 等比缩放，刻度/标注/指针同步变大） */
+@media (min-width: 1280px) {
+  .index-levels .gauge-wrap {
+    max-width: 520px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .index-levels .gauge-wrap {
+    max-width: 580px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .index-levels .gauge-wrap {
+    max-width: 660px;
+  }
+}
+
+@media (min-width: 2560px) {
+  .index-levels .gauge-wrap {
+    max-width: 760px;
+  }
 }
 
 .index-levels .gauge {
@@ -365,7 +392,8 @@
 }
 
 .index-levels .gauge-value {
-  font-size: 32px;
+  /* 7.1cqw ≈ 450px 表盘时的 32px，小屏维持原字号、大屏随表盘等比放大 */
+  font-size: clamp(32px, 7.1cqw, 54px);
   font-weight: 750;
   letter-spacing: -1px;
   font-variant-numeric: tabular-nums;
@@ -374,13 +402,13 @@
 .index-levels .gauge-label {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: clamp(11px, 2.4cqw, 15px);
 }
 
 .index-levels .gauge-change {
   margin-top: 8px;
   color: var(--green-deep);
-  font-size: 11px;
+  font-size: clamp(11px, 2.4cqw, 15px);
 }
 
 .index-levels .gauge-change b {
