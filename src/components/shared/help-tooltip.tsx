@@ -59,11 +59,12 @@ export function DsTooltip({
     <Tooltip
       title={title}
       placement={placement}
+      trigger={["hover", "focus"]}
       {...(open === undefined ? {} : { open })}
       onOpenChange={onOpenChange}
       color="#ffffff"
       getPopupContainer={() =>
-        (document.querySelector('.grid-shell') as HTMLElement) ?? document.body
+        (document.querySelector('.grid-shell, .index-levels') as HTMLElement) ?? document.body
       }
       classNames={{ root: rootClassName }}
       styles={{

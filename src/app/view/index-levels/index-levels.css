@@ -25,6 +25,12 @@
   --amber-arc: #e3b341;
   /* 数码读数字体：next/font 注入 --font-spline，这里收口成页面级读数字体 */
   --font-num: var(--font-spline, ui-monospace, 'SF Mono', Menlo, monospace);
+  /* 问号说明沿用网格页白底 Tooltip，令牌对齐本页墨色 */
+  --foreground: var(--text);
+  --muted-foreground: var(--muted);
+  --border: var(--line);
+  --ds-shadow-lg: 0 8px 20px rgba(10, 11, 13, 0.06);
+  --z-tooltip: 99999;
 
   box-sizing: border-box;
   /* 随视口分档放大的自适应上限（globals.css 中定义） */
@@ -237,6 +243,35 @@
   font-weight: 700;
 }
 
+.index-levels .title-help {
+  display: inline-flex;
+  margin-left: 4px;
+  vertical-align: middle;
+  font-weight: 400;
+}
+
+.index-levels .ant-tooltip {
+  z-index: var(--z-tooltip) !important;
+  --antd-arrow-background-color: #ffffff;
+}
+
+.index-levels .ant-tooltip .ant-tooltip-container,
+.index-levels .ds-help-tooltip .ant-tooltip-inner {
+  color: var(--text) !important;
+  background: #ffffff !important;
+  border: 1px solid var(--line);
+  box-shadow: var(--ds-shadow-lg);
+}
+
+.index-levels .ds-help-tooltip .ant-tooltip-container,
+.index-levels .ds-help-tooltip .ant-tooltip-inner {
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 12px;
+  line-height: 1.55;
+  border-radius: 0.5rem;
+}
+
 .index-levels .code {
   margin-left: 7px;
   color: var(--muted);
@@ -323,10 +358,15 @@
   stroke-linejoin: round;
 }
 
-.index-levels .marker-line {
-  stroke: var(--line-strong);
-  stroke-width: 1;
+.index-levels .marker-line.hover-line {
+  stroke: var(--text);
+  stroke-width: 1.25;
   stroke-dasharray: 3 3;
+}
+
+.index-levels .hover-label {
+  fill: var(--text);
+  font-weight: 600;
 }
 
 .index-levels .chart-foot {

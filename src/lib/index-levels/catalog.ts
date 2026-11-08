@@ -32,6 +32,8 @@ export interface IndexWatch {
   chartEtf?: IndexChartEtf;
   /** 再加一只场外基金的单位净值。 */
   chartFund?: IndexChartEtf;
+  /** 指数折线下再加招行美元汇买、汇卖，按 1 美元计。 */
+  chartBankFx?: boolean;
 }
 
 const POST = (postId: number) =>
@@ -496,6 +498,7 @@ export const INDEX_WATCHES: IndexWatch[] = [
   {
     code: 'USDCNH.OTH',
     name: '美元兑人民币',
+    chartBankFx: true,
     levels: [
       { name: '压力', point: 7.37, label: '7.37' },
       { name: '小支撑', point: 7.13, label: '7.13' },

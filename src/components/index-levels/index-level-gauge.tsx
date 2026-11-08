@@ -46,7 +46,6 @@ export function IndexLevelGauge({
     <section className="panel gauge-panel" aria-label="当前估值位置">
       <div className="gauge-top">
         <div className="panel-title">当前估值位置</div>
-        <span className="pill">E 大点位</span>
       </div>
       <div className="gauge-wrap">
         <GaugeFace scale={scale} marks={marks} needle={ready && close ? angleAt(close.close, scale) : null} />

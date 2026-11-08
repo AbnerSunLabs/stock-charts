@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { filterCloseSpan, type CloseSpan, type IndexClosePoint } from '@/lib/index-levels/close-series';
 import type { EtfTradeMark } from '@/lib/index-levels/media-etf-trades';
@@ -26,6 +26,7 @@ type Geom = {
   innerW: number;
   innerH: number;
   xs: number[];
+  ys: number[];
   ticks: Array<{ value: number; y: number; label: string }>;
   years: Array<{ x: number; year: string }>;
   line: string;
@@ -47,6 +48,7 @@ export function IndexLevelChart({
   marks = [],
   priceDigits,
   wide = false,
+  titleHelp,
 }: {
   name: string;
   code: string;
@@ -58,6 +60,8 @@ export function IndexLevelChart({
   priceDigits?: number;
   /** ETF / 联接基金用整行宽版卡片。 */
   wide?: boolean;
+  /** 标题旁的说明，例如问号提示。 */
+  titleHelp?: ReactNode;
 }) {
   const [span, setSpan] = useState<CloseSpan>('all');
   const [view, setView] = useState<[number, number] | null>(null);
@@ -184,6 +188,7 @@ export function IndexLevelChart({
       <div className="panel-head">
         <div className="panel-title">
           {name} <span className="code">{code}</span>
+          {titleHelp ? <span className="title-help">{titleHelp}</span> : null}
         </div>
         <div className="tabs">
           {SPANS.map(item => (
@@ -215,7 +220,12 @@ export function IndexLevelChart({
           }}
           onDoubleClick={() => setView(null)}
         >
-          <ChartPlot geom={geom} code={code} hoverIndex={hover?.index ?? null} />
+          <ChartPlot
+            geom={geom}
+            code={code}
+            hoverIndex={hover?.index ?? null}
+            hoverLabel={hover && rows[hover.index] ? fmtClose(rows[hover.index].close, digits) : null}
+          />
         </svg>
         {hover && rows[hover.index] ? (
           <div className="tip show" style={{ left: hover.left, top: hover.top }}>
@@ -241,14 +251,18 @@ function ChartPlot({
   geom,
   code,
   hoverIndex,
+  hoverLabel,
 }: {
   geom: Geom;
   code: string;
   hoverIndex: number | null;
+  hoverLabel: string | null;
 }) {
   if (geom.width < 40 || geom.height < 40) return null;
   const gradientId = `area-${code.replace(/[^a-zA-Z0-9]/g, '')}`;
   const hoverX = hoverIndex != null ? geom.xs[hoverIndex] : null;
+  const hoverY = hoverIndex != null ? geom.ys[hoverIndex] : null;
+  const showCross = hoverX != null && hoverY != null;
   return (
     <g>
       <defs>
@@ -278,8 +292,21 @@ function ChartPlot({
         y1={geom.top}
         x2={hoverX ?? 0}
         y2={geom.top + geom.innerH}
-        visibility={hoverX == null ? 'hidden' : 'visible'}
+        visibility={showCross ? 'visible' : 'hidden'}
       />
+      <line
+        className="marker-line hover-line"
+        x1={geom.left}
+        y1={hoverY ?? 0}
+        x2={geom.width - 14}
+        y2={hoverY ?? 0}
+        visibility={showCross ? 'visible' : 'hidden'}
+      />
+      {showCross && hoverLabel ? (
+        <text className="hover-label" x={geom.left - 8} y={(hoverY ?? 0) + 3} textAnchor="end">
+          {hoverLabel}
+        </text>
+      ) : null}
       {geom.marks.map(mark => (
         <g className="trade-mark" key={`${mark.side}-${mark.date}`}>
           <circle cx={mark.x} cy={mark.y - 12} r="7.5" style={{ fill: mark.side === 'buy' ? BUY : SELL }} />
@@ -374,6 +401,7 @@ function buildGeom(
     innerW: 0,
     innerH: 0,
     xs: [],
+    ys: [],
     ticks: [] as GeomTick[],
     years: [],
     line: '',
@@ -382,7 +410,7 @@ function buildGeom(
   };
   if (size.width < 40 || size.height < 40 || rows.length === 0) return empty;
 
-  const left = isIndexLike(code, rows) ? 40 : 46;
+  const left = code === 'USDCNH.OTH' || !isIndexLike(code, rows) ? 46 : 40;
   const right = 14;
   const top = 18;
   const bottom = 32;
@@ -408,11 +436,14 @@ function buildGeom(
   });
 
   const xs: number[] = [];
+  const ys: number[] = [];
   let line = '';
   rows.forEach((row, index) => {
     const x = xAt(index);
+    const y = yAt(row.close);
     xs.push(x);
-    line += `${index === 0 ? 'M' : 'L'}${x.toFixed(2)} ${yAt(row.close).toFixed(2)} `;
+    ys.push(y);
+    line += `${index === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)} `;
   });
   const baseY = (top + innerH).toFixed(2);
   const area = `${line.trim()} L${(xs[xs.length - 1] ?? left).toFixed(2)} ${baseY} L${(xs[0] ?? left).toFixed(2)} ${baseY} Z`;
@@ -425,7 +456,7 @@ function buildGeom(
     places.push({ x: xAt(index), y: yAt(rows[index].close), side: mark.side, price: mark.price, date, index });
   });
 
-  return { width: size.width, height: size.height, left, top, innerW, innerH, xs, ticks, years, line, area, marks: places };
+  return { width: size.width, height: size.height, left, top, innerW, innerH, xs, ys, ticks, years, line, area, marks: places };
 }
 
 function isIndexLike(code: string, rows: IndexClosePoint[]): boolean {
@@ -434,8 +465,10 @@ function isIndexLike(code: string, rows: IndexClosePoint[]): boolean {
   return peak >= 100;
 }
 
-function domainOf(rows: IndexClosePoint[], code: string): [number, number] {
+/** 纵轴范围。美元兑人民币从 6 起，避免汇率被压在从 0 起的指数轴顶端。 */
+export function domainOf(rows: IndexClosePoint[], code: string): [number, number] {
   const max = rows.reduce((peak, row) => Math.max(peak, row.close), 0);
+  if (code === 'USDCNH.OTH') return [6, Math.max(axisTop(max), 7)];
   if (isIndexLike(code, rows)) return [0, axisTop(max)];
   const min = rows.reduce((floor, row) => Math.min(floor, row.close), max);
   const pad = Math.max((max - min) * 0.08, max * 0.01);
@@ -461,8 +494,9 @@ function ticksOf(min: number, max: number): number[] {
   return ticks;
 }
 
-function labelOf(value: number, code: string, rows: IndexClosePoint[]): string {
-  if (!isIndexLike(code, rows)) return value.toFixed(2);
+/** 纵轴刻度文字。汇率保留两位小数，指数仍取整。 */
+export function labelOf(value: number, code: string, rows: IndexClosePoint[]): string {
+  if (code === 'USDCNH.OTH' || !isIndexLike(code, rows)) return value.toFixed(2);
   if (value === 0) return '0';
   if (value >= 1000 && value % 1000 === 0) return `${value / 1000}K`;
   if (value >= 1000) return `${(value / 1000).toFixed(1).replace(/\.0$/, '')}K`;

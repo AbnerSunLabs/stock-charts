@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { IndexLevelChart } from '@/components/index-levels/index-level-chart';
+import { HelpTooltip } from '@/components/shared/help-tooltip';
 import { IndexLevelGauge } from '@/components/index-levels/index-level-gauge';
 import { IndexLevelPicker } from '@/components/index-levels/index-level-picker';
 import { IndexQuoteLedger } from '@/components/index-levels/index-quote-ledger';
@@ -16,6 +17,8 @@ import {
 import { MEDIA_ETF_TRADES } from '@/lib/index-levels/media-etf-trades';
 import { MEDIA_LINK_TRADES } from '@/lib/index-levels/media-link-trades';
 import type { IndexClosePoint } from '@/lib/index-levels/close-series';
+import type { CmbUsdQuotes } from '@/lib/index-levels/cmb-fx';
+import { CMB_USD_BUY_MARKS } from '@/lib/index-levels/cmb-fx-trades';
 import { formatClose } from '@/lib/index-levels/position';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { fetchEtfCloseSeries } from '@/lib/supabase/etf-daily-repository';
@@ -145,13 +148,15 @@ function useFundSeries(fundCode?: string): { fundPoints: IndexClosePoint[]; fund
 
 /**
  * 点位跟踪：面包屑与页头，指数折线 + 估值仪表盘并排，ETF 与联接基金齐全时一行两列、
- * 只此一张时整行，底下是原文摘录和关键点位速览。当前指数写在 query `index` 上。
+ * 只此一张时整行。美元兑人民币在折线下加招行汇卖、汇买一行两列。
+ * 底下是原文摘录和关键点位速览。当前指数写在 query `index` 上。
  */
 export function IndexLevelTracker() {
   const [code, setCode] = useWatchedIndex();
   const current = INDEX_WATCHES.find(item => item.code === code) ?? INDEX_WATCHES[0];
   const { points, etfPoints, phase } = useCloseSeries(code, current?.chartEtf?.code);
   const { fundPoints, fundPhase } = useFundSeries(current?.chartFund?.code);
+  const cmb = useCmbFxSeries(current?.chartBankFx === true);
 
   const close = useMemo(() => latestClose(code, points, phase), [code, points, phase]);
 
@@ -177,6 +182,8 @@ export function IndexLevelTracker() {
         />
       </section>
 
+      <CmbFxCharts enabled={current.chartBankFx === true} quotes={cmb} />
+
       <LinkedFundCharts
         watch={current}
         etfPoints={etfPoints}
@@ -192,6 +199,78 @@ export function IndexLevelTracker() {
         <span>收盘为已结算序列</span>
       </div>
     </>
+  );
+}
+
+/** 招行美元汇买、汇卖。未配置时不请求。 */
+function useCmbFxSeries(enabled: boolean): { points: CmbUsdQuotes; phase: Phase } {
+  const [points, setPoints] = useState<CmbUsdQuotes>({ bid: [], ask: [] });
+  const [phase, setPhase] = useState<Phase>(enabled ? 'loading' : 'ready');
+
+  useResetOnChange(enabled, () => {
+    setPoints({ bid: [], ask: [] });
+    setPhase(enabled ? 'loading' : 'ready');
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    setPoints({ bid: [], ask: [] });
+    if (!enabled) {
+      setPhase('ready');
+      return undefined;
+    }
+    setPhase('loading');
+    fetch('/api/index-levels/cmb-fx')
+      .then(response => {
+        if (!response.ok) throw new Error('cmb fx failed');
+        return response.json() as Promise<Partial<CmbUsdQuotes>>;
+      })
+      .then(body => {
+        if (cancelled) return;
+        setPoints({ bid: body.bid ?? [], ask: body.ask ?? [] });
+        setPhase('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setPhase('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  return { points, phase };
+}
+
+const CMB_ASK_HELP = '在招行买入美元（购汇）的成交价，即银行卖出价。按 1 美元计。';
+const CMB_BID_HELP = '把美元卖给招行（结汇）的成交价，即银行买入价。按 1 美元计。';
+
+/**
+ * 招行汇卖、汇买一行两列。购汇用的汇卖在左。窄屏与传媒 ETF 行同一断点折回单列。
+ */
+function CmbFxCharts({ enabled, quotes }: { enabled: boolean; quotes: { points: CmbUsdQuotes; phase: Phase } }) {
+  if (!enabled) return null;
+  return (
+    <section className="etf-fund-row" aria-label="招行美元汇卖与汇买">
+      <IndexLevelChart
+        wide
+        name="招行汇卖"
+        code="USD.ASK"
+        points={quotes.points.ask}
+        phase={quotes.phase}
+        priceDigits={5}
+        marks={CMB_USD_BUY_MARKS}
+        titleHelp={<HelpTooltip title={CMB_ASK_HELP} />}
+      />
+      <IndexLevelChart
+        wide
+        name="招行汇买"
+        code="USD.BID"
+        points={quotes.points.bid}
+        phase={quotes.phase}
+        priceDigits={4}
+        titleHelp={<HelpTooltip title={CMB_BID_HELP} />}
+      />
+    </section>
   );
 }
 

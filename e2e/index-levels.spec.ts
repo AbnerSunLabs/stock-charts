@@ -21,6 +21,24 @@ test.describe('指数点位跟踪 · 关联标的布局', () => {
     expect(await countGridTracks(page, row)).toBe(1);
   });
 
+  test('美元兑人民币：招行汇买与汇卖一行两列并在窄屏折回单列', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/view/index-levels?index=USDCNH.OTH');
+
+    const row = page.locator('.etf-fund-row');
+    await expect(row).toBeVisible();
+    const sections = row.locator(':scope > section');
+    await expect(sections).toHaveCount(2);
+    await expect(sections.nth(0).getByText('USD.ASK')).toBeVisible();
+    await expect(sections.nth(1).getByText('USD.BID')).toBeVisible();
+    await expect(sections.nth(0).getByLabel('查看说明')).toBeVisible();
+    await expect(sections.nth(1).getByLabel('查看说明')).toBeVisible();
+    expect(await countGridTracks(page, row)).toBe(2);
+
+    await page.setViewportSize({ width: 1000, height: 900 });
+    expect(await countGridTracks(page, row)).toBe(1);
+  });
+
   test('中证500：未配置关联标的时不渲染该区块', async ({ page }) => {
     await page.goto('/view/index-levels');
     await expect(page.locator('.etf-fund-row')).toHaveCount(0);
