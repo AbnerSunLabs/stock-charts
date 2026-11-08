@@ -1,25 +1,30 @@
 /**
- * 点位跟踪。样式取自 output/index-levels-399971-v2.html，按 .index-levels 作用域收口。
+ * 点位跟踪。海拔仪表盘语言：E 大点位本身就是海拔隐喻（外太空/大气层/钻石坑），
+ * 图表卡是记录纸，表盘卡是表头，摘录是台账。语义色按 A股语系统一：
+ * 绿=买入/低估/跌，红=卖出/高估/涨，琥珀=现在位置。
  */
 
 .index-levels {
-  --bg: #f4f6fa;
-  --surface: #ffffff;
-  --line: #eceff4;
-  --line-strong: #dde3ea;
-  --text: #1d2839;
-  --muted: #7d8898;
-  --soft: #a2acb8;
-  --green: #3d9a78;
-  --green-soft: #e6f4ef;
-  --green-deep: #2e7d60;
-  --blue: #3a6ff0;
-  --blue-soft: #eef3ff;
-  --red: #e05656;
-  --red-soft: #fdeded;
+  --surface: #fdfdfb;
+  --line: #e6e9e2;
+  --line-strong: #d8ddd3;
+  --text: #1f2c25;
+  --muted: #67746b;
+  --soft: #8d9a90;
+  --green: #2e8a68;
+  --green-soft: #e7f2ec;
+  --green-deep: #1f6b4f;
+  --red: #ce4630;
+  --red-soft: #fbede9;
   --amber: #e8a33d;
-  --shadow: 0 1px 2px rgba(29, 40, 57, 0.04), 0 4px 16px rgba(29, 40, 57, 0.05);
-  --shadow-hover: 0 2px 6px rgba(29, 40, 57, 0.06), 0 10px 28px rgba(29, 40, 57, 0.09);
+  --amber-deep: #9a6b10;
+  --amber-soft: #f9f1df;
+  /* 买入徽章与表盘指针/弧线中段：SVG 通过 var() 消费，改这里即全站生效 */
+  --green-badge: #0c9a62;
+  --amber-needle: #c67f10;
+  --amber-arc: #e3b341;
+  /* 数码读数字体：next/font 注入 --font-spline，这里收口成页面级读数字体 */
+  --font-num: var(--font-spline, ui-monospace, 'SF Mono', Menlo, monospace);
 
   box-sizing: border-box;
   /* 随视口分档放大的自适应上限（globals.css 中定义） */
@@ -58,7 +63,7 @@
 .index-levels h1 {
   margin: 0 0 5px;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.5px;
 }
 
@@ -84,9 +89,9 @@
   padding: 10px 36px 10px 13px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
-  background-color: #ffffff;
-  background-image: linear-gradient(45deg, transparent 50%, #98a2af 50%),
-    linear-gradient(135deg, #98a2af 50%, transparent 50%);
+  background-color: var(--surface);
+  background-image: linear-gradient(45deg, transparent 50%, var(--soft) 50%),
+    linear-gradient(135deg, var(--soft) 50%, transparent 50%);
   background-position: calc(100% - 17px) 17px, calc(100% - 12px) 17px;
   background-size: 5px 5px;
   background-repeat: no-repeat;
@@ -98,24 +103,19 @@
 }
 
 .index-levels .index-select:hover {
-  border-color: #b9c5d3;
+  border-color: var(--soft);
 }
 
 .index-levels .index-select:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px var(--blue-soft);
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--green-soft);
 }
 
+/* 记录纸卡：暖白面 + 刻线，靠线不靠影 */
 .index-levels .panel {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-  transition: box-shadow 0.25s ease;
-}
-
-.index-levels .panel:hover {
-  box-shadow: var(--shadow-hover);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
 }
 
 .index-levels .tip {
@@ -125,9 +125,10 @@
   padding: 11px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.97);
+  /* 暖白读数浮层，与卡面同温 */
+  background: rgba(253, 253, 251, 0.97);
   backdrop-filter: blur(4px);
-  box-shadow: 0 8px 28px rgba(29, 40, 57, 0.16);
+  box-shadow: 0 8px 28px rgba(31, 44, 37, 0.14);
   color: var(--text);
   font-size: 12px;
   line-height: 1.65;
@@ -194,19 +195,28 @@
   font-weight: 600;
 }
 
+/* A股语系：买入=绿（低估一侧），卖出=红 */
 .index-levels .tip-trade.buy em {
-  color: var(--blue);
+  color: var(--green-deep);
 }
 
 .index-levels .tip-trade.sell em {
   color: var(--red);
 }
 
+/* 全页一套两列网格：总览、关联标的、摘录三行列缘对齐，列宽一律 minmax(0,1fr) 等分 */
 .index-levels .overview {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(340px, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 14px;
   margin-bottom: 14px;
+}
+
+/* 折线卡：列方向弹性，同行有更高的兄弟卡时绘图区自动长高，底部不留白 */
+.index-levels .chart-panel,
+.index-levels .wide-chart {
+  display: flex;
+  flex-direction: column;
 }
 
 .index-levels .chart-panel {
@@ -230,17 +240,19 @@
 .index-levels .code {
   margin-left: 7px;
   color: var(--muted);
+  font-family: var(--font-num);
   font-size: 11px;
   font-weight: 500;
 }
 
+/* 时间跨度切换：刻线分段钮，选中态靠描边不靠投影 */
 .index-levels .tabs {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 3px;
   border-radius: 10px;
-  background: #f1f4f8;
+  background: var(--line);
   white-space: nowrap;
 }
 
@@ -253,7 +265,7 @@
   font: inherit;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .index-levels .tab:hover {
@@ -261,23 +273,27 @@
 }
 
 .index-levels .tab.active {
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(29, 40, 57, 0.12);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line-strong);
   color: var(--text);
   font-weight: 650;
 }
 
 .index-levels .chart-host {
   position: relative;
-  /* 容器查询锚点：折线图高度随宽度联动，避免大屏下被拉成超扁条 */
+  flex: 1 1 auto;
+  /* 容器查询锚点：固有高度随卡宽联动，cqw 必须由后代（.chart）消费，
+     写在容器自身会回退成视口单位 */
   container-type: inline-size;
 }
 
 .index-levels .chart {
   display: block;
   width: 100%;
-  /* 高度随宽度等比放大：窄屏维持 260px 基线，1408px 宽时约 450px */
+  /* 固有高度随卡宽等比（窄屏 260px 基线）；同行兄弟卡更高时 min-height 把绘图区填满，
+     高度显式声明也切断动态 viewBox 与布局的反馈环 */
   height: clamp(260px, 32cqw, 470px);
+  min-height: 100%;
   overflow: visible;
   cursor: crosshair;
 }
@@ -286,15 +302,16 @@
   cursor: grabbing;
 }
 
+/* 坐标轴读数走数码字体，对齐成列 */
 .index-levels .chart text {
-  fill: #98a2b0;
-  font-family: inherit;
+  fill: var(--soft);
+  font-family: var(--font-num);
   font-size: 10px;
   font-weight: 500;
 }
 
 .index-levels .gridline {
-  stroke: #eef1f5;
+  stroke: var(--line);
   stroke-width: 1;
 }
 
@@ -307,7 +324,7 @@
 }
 
 .index-levels .marker-line {
-  stroke: #b9c4d0;
+  stroke: var(--line-strong);
   stroke-width: 1;
   stroke-dasharray: 3 3;
 }
@@ -318,6 +335,7 @@
   justify-content: flex-end;
   margin-top: 10px;
   color: var(--soft);
+  font-family: var(--font-num);
   font-size: 10px;
 }
 
@@ -327,17 +345,20 @@
 }
 
 .index-levels .buy {
-  color: var(--blue);
+  color: var(--green-deep);
 }
 
 .index-levels .sell {
   color: var(--red);
 }
 
+/* 表头卡：微凹仪面——上缘内嵌高光 + 下缘内嵌暗线，模拟表蒙反光，全页唯一「立体」处 */
 .index-levels .gauge-panel {
   display: flex;
   flex-direction: column;
   padding: 19px 20px;
+  background: linear-gradient(180deg, #fafcf8 0%, #f2f5ec 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(31, 44, 37, 0.05);
 }
 
 .index-levels .gauge-top {
@@ -348,56 +369,36 @@
 
 .index-levels .gauge-wrap {
   position: relative;
+  flex: 1 1 auto;
   width: 100%;
-  max-width: 450px;
-  margin: 4px auto 0;
   /* 容器查询锚点：数值文字随表盘宽度等比缩放 */
   container-type: inline-size;
-}
-
-/* 大屏：表盘随容器分档放大（SVG viewBox 等比缩放，刻度/标注/指针同步变大） */
-@media (min-width: 1280px) {
-  .index-levels .gauge-wrap {
-    max-width: 520px;
-  }
-}
-
-@media (min-width: 1536px) {
-  .index-levels .gauge-wrap {
-    max-width: 580px;
-  }
-}
-
-@media (min-width: 1920px) {
-  .index-levels .gauge-wrap {
-    max-width: 660px;
-  }
-}
-
-@media (min-width: 2560px) {
-  .index-levels .gauge-wrap {
-    max-width: 760px;
-  }
 }
 
 .index-levels .gauge {
   display: block;
   width: 100%;
+  /* 固有高度由 450:310 视图比例随宽度得出，max-height 封顶防止大屏无限长高；
+     卡片被同行撑高时 min-height 填满，内容按 meet 取宽高小者居中 */
+  min-height: 100%;
+  max-height: 480px;
 }
 
 .index-levels .gauge-center {
   position: absolute;
   left: 0;
   right: 0;
-  top: 71%;
+  /* 画布 450×330：读数块锚在指针轴心（y=214/330≈65%）略下方 */
+  top: 65%;
   text-align: center;
   transform: translateY(-2px);
 }
 
 .index-levels .gauge-value {
   /* 7.1cqw ≈ 450px 表盘时的 32px，小屏维持原字号、大屏随表盘等比放大 */
+  font-family: var(--font-num);
   font-size: clamp(32px, 7.1cqw, 54px);
-  font-weight: 750;
+  font-weight: 600;
   letter-spacing: -1px;
   font-variant-numeric: tabular-nums;
 }
@@ -408,9 +409,17 @@
   font-size: clamp(11px, 2.4cqw, 15px);
 }
 
+/* 读数旁的交易日期：数码字体，与折线卡「更新至」同一格式 */
+.index-levels .gauge-date {
+  margin-left: 8px;
+  font-family: var(--font-num);
+  color: var(--soft);
+}
+
+/* A股语系：涨红跌绿，无数据/持平走中性灰 */
 .index-levels .gauge-change {
   margin-top: 8px;
-  color: var(--green-deep);
+  color: var(--red);
   font-size: clamp(11px, 2.4cqw, 15px);
 }
 
@@ -420,7 +429,23 @@
 
 .index-levels .gauge-change.down,
 .index-levels .gauge-change.down b {
-  color: var(--red);
+  color: var(--green-deep);
+}
+
+.index-levels .gauge-change.flat,
+.index-levels .gauge-change.flat b {
+  color: var(--muted);
+}
+
+/* 上电扫针：挂载后从低点摆到当前值；换指数时也按同一曲线滑过去 */
+.index-levels .gauge-needle {
+  transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .index-levels .gauge-needle {
+    transition: none;
+  }
 }
 
 .index-levels .section {
@@ -431,13 +456,28 @@
   padding: 18px 20px 13px;
 }
 
+/* ETF / 联接基金卡的固有绘图高度略高一档 */
 .index-levels .wide-chart .chart {
   height: clamp(270px, 33cqw, 480px);
 }
 
+/* 场内 ETF 与场外基金两张折线齐全时一行两列；折线高度走 33cqw，随各自列宽等比。
+   ≤1100px 与 .overview 同档折回单列，避免窄视口下两张图被挤成长条 */
+.index-levels .etf-fund-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.index-levels .etf-fund-row .section {
+  margin-top: 0;
+  min-width: 0;
+}
+
 .index-levels .note-area {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 14px;
   margin-top: 14px;
 }
@@ -461,7 +501,7 @@
   padding-right: 8px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #cdd5de transparent;
+  scrollbar-color: #c9d1c6 transparent;
 }
 
 .index-levels .notes-list::-webkit-scrollbar {
@@ -473,12 +513,12 @@
 }
 
 .index-levels .notes-list::-webkit-scrollbar-thumb {
-  background: #cdd5de;
+  background: #c9d1c6;
   border-radius: 3px;
 }
 
 .index-levels .notes-list::-webkit-scrollbar-thumb:hover {
-  background: #b8c2cd;
+  background: #b2bdae;
 }
 
 .index-levels .note {
@@ -499,13 +539,13 @@
 
 .index-levels .note p {
   margin: 7px 0 8px;
-  color: #5c6878;
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.7;
 }
 
 .index-levels .note a {
-  color: var(--blue);
+  color: var(--green-deep);
   font-size: 11px;
   font-weight: 600;
   text-decoration: none;
@@ -517,7 +557,7 @@
 
 .index-levels .insight {
   padding: 19px 20px;
-  background: linear-gradient(180deg, #fbfcfe 0%, #f7f9fc 100%);
+  background: linear-gradient(180deg, #fbfcf9 0%, #f5f7f1 100%);
 }
 
 .index-levels .insight h3 {
@@ -530,7 +570,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 11px 12px;
+  /* 行内垂直留白放宽，五行速览不显逼仄 */
+  padding: 17px 12px;
   border-radius: 9px;
   font-size: 12px;
 }
@@ -544,23 +585,25 @@
 }
 
 .index-levels .insight-row strong {
-  font-weight: 700;
+  font-family: var(--font-num);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
+/* 当前点位行：就位琥珀，呼应表盘指针 */
 .index-levels .insight-row:first-of-type {
-  background: var(--blue-soft);
+  background: var(--amber-soft);
 }
 
 .index-levels .insight-row:first-of-type strong {
-  color: var(--blue);
+  color: var(--amber-deep);
 }
 
 .index-levels .pill {
   padding: 3px 9px;
   border-radius: 20px;
-  background: #f0f3f8;
-  color: #6f7b8c;
+  background: var(--line);
+  color: var(--muted);
   font-size: 10px;
   font-weight: 600;
 }
@@ -569,12 +612,14 @@
   display: flex;
   justify-content: space-between;
   margin-top: 22px;
-  color: #a6afbb;
+  color: var(--soft);
   font-size: 10px;
 }
 
 @media (max-width: 1100px) {
-  .index-levels .overview {
+  .index-levels .overview,
+  .index-levels .etf-fund-row,
+  .index-levels .note-area {
     grid-template-columns: 1fr;
   }
 
@@ -584,14 +629,6 @@
 }
 
 @media (max-width: 850px) {
-  .index-levels .overview {
-    grid-template-columns: 1fr;
-  }
-
-  .index-levels .note-area {
-    grid-template-columns: 1fr;
-  }
-
   .index-levels .page-head {
     flex-direction: column;
     align-items: flex-start;

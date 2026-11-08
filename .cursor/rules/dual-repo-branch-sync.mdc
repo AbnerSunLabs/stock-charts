@@ -1,0 +1,35 @@
+---
+description: 新需求开分支时，stock-charts 与 scheduled-tasks 必须使用同名分支
+alwaysApply: true
+---
+
+# 双仓同名分支
+
+本仓库（`stock-charts`）与同级 **`scheduled-tasks`**（`../scheduled-tasks`，远程 `AbnerSunLabs/scheduled-tasks`）按功能同步开发。开新需求分支时，两边分支名必须一致。
+
+## 何时必须建同名分支
+
+在本仓为新需求新建分支时（`feature/*`、`fix/*`、`refactor/*` 等），**同一轮操作**里在 `scheduled-tasks` 创建完全相同的分支名。
+
+先建本仓分支，再在同级仓从它的默认分支建同名分支。同级仓已有该分支时，直接使用，不要另起名字或强行重建。
+
+```bash
+# 本仓
+git checkout -b feature/fx-rate-fallback
+
+# 同级仓（路径相对本仓根目录）
+git -C ../scheduled-tasks fetch origin
+git -C ../scheduled-tasks checkout -b feature/fx-rate-fallback origin/HEAD
+```
+
+## 约束
+
+- 分支名逐字相同，含前缀（`feature/fx-rate-fallback`，不要写成 `feat/fx-rate-fallback`）。
+- 只建本地分支。未经用户明确要求，不 `push`、不建 PR。
+- 本仓继续遵守数据边界：DDL、第三方拉数、共享表批量写入只在 `scheduled-tasks` 的同名分支上做。
+- 用户明确说「只改本仓 / 不要动 scheduled-tasks」时，跳过同级建分支，并在回复里说明未建。
+
+## 不在此列
+
+- 只是切到已有分支、查看状态、提交、推送：不新建分支。
+- 用户指定只在其中一个仓库工作。

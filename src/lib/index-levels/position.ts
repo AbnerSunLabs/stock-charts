@@ -103,3 +103,13 @@ export function changePct(close: number, previous: number | null): number | null
   if (previous == null || previous === 0) return null;
   return ((close - previous) / previous) * 100;
 }
+
+/** 日涨跌的展示分类：涨红、跌绿，无数据或持平走中性灰（A股语系）。
+    以 toFixed(2) 的显示值为准（.5 边界与 Math.round 舍入方向不同），
+    避免出现红色的「+0.00%」或绿色的「-0.01%」。 */
+export function classifyChange(change: number | null): 'up' | 'down' | 'flat' {
+  if (change == null) return 'flat';
+  const shown = Number(change.toFixed(2));
+  if (shown === 0) return 'flat';
+  return shown < 0 ? 'down' : 'up';
+}

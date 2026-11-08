@@ -11,9 +11,11 @@ const SPANS: Array<{ id: CloseSpan; label: string }> = [
   { id: '5', label: '近 5 年' },
 ];
 
-const PRICE = '#3d9a78';
-const BUY = '#3a6ff0';
-const SELL = '#e05656';
+/** 语义色直接消费 .index-levels 令牌（presentation 属性不认 var，用 style 应用）：
+    绿=买入/低估，红=卖出/高估（A股语系）；买入徽章比价格线的哑光绿更鲜，信号要比曲线响。 */
+const PRICE = 'var(--green)';
+const BUY = 'var(--green-badge)';
+const SELL = 'var(--red)';
 const MIN_WINDOW = 15;
 
 type Geom = {
@@ -251,8 +253,8 @@ function ChartPlot({
     <g>
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={PRICE} stopOpacity="0.15" />
-          <stop offset="1" stopColor={PRICE} stopOpacity="0" />
+          <stop offset="0" style={{ stopColor: PRICE }} stopOpacity="0.15" />
+          <stop offset="1" style={{ stopColor: PRICE }} stopOpacity="0" />
         </linearGradient>
       </defs>
       {geom.ticks.map(tick => (
@@ -280,7 +282,7 @@ function ChartPlot({
       />
       {geom.marks.map(mark => (
         <g className="trade-mark" key={`${mark.side}-${mark.date}`}>
-          <circle cx={mark.x} cy={mark.y - 12} r="7.5" fill={mark.side === 'buy' ? BUY : SELL} />
+          <circle cx={mark.x} cy={mark.y - 12} r="7.5" style={{ fill: mark.side === 'buy' ? BUY : SELL }} />
           <text
             x={mark.x}
             y={mark.y - 9.2}

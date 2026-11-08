@@ -1,14 +1,14 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { IndexLevelMark, IndexQuote } from '@/lib/index-levels/catalog';
-import { formatMarkLabel, levelMentionDate } from '@/lib/index-levels/position';
+import { changePct, classifyChange, formatMarkLabel, levelMentionDate } from '@/lib/index-levels/position';
 import type { IndexLatestClose } from '@/lib/supabase/index-daily-repository';
 
 type Phase = 'loading' | 'ready' | 'error';
 
-/** 与预览页同一套几何：450×310 画布，圆心 (225,240)，半径 120 的半圆。 */
+/** 与预览页同一套几何：450×330 画布（底部加高给标注留行距），圆心 (225,240)，半径 120 的半圆。 */
 const CX = 225;
 const CY = 240;
 const R = 120;
@@ -20,7 +20,7 @@ const EDGE = 6;
 
 /**
  * 当前估值位置。弧线按 E 大给出的全部点位铺开，每个点位一个圆点 + 引线 + 文字，
- * 低位 / 中枢 / 高位额外带出原文日期；指针用蓝色。
+ * 低位 / 中枢 / 高位额外带出原文日期；琥珀指针表示「现在」，挂载时从低点扫到当前值。
  */
 export function IndexLevelGauge({
   levels,
@@ -39,10 +39,8 @@ export function IndexLevelGauge({
   const { scale, marks } = useMemo(() => buildScale(levels, quotes, mid), [levels, quotes, mid]);
 
   const ready = phase === 'ready' && close != null;
-  const change =
-    close?.previousClose == null || close.previousClose === 0
-      ? null
-      : ((close.close - close.previousClose) / close.previousClose) * 100;
+  const change = changePct(close?.close ?? 0, close?.previousClose ?? null);
+  const changeKind = classifyChange(change);
 
   return (
     <section className="panel gauge-panel" aria-label="当前估值位置">
@@ -56,8 +54,11 @@ export function IndexLevelGauge({
           <div className="gauge-value">
             {ready && close ? close.close.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
           </div>
-          <div className="gauge-label">当前指数点位</div>
-          <div className={change != null && change < 0 ? 'gauge-change down' : 'gauge-change'}>
+          <div className="gauge-label">
+            当前指数点位
+            {ready && close ? <span className="gauge-date">{close.tradeDate.replaceAll('-', '/')}</span> : null}
+          </div>
+          <div className={`gauge-change ${changeKind}`}>
             较前一交易日{' '}
             <b>{change == null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(2)}%`}</b>
           </div>
@@ -82,15 +83,16 @@ function GaugeFace({
   const majors = majorTickValues(scale);
 
   return (
-    <svg className="gauge" viewBox="0 0 450 310" role="img" aria-label="估值区间仪表盘">
+    <svg className="gauge" viewBox="0 0 450 330" role="img" aria-label="估值区间仪表盘">
       <defs>
         <linearGradient id="index-gauge-arc" x1="0" x2="1">
-          <stop offset="0" stopColor="#3d9a78" />
-          <stop offset="0.5" stopColor="#e8c34d" />
-          <stop offset="1" stopColor="#e05656" />
+          {/* 颜色一律消费 .index-levels 令牌（presentation 属性不认 var，走 style） */}
+          <stop offset="0" style={{ stopColor: 'var(--green)' }} />
+          <stop offset="0.5" style={{ stopColor: 'var(--amber-arc)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--red)' }} />
         </linearGradient>
       </defs>
-      <path d={`M${CX - R} ${CY} A${R} ${R} 0 0 1 ${CX + R} ${CY}`} fill="none" stroke="#eef2f6" strokeWidth="18" strokeLinecap="round" />
+      <path d={`M${CX - R} ${CY} A${R} ${R} 0 0 1 ${CX + R} ${CY}`} fill="none" style={{ stroke: 'var(--line)' }} strokeWidth="18" strokeLinecap="round" />
       <path
         d={`M${CX - R} ${CY} A${R} ${R} 0 0 1 ${CX + R} ${CY}`}
         fill="none"
@@ -99,8 +101,8 @@ function GaugeFace({
         strokeLinecap="round"
         opacity="0.9"
       />
-      <path d={minorTickPath()} fill="none" stroke="#c3cdd8" strokeWidth="1" />
-      <g stroke="#8a95a5" strokeWidth="2" strokeLinecap="round">
+      <path d={minorTickPath()} fill="none" style={{ stroke: 'var(--line-strong)' }} strokeWidth="1" />
+      <g style={{ stroke: 'var(--soft)' }} strokeWidth="2" strokeLinecap="round">
         {majors.map(value => {
           const inner = polar(R + 12, angleOf(value));
           const outer = polar(R + 19, angleOf(value));
@@ -108,6 +110,16 @@ function GaugeFace({
         })}
       </g>
 
+      <GaugeMarks placed={placed} />
+      {needle != null ? <Needle deg={needle} /> : null}
+    </svg>
+  );
+}
+
+/** 弧外点位标注：引线 + 圆点 + 两三行文字。 */
+function GaugeMarks({ placed }: { placed: Placed[] }) {
+  return (
+    <>
       {placed.map(item => (
         <Leader key={`l-${item.key}`} item={item} others={placed} />
       ))}
@@ -121,7 +133,7 @@ function GaugeFace({
             cy={y}
             r={anchor ? 3.6 : 3}
             fill="#ffffff"
-            stroke={anchor ? '#1d2839' : '#7d8a9b'}
+            style={{ stroke: anchor ? 'var(--text)' : 'var(--soft)' }}
             strokeWidth={anchor ? 1.8 : 1.4}
           />
         );
@@ -129,9 +141,7 @@ function GaugeFace({
       {placed.map(item => (
         <LevelLabel key={`t-${item.key}`} item={item} />
       ))}
-
-      {needle != null ? <Needle deg={needle} /> : null}
-    </svg>
+    </>
   );
 }
 
@@ -140,7 +150,7 @@ function Leader({ item, others }: { item: Placed; others: Placed[] }) {
   const [ax, ay] = polar(R + 21, item.deg);
   const bx = item.align === 'start' ? item.x - 4 : item.align === 'end' ? item.x + 4 : item.x;
   // 中线上的标注压在刻度带上方，引线从文字块下沿接过去，别穿过字
-  const by = item.align === 'middle' ? item.y + (item.date ? 22 : 12) : item.y - 4;
+  const by = item.align === 'middle' ? item.y + (item.date ? 16 : 4) : item.y - 4;
   const blocked =
     item.align === 'middle' &&
     others.some(
@@ -152,30 +162,53 @@ function Leader({ item, others }: { item: Placed; others: Placed[] }) {
         other.y < ay - 4
     );
   if (blocked) return null;
-  return <line x1={ax} y1={ay} x2={bx} y2={by} stroke="#d3dbe4" strokeWidth="1" strokeLinecap="round" />;
+  return <line x1={ax} y1={ay} x2={bx} y2={by} style={{ stroke: 'var(--line-strong)' }} strokeWidth="1" strokeLinecap="round" />;
 }
 
+/**
+ * 琥珀指针（比弧线中段更深一档，扫过暖色段时仍有轮廓）。
+ * 指针随收盘数据到位才挂载：首帧停在低点，下一帧放开到真实角度，
+ * 由 .gauge-needle 的 CSS 过渡完成「上电扫针」；换指数会经历 loading 卸载重挂，同样重扫。
+ */
 function Needle({ deg }: { deg: number }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    // 双 rAF：确保 -SWEEP 起扫帧先完成绘制，再放开到真实角度，
+    // 否则状态更新可能与首帧合并导致过渡被跳过
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setArmed(true));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, []);
+  const angle = armed ? deg : -SWEEP;
   return (
-    <g transform={`rotate(${deg.toFixed(2)} ${CX} ${NEEDLE_PIVOT_Y})`}>
-      <path d={`M${CX} ${NEEDLE_PIVOT_Y - 102} L${CX + 11} ${NEEDLE_PIVOT_Y - 1} L${CX} ${NEEDLE_PIVOT_Y + 13} L${CX - 11} ${NEEDLE_PIVOT_Y - 1} Z`} fill="#3a6ff0" />
-      <circle cx={CX} cy={NEEDLE_PIVOT_Y} r="6" fill="#ffffff" stroke="#3a6ff0" strokeWidth="3" />
+    <g
+      className="gauge-needle"
+      style={{ transform: `rotate(${angle.toFixed(2)}deg)`, transformOrigin: `${CX}px ${NEEDLE_PIVOT_Y}px` }}
+    >
+      <path d={`M${CX} ${NEEDLE_PIVOT_Y - 102} L${CX + 11} ${NEEDLE_PIVOT_Y - 1} L${CX} ${NEEDLE_PIVOT_Y + 13} L${CX - 11} ${NEEDLE_PIVOT_Y - 1} Z`} style={{ fill: 'var(--amber-needle)', stroke: 'var(--surface)' }} strokeWidth="1.2" />
+      <circle cx={CX} cy={NEEDLE_PIVOT_Y} r="6" fill="#ffffff" style={{ stroke: 'var(--amber-needle)' }} strokeWidth="3" />
     </g>
   );
 }
 
+/** 点位标注：数值与注释同行（如「1,220（压力）」），锚点点位第二行带原文日期。 */
 function LevelLabel({ item }: { item: Placed }) {
   const anchor = item.role !== 'level';
   return (
     <g textAnchor={item.align} fontFamily="sans-serif">
-      <text x={item.x} y={item.y} fill="#1d2839" fontSize={anchor ? 11.5 : 10.5} fontWeight="700">
+      <text x={item.x} y={item.y} style={{ fill: 'var(--text)' }} fontSize={anchor ? 11.5 : 10.5} fontWeight="700">
         {item.label}
-      </text>
-      <text x={item.x} y={item.y + 10.5} fill="#8a95a5" fontSize="9.2">
-        {item.name}
+        <tspan fontSize="9.2" fontWeight="500" style={{ fill: 'var(--muted)' }}>
+          （{item.name}）
+        </tspan>
       </text>
       {anchor && item.date ? (
-        <text x={item.x} y={item.y + 20} fill="#a9b2bf" fontSize="8.4">
+        <text x={item.x} y={item.y + 12} style={{ fill: 'var(--soft)' }} fontSize="8.4">
           {item.date}
         </text>
       ) : null}
@@ -264,21 +297,24 @@ function layoutMarks(marks: LevelView[], angleOf: (value: number) => number): Pl
     side.forEach((item, index) => {
       const prev = side[index - 1];
       if (!prev) return;
-      const need = prev.date ? 34 : 28;
+      // 带日期的标注自身多一行文字，后续标注要留出三行高度加呼吸空间
+      // 标注已是「数值（注释）」单行，带日期的锚点块第二行到 y+12
+      const need = prev.date ? 46 : 38;
       if (item.y - prev.y < need) item.y = prev.y + need;
     });
     const last = side[side.length - 1];
     if (!last) return;
-    const bottom = last.y + (last.date ? 21 : 11);
-    if (bottom > 296) {
-      const shift = bottom - 296;
+    // 画布加高到 330 后防线下移，密集侧（如 931/950/1000）有足够下沉空间
+    const bottom = last.y + (last.date ? 16 : 11);
+    if (bottom > 316) {
+      const shift = bottom - 316;
       side.forEach(item => {
         item.y -= shift;
       });
     }
     // 中线上方的标注要让开弧顶细刻度带（y≈102），两侧的标注则不要越过画布顶部
     if (align === 'middle') {
-      const lastBottom = last.y + (last.date ? 21 : 11);
+      const lastBottom = last.y + (last.date ? 16 : 11);
       if (lastBottom > 94) {
         const shift = lastBottom - 94;
         side.forEach(item => {
@@ -299,11 +335,11 @@ function layoutMarks(marks: LevelView[], angleOf: (value: number) => number): Pl
   return placed;
 }
 
-/** 粗估一行文字的宽度：数字窄、汉字宽。 */
+/** 粗估「数值（注释）」合并行的宽度：数字窄、汉字与全角括号宽。 */
 function estimateWidth(mark: LevelView): number {
   const numeric = mark.label.length * 6.1;
-  const cjk = mark.name.length * 9.3;
-  return Math.max(numeric, cjk, 22);
+  const note = (mark.name.length + 2) * 9.3;
+  return Math.max(numeric + note, 22);
 }
 
 /** 低点 −88°、中枢 0°、高点 +88°，两侧分段线性。 */
