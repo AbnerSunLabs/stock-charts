@@ -19,6 +19,8 @@ export interface IndexQuote {
 export interface IndexChartEtf {
   code: string;
   name: string;
+  /** 代码旁的外链，例如且慢发车页。 */
+  href?: string;
 }
 
 export interface IndexWatch {
@@ -229,7 +231,11 @@ export const INDEX_WATCHES: IndexWatch[] = [
     code: '399971.SZ',
     name: '中证传媒',
     chartEtf: { code: '512980', name: '传媒ETF' },
-    chartFund: { code: '004752', name: '广发中证传媒ETF联接A' },
+    chartFund: {
+      code: '004752',
+      name: '广发中证传媒ETF联接A',
+      href: 'https://qieman.com/longwin/funds/004752?prodCode=LONG_WIN',
+    },
     gauge: { mid: 1400 },
     levels: [
       { name: '前低', point: 931, label: '931' },
@@ -324,6 +330,12 @@ export const INDEX_WATCHES: IndexWatch[] = [
   {
     code: '399975.SZ',
     name: '证券公司',
+    chartEtf: { code: '512880', name: '证券ETF' },
+    chartFund: {
+      code: '502010',
+      name: '易方达中证全指证券公司指数(LOF)A',
+      href: 'https://qieman.com/longwin/funds/502010?prodCode=LONG_WIN',
+    },
     levels: [
       { name: '补仓', point: 600, label: '600' },
       { name: '极限底', point: 360, label: '360–400' },

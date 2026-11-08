@@ -14,14 +14,17 @@ import {
   type IndexLevelMark,
   type IndexWatch,
 } from '@/lib/index-levels/catalog';
-import { MEDIA_ETF_TRADES } from '@/lib/index-levels/media-etf-trades';
+import { MEDIA_ETF_TRADES, type EtfTradeMark } from '@/lib/index-levels/media-etf-trades';
 import { MEDIA_LINK_TRADES } from '@/lib/index-levels/media-link-trades';
+import { SECURITIES_ETF_TRADES } from '@/lib/index-levels/securities-etf-trades';
+import { SECURITIES_LINK_TRADES } from '@/lib/index-levels/securities-link-trades';
 import type { IndexClosePoint } from '@/lib/index-levels/close-series';
 import type { CmbUsdQuotes } from '@/lib/index-levels/cmb-fx';
 import { CMB_USD_BUY_MARKS } from '@/lib/index-levels/cmb-fx-trades';
 import { formatClose } from '@/lib/index-levels/position';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { fetchEtfCloseSeries } from '@/lib/supabase/etf-daily-repository';
+import { loadChartFundNav } from '@/lib/supabase/fund-nav-repository';
 import { fetchIndexCloseSeries, type IndexLatestClose } from '@/lib/supabase/index-daily-repository';
 
 type Phase = 'loading' | 'ready' | 'error';
@@ -106,7 +109,7 @@ function useCloseSeries(code: string, etfCode?: string): {
   return { points, etfPoints, phase };
 }
 
-/** 场外基金单位净值，走本地 fund-nav 接口；未配置时保持 ready 空序列。 */
+/** 场外基金单位净值。004752 与 502010 优先读已落库序列，其余走 fund-nav 接口。 */
 function useFundSeries(fundCode?: string): { fundPoints: IndexClosePoint[]; fundPhase: Phase } {
   const [fundPoints, setFundPoints] = useState<IndexClosePoint[]>([]);
   const [fundPhase, setFundPhase] = useState<Phase>('ready');
@@ -124,14 +127,10 @@ function useFundSeries(fundCode?: string): { fundPoints: IndexClosePoint[]; fund
       return undefined;
     }
     setFundPhase('loading');
-    fetch(`/api/index-levels/fund-nav?code=${fundCode}`)
-      .then(response => {
-        if (!response.ok) throw new Error('fund nav failed');
-        return response.json() as Promise<{ points?: IndexClosePoint[] }>;
-      })
-      .then(body => {
+    loadChartFundNav(fundCode)
+      .then(points => {
         if (!cancelled) {
-          setFundPoints(body.points ?? []);
+          setFundPoints(points);
           setFundPhase('ready');
         }
       })
@@ -290,6 +289,16 @@ function TrackerHead({ current, onSelect }: { current: IndexWatch; onSelect: (ne
   );
 }
 
+const ETF_TRADE_MARKS: Record<string, EtfTradeMark[]> = {
+  '512980': MEDIA_ETF_TRADES,
+  '512880': SECURITIES_ETF_TRADES,
+};
+
+const FUND_TRADE_MARKS: Record<string, EtfTradeMark[]> = {
+  '004752': MEDIA_LINK_TRADES,
+  '502010': SECURITIES_LINK_TRADES,
+};
+
 /**
  * 关联标的折线：场内 ETF 与场外基金两张齐全时一行两列并排，
  * 只配置其中一张时维持整行宽版。
@@ -314,7 +323,7 @@ function LinkedFundCharts({
       code={watch.chartEtf.code}
       points={etfPoints}
       phase={phase}
-      marks={watch.chartEtf.code === '512980' ? MEDIA_ETF_TRADES : []}
+      marks={ETF_TRADE_MARKS[watch.chartEtf.code] ?? []}
       priceDigits={3}
     />
   ) : null;
@@ -325,8 +334,9 @@ function LinkedFundCharts({
       code={watch.chartFund.code}
       points={fundPoints}
       phase={fundPhase}
-      marks={watch.chartFund.code === '004752' ? MEDIA_LINK_TRADES : []}
+      marks={FUND_TRADE_MARKS[watch.chartFund.code] ?? []}
       priceDigits={4}
+      codeHref={watch.chartFund.href}
     />
   ) : null;
 

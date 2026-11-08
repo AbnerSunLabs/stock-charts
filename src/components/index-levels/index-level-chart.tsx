@@ -36,6 +36,26 @@ type Geom = {
 
 const digitsOf = (priceDigits?: number): number => priceDigits ?? 2;
 
+/** 标题。场外基金把中文名称链到且慢，代码仍是普通文本。 */
+function ChartTitle({ name, code, href }: { name: string; code: string; href?: string }) {
+  const codeNode = <span className="code">{code}</span>;
+  if (!href) {
+    return (
+      <>
+        {name} {codeNode}
+      </>
+    );
+  }
+  return (
+    <>
+      <a className="name-link" href={href} target="_blank" rel="noreferrer">
+        {name}
+      </a>
+      {codeNode}
+    </>
+  );
+}
+
 /**
  * 收盘折线。走势线深绿配渐变面积，买卖点用 B/S 圆形徽章。
  * 滚轮缩放、拖拽平移、双击复位，与预览页一致。
@@ -49,6 +69,7 @@ export function IndexLevelChart({
   priceDigits,
   wide = false,
   titleHelp,
+  codeHref,
 }: {
   name: string;
   code: string;
@@ -62,6 +83,8 @@ export function IndexLevelChart({
   wide?: boolean;
   /** 标题旁的说明，例如问号提示。 */
   titleHelp?: ReactNode;
+  /** 代码外链。缺省时代码只作文本。 */
+  codeHref?: string;
 }) {
   const [span, setSpan] = useState<CloseSpan>('all');
   const [view, setView] = useState<[number, number] | null>(null);
@@ -187,7 +210,7 @@ export function IndexLevelChart({
     <section className={wide ? 'panel wide-chart section' : 'panel chart-panel'}>
       <div className="panel-head">
         <div className="panel-title">
-          {name} <span className="code">{code}</span>
+          <ChartTitle name={name} code={code} href={codeHref} />
           {titleHelp ? <span className="title-help">{titleHelp}</span> : null}
         </div>
         <div className="tabs">

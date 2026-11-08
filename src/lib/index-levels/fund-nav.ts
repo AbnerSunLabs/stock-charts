@@ -3,6 +3,7 @@ import type { IndexClosePoint } from '@/lib/index-levels/close-series';
 /** 天天基金单位净值脚本。只读，不写入共享行情表。 */
 const FUND_NAV_SCRIPTS: Record<string, string> = {
   '004752': 'https://fund.eastmoney.com/pingzhongdata/004752.js',
+  '502010': 'https://fund.eastmoney.com/pingzhongdata/502010.js',
 };
 
 const SHANGHAI_DATE = new Intl.DateTimeFormat('en-CA', {

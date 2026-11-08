@@ -280,6 +280,16 @@
   font-weight: 500;
 }
 
+.index-levels a.name-link {
+  color: var(--green-deep);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.index-levels a.name-link:hover {
+  text-decoration: underline;
+}
+
 /* 时间跨度切换：刻线分段钮，选中态靠描边不靠投影 */
 .index-levels .tabs {
   display: flex;

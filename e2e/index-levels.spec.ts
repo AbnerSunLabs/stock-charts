@@ -12,6 +12,9 @@ test.describe('指数点位跟踪 · 关联标的布局', () => {
     // 名称互为子串，改用代码断言各自在列
     await expect(row.getByText('512980')).toBeVisible();
     await expect(row.getByText('004752')).toBeVisible();
+    const fund = row.getByRole('link', { name: '广发中证传媒ETF联接A' });
+    await expect(fund).toBeVisible();
+    await expect(fund).toHaveAttribute('href', 'https://qieman.com/longwin/funds/004752?prodCode=LONG_WIN');
 
     // 宽屏：两列等宽分轨
     expect(await countGridTracks(page, row)).toBe(2);
@@ -37,6 +40,21 @@ test.describe('指数点位跟踪 · 关联标的布局', () => {
 
     await page.setViewportSize({ width: 1000, height: 900 });
     expect(await countGridTracks(page, row)).toBe(1);
+  });
+
+  test('证券公司：证券ETF与场外基金一行两列', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/view/index-levels?index=399975.SZ');
+
+    const row = page.locator('.etf-fund-row');
+    await expect(row).toBeVisible();
+    await expect(row.locator(':scope > section')).toHaveCount(2);
+    await expect(row.getByText('512880')).toBeVisible();
+    await expect(row.getByText('502010')).toBeVisible();
+    const fund = row.getByRole('link', { name: '易方达中证全指证券公司指数(LOF)A' });
+    await expect(fund).toBeVisible();
+    await expect(fund).toHaveAttribute('href', 'https://qieman.com/longwin/funds/502010?prodCode=LONG_WIN');
+    expect(await countGridTracks(page, row)).toBe(2);
   });
 
   test('中证500：未配置关联标的时不渲染该区块', async ({ page }) => {
