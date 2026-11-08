@@ -1023,6 +1023,35 @@ body::after {
   color: var(--family-body);
 }
 
+/* 大屏自适应：图表容器变宽后按档提高高度下限，避免宽屏下图表过扁 */
+@media (min-width: 1536px) {
+  .family-finance-page.family-overview-page .family-balance-trend-chart-body {
+    min-height: 420px;
+  }
+
+  .family-finance-page.family-overview-page .family-mental-goals-chart-wrap {
+    min-height: 320px;
+  }
+
+  .family-finance-page.family-ledger-page .family-ledger-structure-card > .ant-card-body {
+    min-height: 420px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .family-finance-page.family-overview-page .family-balance-trend-chart-body {
+    min-height: 460px;
+  }
+
+  .family-finance-page.family-overview-page .family-mental-goals-chart-wrap {
+    min-height: 360px;
+  }
+
+  .family-finance-page.family-ledger-page .family-ledger-structure-card > .ant-card-body {
+    min-height: 460px;
+  }
+}
+
 @media (max-width: 991px) {
   .family-finance-page {
     padding: 32px 20px 48px;

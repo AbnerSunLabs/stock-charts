@@ -240,7 +240,7 @@ export function StrategyComparisonChart({
         </p>
       </div>
 
-      <div className="h-[360px] w-full sm:h-[440px] md:h-[520px] xl:h-[560px]">
+      <div className="h-[360px] w-full sm:h-[440px] md:h-[520px] xl:h-[560px] 2xl:h-[620px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={chartMargin}>
             <CartesianGrid

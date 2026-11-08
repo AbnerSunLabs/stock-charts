@@ -269,12 +269,15 @@
 
 .index-levels .chart-host {
   position: relative;
+  /* 容器查询锚点：折线图高度随宽度联动，避免大屏下被拉成超扁条 */
+  container-type: inline-size;
 }
 
 .index-levels .chart {
   display: block;
   width: 100%;
-  height: 260px;
+  /* 高度随宽度等比放大：窄屏维持 260px 基线，1408px 宽时约 450px */
+  height: clamp(260px, 32cqw, 470px);
   overflow: visible;
   cursor: crosshair;
 }
@@ -429,7 +432,7 @@
 }
 
 .index-levels .wide-chart .chart {
-  height: 270px;
+  height: clamp(270px, 33cqw, 480px);
 }
 
 .index-levels .note-area {
