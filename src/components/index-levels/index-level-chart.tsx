@@ -11,12 +11,15 @@ const SPANS: Array<{ id: CloseSpan; label: string }> = [
   { id: '5', label: '近 5 年' },
 ];
 
-/** 语义色直接消费 .index-levels 令牌（presentation 属性不认 var，用 style 应用）：
-    绿=买入/低估，红=卖出/高估（A股语系）；买入徽章比价格线的哑光绿更鲜，信号要比曲线响。 */
-const PRICE = 'var(--green)';
-const BUY = 'var(--green-badge)';
-const SELL = 'var(--red)';
+/** 折线用聚焦页的靛色。买卖徽章仍是 A 股语系：买入绿、卖出红。 */
+const LINE = '#8183d8';
+const BUY = '#05b169';
+const SELL = '#cf202f';
 const MIN_WINDOW = 15;
+const PLOT_TOP = 16;
+const PLOT_BOTTOM = 28;
+const PLOT_RIGHT = 24;
+const NO_LEVELS: number[] = [];
 
 type Geom = {
   width: number;
@@ -31,6 +34,9 @@ type Geom = {
   years: Array<{ x: number; year: string }>;
   line: string;
   area: string;
+  levelY: number | null;
+  /** 最新收盘的琥珀线与右侧价格。窗口没落到最新一天时为空。 */
+  now: { x: number; y: number; tagY: number; label: string } | null;
   marks: Array<{ x: number; y: number; side: 'buy' | 'sell'; price: number; date: string; index: number }>;
 };
 
@@ -70,6 +76,13 @@ export function IndexLevelChart({
   wide = false,
   titleHelp,
   codeHref,
+  bare = false,
+  span: spanProp,
+  axisFromZero = false,
+  levels = NO_LEVELS,
+  activeLevel = null,
+  onActiveLevel,
+  presliced = false,
 }: {
   name: string;
   code: string;
@@ -85,8 +98,23 @@ export function IndexLevelChart({
   titleHelp?: ReactNode;
   /** 代码外链。缺省时代码只作文本。 */
   codeHref?: string;
+  /** 只画折线，标题和时间范围由页面统一放。 */
+  bare?: boolean;
+  /** 页面统一的时间范围。传入后图内不再画分段按钮。 */
+  span?: CloseSpan;
+  /** 上市以来且未缩放时，纵轴从 0 起。 */
+  axisFromZero?: boolean;
+  /** 纳入纵轴的判断点位。 */
+  levels?: number[];
+  /** 当前选中的判断点位，画出虚线。 */
+  activeLevel?: number | null;
+  /** 点击虚线时切换这一档。 */
+  onActiveLevel?: () => void;
+  /** 点数已经按页面时间范围切过，图内不再按自身最后一天重切。 */
+  presliced?: boolean;
 }) {
-  const [span, setSpan] = useState<CloseSpan>('all');
+  const [innerSpan, setSpan] = useState<CloseSpan>('5');
+  const span = spanProp ?? innerSpan;
   const [view, setView] = useState<[number, number] | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [hover, setHover] = useState<{ index: number; left: number; top: number } | null>(null);
@@ -95,7 +123,10 @@ export function IndexLevelChart({
   const hostRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; view: [number, number]; moved: boolean } | null>(null);
 
-  const full = useMemo(() => filterCloseSpan(points, span), [points, span]);
+  const full = useMemo(
+    () => (presliced ? points : filterCloseSpan(points, span)),
+    [points, span, presliced]
+  );
   const win = useMemo<[number, number]>(() => {
     if (!view || view[1] - view[0] < 2 || view[1] > full.length) return [0, full.length];
     return view;
@@ -118,8 +149,18 @@ export function IndexLevelChart({
     return () => observer.disconnect();
   }, []);
 
-  const geom = useMemo(() => buildGeom(rows, code, marks, size), [rows, code, marks, size]);
   const digits = digitsOf(priceDigits);
+  const fromZero = axisFromZero && span === 'all' && (view == null || win[0] === 0 && win[1] === full.length);
+  const geom = useMemo(
+    () => buildGeom(rows, code, marks, size, {
+      fromZero,
+      extras: levels,
+      digits,
+      level: activeLevel,
+      showNow: levels.length > 0 && rows[rows.length - 1]?.tradeDate === full[full.length - 1]?.tradeDate,
+    }),
+    [rows, code, marks, size, fromZero, levels, digits, activeLevel, full]
+  );
   const last = rows[rows.length - 1];
 
   const zoomAt = useCallback(
@@ -129,7 +170,7 @@ export function IndexLevelChart({
       const len = full.length;
       const width = host.clientWidth;
       const left = geom.left;
-      const right = 14;
+      const right = PLOT_RIGHT;
       const rect = host.getBoundingClientRect();
       const frac = Math.min(1, Math.max(0, (((clientX - rect.left) / (rect.width || 1)) * width - left) / (width - left - right || 1)));
       const [start, end] = win;
@@ -142,6 +183,10 @@ export function IndexLevelChart({
     },
     [full.length, geom.left, win]
   );
+
+  useEffect(() => {
+    setView(null);
+  }, [span]);
 
   useEffect(() => {
     const svg = hostRef.current?.querySelector('svg');
@@ -174,7 +219,7 @@ export function IndexLevelChart({
       const dx = event.clientX - state.x;
       if (Math.abs(dx) > 3) state.moved = true;
       if (state.moved) {
-        const innerW = geom.width - geom.left - 14;
+        const innerW = geom.width - geom.left - PLOT_RIGHT;
         const winLen = state.view[1] - state.view[0];
         let start = state.view[0] - Math.round((dx / innerW) * winLen);
         start = Math.max(0, Math.min(full.length - winLen, start));
@@ -186,7 +231,7 @@ export function IndexLevelChart({
       return;
     }
 
-    if (x < geom.left || x > geom.width - 14 || rows.length === 0) {
+    if (x < geom.left || x > geom.width - PLOT_RIGHT || rows.length === 0) {
       setHover(null);
       return;
     }
@@ -205,30 +250,8 @@ export function IndexLevelChart({
   };
 
   const ariaLabel = wide ? `${name}收盘折线与策略信号` : `${name}历史走势`;
-
-  return (
-    <section className={wide ? 'panel wide-chart section' : 'panel chart-panel'}>
-      <div className="panel-head">
-        <div className="panel-title">
-          <ChartTitle name={name} code={code} href={codeHref} />
-          {titleHelp ? <span className="title-help">{titleHelp}</span> : null}
-        </div>
-        <div className="tabs">
-          {SPANS.map(item => (
-            <button
-              key={item.id}
-              type="button"
-              className={span === item.id ? 'tab active' : 'tab'}
-              onClick={() => {
-                setSpan(item.id);
-                setView(null);
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
+  const plot = (
+    <>
       <div className="chart-host" ref={hostRef}>
         <svg
           className={dragging ? 'chart dragging' : 'chart'}
@@ -248,6 +271,7 @@ export function IndexLevelChart({
             code={code}
             hoverIndex={hover?.index ?? null}
             hoverLabel={hover && rows[hover.index] ? fmtClose(rows[hover.index].close, digits) : null}
+            onActiveLevel={onActiveLevel}
           />
         </svg>
         {hover && rows[hover.index] ? (
@@ -263,9 +287,42 @@ export function IndexLevelChart({
           </div>
         ) : null}
       </div>
-      <div className="chart-foot">{last ? <span>更新至 {slashDate(last.tradeDate)}</span> : null}</div>
+      {bare ? null : (
+        <div className="chart-foot">{last ? <span>更新至 {slashDate(last.tradeDate)}</span> : null}</div>
+      )}
       {phase === 'loading' ? <p className="sr">读取收盘</p> : null}
       {phase === 'error' ? <p className="sr">收盘暂时读不出来</p> : null}
+    </>
+  );
+
+  if (bare) return plot;
+
+  return (
+    <section className={wide ? 'panel wide-chart section' : 'panel chart-panel'}>
+      <div className="panel-head">
+        <div className="panel-title">
+          <ChartTitle name={name} code={code} href={codeHref} />
+          {titleHelp ? <span className="title-help">{titleHelp}</span> : null}
+        </div>
+        {spanProp == null ? (
+          <div className="tabs">
+            {SPANS.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                className={span === item.id ? 'tab active' : 'tab'}
+                onClick={() => {
+                  setSpan(item.id);
+                  setView(null);
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      {plot}
     </section>
   );
 }
@@ -275,11 +332,13 @@ function ChartPlot({
   code,
   hoverIndex,
   hoverLabel,
+  onActiveLevel,
 }: {
   geom: Geom;
   code: string;
   hoverIndex: number | null;
   hoverLabel: string | null;
+  onActiveLevel?: () => void;
 }) {
   if (geom.width < 40 || geom.height < 40) return null;
   const gradientId = `area-${code.replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -290,13 +349,13 @@ function ChartPlot({
     <g>
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" style={{ stopColor: PRICE }} stopOpacity="0.15" />
-          <stop offset="1" style={{ stopColor: PRICE }} stopOpacity="0" />
+          <stop offset="0" style={{ stopColor: LINE }} stopOpacity="0.08" />
+          <stop offset="1" style={{ stopColor: LINE }} stopOpacity="0" />
         </linearGradient>
       </defs>
       {geom.ticks.map(tick => (
         <g key={tick.value}>
-          <line className="gridline" x1={geom.left} y1={tick.y} x2={geom.width - 14} y2={tick.y} />
+          <line className="gridline" x1={geom.left} y1={tick.y} x2={geom.left + geom.innerW} y2={tick.y} />
           <text x={geom.left - 8} y={tick.y + 3} textAnchor="end">
             {tick.label}
           </text>
@@ -309,6 +368,27 @@ function ChartPlot({
       ))}
       <path fill={`url(#${gradientId})`} d={geom.area} />
       <path className="price-line" d={geom.line} />
+      {geom.levelY != null ? (
+        <g className="key-level" onClick={onActiveLevel}>
+          <line
+            x1={geom.left}
+            y1={geom.levelY}
+            x2={geom.left + geom.innerW}
+            y2={geom.levelY}
+            strokeWidth={1.2}
+            strokeDasharray="5 6"
+          />
+          <circle cx={geom.left + geom.innerW - 5} cy={geom.levelY} r={3} />
+          <line
+            x1={geom.left}
+            y1={geom.levelY}
+            x2={geom.left + geom.innerW}
+            y2={geom.levelY}
+            stroke="transparent"
+            strokeWidth={12}
+          />
+        </g>
+      ) : null}
       <line
         className="marker-line hover-line"
         x1={hoverX ?? 0}
@@ -321,7 +401,7 @@ function ChartPlot({
         className="marker-line hover-line"
         x1={geom.left}
         y1={hoverY ?? 0}
-        x2={geom.width - 14}
+        x2={geom.left + geom.innerW}
         y2={hoverY ?? 0}
         visibility={showCross ? 'visible' : 'hidden'}
       />
@@ -330,12 +410,38 @@ function ChartPlot({
           {hoverLabel}
         </text>
       ) : null}
+      {geom.now ? (
+        <g className="now-tag">
+          <line
+            className="now-line"
+            x1={geom.left}
+            y1={geom.now.y}
+            x2={geom.left + geom.innerW}
+            y2={geom.now.y}
+            stroke="#f4b000"
+            strokeWidth={1.2}
+            strokeDasharray="4 3"
+          />
+          <circle cx={geom.now.x} cy={geom.now.y} r={3.5} fill="#f4b000" stroke="#ffffff" strokeWidth={1.4} />
+          <rect x={geom.left + geom.innerW - 82} y={geom.now.tagY - 9} width={76} height={18} rx={4} fill="#f4b000" />
+          <text x={geom.left + geom.innerW - 76} y={geom.now.tagY + 4} fontSize={11} fontWeight={600}>
+            {geom.now.label}
+          </text>
+        </g>
+      ) : null}
       {geom.marks.map(mark => (
         <g className="trade-mark" key={`${mark.side}-${mark.date}`}>
-          <circle cx={mark.x} cy={mark.y - 12} r="7.5" style={{ fill: mark.side === 'buy' ? BUY : SELL }} />
+          <circle
+            cx={mark.x}
+            cy={mark.y}
+            r="6.5"
+            stroke="#ffffff"
+            strokeWidth="1.5"
+            style={{ fill: mark.side === 'buy' ? BUY : SELL }}
+          />
           <text
             x={mark.x}
-            y={mark.y - 9.2}
+            y={mark.y + 3}
             textAnchor="middle"
             fontSize="8.5"
             fontWeight="700"
@@ -414,7 +520,8 @@ function buildGeom(
   rows: IndexClosePoint[],
   code: string,
   marks: EtfTradeMark[],
-  size: { width: number; height: number }
+  size: { width: number; height: number },
+  options: { fromZero: boolean; extras: number[]; digits: number; level: number | null; showNow: boolean }
 ): Geom {
   const empty: Geom = {
     width: size.width,
@@ -429,31 +536,40 @@ function buildGeom(
     years: [],
     line: '',
     area: '',
+    levelY: null,
+    now: null,
     marks: [],
   };
   if (size.width < 40 || size.height < 40 || rows.length === 0) return empty;
 
-  const left = code === 'USDCNH.OTH' || !isIndexLike(code, rows) ? 46 : 40;
-  const right = 14;
-  const top = 18;
-  const bottom = 32;
+  const left = options.digits > 2 ? 48 : 52;
+  const right = PLOT_RIGHT;
+  const top = PLOT_TOP;
+  const bottom = PLOT_BOTTOM;
   const innerW = size.width - left - right;
   const innerH = size.height - top - bottom;
-  const [y0, y1] = domainOf(rows, code);
+  const [y0, y1] = plotDomain(rows, code, options.fromZero, options.extras);
+  const t0 = Date.parse(rows[0].tradeDate);
+  const t1 = Date.parse(rows[rows.length - 1].tradeDate);
   const xAt = (index: number) =>
-    left + (rows.length === 1 ? innerW / 2 : (index / (rows.length - 1)) * innerW);
+    left + ((Date.parse(rows[index].tradeDate) - t0) / (t1 - t0 || 1)) * innerW;
   const yAt = (value: number) => top + (1 - (value - y0) / (y1 - y0 || 1)) * innerH;
 
-  const ticks = ticksOf(y0, y1).map(value => ({ value, y: yAt(value), label: labelOf(value, code, rows) }));
+  const ticks = ticksOf(y0, y1).map(value => ({
+    value,
+    y: yAt(value),
+    label: axisLabel(value, code, rows, options.digits, options.fromZero, y1),
+  }));
   const years: Array<{ x: number; year: string }> = [];
   let lastX = -999;
   let lastYear = '';
   rows.forEach((row, index) => {
     const year = row.tradeDate.slice(0, 4);
     if (year === lastYear) return;
-    lastYear = year;
     const x = xAt(index);
-    if (x - lastX < 56 && index !== 0) return;
+    // 年初挤在上一年旁边时，继续往后找，直到留出 46px 再落字。
+    if (index !== 0 && x - lastX < 46 && index !== rows.length - 1) return;
+    lastYear = year;
     lastX = x;
     years.push({ x, year });
   });
@@ -479,7 +595,65 @@ function buildGeom(
     places.push({ x: xAt(index), y: yAt(rows[index].close), side: mark.side, price: mark.price, date, index });
   });
 
-  return { width: size.width, height: size.height, left, top, innerW, innerH, xs, ys, ticks, years, line, area, marks: places };
+  const levelY = options.level == null ? null : yAt(options.level);
+  const lastRow = rows[rows.length - 1];
+  const nowY = yAt(lastRow.close);
+  const now = options.showNow
+    ? {
+        x: xAt(rows.length - 1),
+        y: nowY,
+        tagY: Math.max(top + 10, Math.min(top + innerH - 10, nowY)),
+        label: lastRow.close.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      }
+    : null;
+  return {
+    width: size.width,
+    height: size.height,
+    left,
+    top,
+    innerW,
+    innerH,
+    xs,
+    ys,
+    ticks,
+    years,
+    line,
+    area,
+    levelY,
+    now,
+    marks: places,
+  };
+}
+
+/** 纵轴。上市以来从 0 起；其余时间贴着可见价格。美元兑人民币仍从 6 起。 */
+function plotDomain(
+  rows: IndexClosePoint[],
+  code: string,
+  fromZero: boolean,
+  extras: number[]
+): [number, number] {
+  if (code === 'USDCNH.OTH') return domainOf(rows, code);
+  const values = [...rows.map(row => row.close), ...extras];
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  if (fromZero) return [0, axisTop(max)];
+  const pad = Math.max((max - min) * 0.1, max * 0.02);
+  return [Math.max(0, min - pad), max + pad];
+}
+
+/** 刻度文字。指数用整数，价格用两位小数；从 0 起且上沿过 3000 时用 K。 */
+function axisLabel(
+  value: number,
+  code: string,
+  rows: IndexClosePoint[],
+  digits: number,
+  fromZero: boolean,
+  max: number
+): string {
+  if (code === 'USDCNH.OTH') return labelOf(value, code, rows);
+  if (digits > 2) return value.toFixed(2);
+  if (fromZero && max >= 3000) return labelOf(value, code, rows);
+  return Math.round(value).toLocaleString('zh-CN');
 }
 
 function isIndexLike(code: string, rows: IndexClosePoint[]): boolean {

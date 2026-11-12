@@ -5,23 +5,23 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { IndexLevelChart } from '@/components/index-levels/index-level-chart';
 import { HelpTooltip } from '@/components/shared/help-tooltip';
-import { IndexLevelGauge } from '@/components/index-levels/index-level-gauge';
 import { IndexLevelPicker } from '@/components/index-levels/index-level-picker';
-import { IndexQuoteLedger } from '@/components/index-levels/index-quote-ledger';
 import {
   INDEX_WATCHES,
+  quoteHref,
   resolveWatchedIndex,
   type IndexLevelMark,
+  type IndexQuote,
   type IndexWatch,
 } from '@/lib/index-levels/catalog';
 import { MEDIA_ETF_TRADES, type EtfTradeMark } from '@/lib/index-levels/media-etf-trades';
 import { MEDIA_LINK_TRADES } from '@/lib/index-levels/media-link-trades';
 import { SECURITIES_ETF_TRADES } from '@/lib/index-levels/securities-etf-trades';
 import { SECURITIES_LINK_TRADES } from '@/lib/index-levels/securities-link-trades';
-import type { IndexClosePoint } from '@/lib/index-levels/close-series';
+import type { CloseSpan, IndexClosePoint } from '@/lib/index-levels/close-series';
 import type { CmbUsdQuotes } from '@/lib/index-levels/cmb-fx';
 import { CMB_USD_BUY_MARKS } from '@/lib/index-levels/cmb-fx-trades';
-import { formatClose } from '@/lib/index-levels/position';
+import { changePct, classifyChange, formatClose, formatMarkLabel } from '@/lib/index-levels/position';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { fetchEtfCloseSeries } from '@/lib/supabase/etf-daily-repository';
 import { loadChartFundNav } from '@/lib/supabase/fund-nav-repository';
@@ -145,10 +145,16 @@ function useFundSeries(fundCode?: string): { fundPoints: IndexClosePoint[]; fund
   return { fundPoints, fundPhase };
 }
 
+const SPANS: Array<{ id: CloseSpan; label: string }> = [
+  { id: 'all', label: '上市以来' },
+  { id: '10', label: '近 10 年' },
+  { id: '5', label: '近 5 年' },
+];
+
 /**
- * 点位跟踪：面包屑与页头，指数折线 + 估值仪表盘并排，ETF 与联接基金齐全时一行两列、
- * 只此一张时整行。美元兑人民币在折线下加招行汇卖、汇买一行两列。
- * 底下是原文摘录和关键点位速览。当前指数写在 query `index` 上。
+ * 点位跟踪：页头是指数名和日期，主图给出收盘、时间范围和可选点位，
+ * 原文跟在点位下面。关联基金与招行汇率沿用同一套折线。
+ * 当前指数写在 query `index` 上。
  */
 export function IndexLevelTracker() {
   const [code, setCode] = useWatchedIndex();
@@ -156,47 +162,107 @@ export function IndexLevelTracker() {
   const { points, etfPoints, phase } = useCloseSeries(code, current?.chartEtf?.code);
   const { fundPoints, fundPhase } = useFundSeries(current?.chartFund?.code);
   const cmb = useCmbFxSeries(current?.chartBankFx === true);
+  const [span, setSpan] = useState<CloseSpan>('5');
+  const [levelId, setLevelId] = useState<string | null>(defaultLevelId(current?.levels ?? []));
+
+  useResetOnChange(code, () => setLevelId(defaultLevelId(current?.levels ?? [])));
 
   const close = useMemo(() => latestClose(code, points, phase), [code, points, phase]);
+  const windowed = useMemo(() => sliceSpan(points, span), [points, span]);
+  const etfWindow = useMemo(
+    () => sliceSpan(etfPoints, span, windowed[windowed.length - 1]?.tradeDate),
+    [etfPoints, span, windowed]
+  );
+  const fundWindow = useMemo(
+    () => sliceSpan(fundPoints, span, windowed[windowed.length - 1]?.tradeDate),
+    [fundPoints, span, windowed]
+  );
+  const levelPoints = useMemo(() => (current?.levels ?? []).map(level => level.point), [current]);
 
   if (!current) return null;
-  const levels = current.levels;
-  const sorted = [...levels].sort((a, b) => a.point - b.point);
-  const observed = close ? [...sorted].reverse().find(level => level.point <= close.close) : null;
-  const reference = close ? sorted.find(level => level.point > close.close) : null;
-  const bottom = sorted[0]?.point;
+  const selected = current.levels.find(level => String(level.point) === levelId) ?? null;
+  const edge = close ? brackets(close.close, current.levels) : { below: null, above: null };
+  const quotes = selected ? quotesForLevel(current.quotes, selected, current.levels) : [];
+  const chooseLevel = (id: string) => setLevelId(currentId => (currentId === id ? null : id));
 
   return (
     <>
-      <TrackerHead current={current} onSelect={setCode} />
+      <p className="crumb">
+        <a href="/">工具集</a>
+        {' / '}
+        点位跟踪
+      </p>
+      <TrackerHead current={current} date={close?.tradeDate} onSelect={setCode} />
 
-      <section className="overview">
-        <IndexLevelChart name={current.name} code={current.code} points={points} phase={phase} />
-        <IndexLevelGauge
-          levels={levels}
-          quotes={current.quotes}
-          close={close}
+      <section className="panel">
+        <div className="group-head">
+          <div className="readout">
+            <div className="quote">
+              <div className="px-row">
+                <b className="px">{close ? formatClose(close.close) : '—'}</b>
+                <ChangeText close={close} />
+              </div>
+              <GapText below={edge.below} above={edge.above} />
+            </div>
+            <div className="time-side">
+              <div className="tabs" role="group" aria-label="时间范围">
+                {SPANS.map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={span === item.id ? 'tab active' : 'tab'}
+                    aria-pressed={span === item.id}
+                    onClick={() => setSpan(item.id)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <IndexLevelChart
+          bare
+          presliced
+          axisFromZero
+          name={current.name}
+          code={current.code}
+          points={windowed}
           phase={phase}
-          mid={current.gauge?.mid}
+          span={span}
+          levels={levelPoints}
+          activeLevel={selected?.point ?? null}
+          onActiveLevel={selected ? () => chooseLevel(String(selected.point)) : undefined}
         />
+        {current.levels.length > 0 ? (
+          <div className="level-picker" role="group" aria-label="关键点位">
+            {current.levels.map(level => (
+              <button
+                key={level.point}
+                type="button"
+                data-level={level.point}
+                aria-pressed={selected?.point === level.point}
+                onClick={() => chooseLevel(String(level.point))}
+              >
+                <span>{level.name}</span>
+                <b>{formatMarkLabel(level.label)}</b>
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {quotes.length > 0 ? <QuoteSheet quotes={quotes} /> : null}
       </section>
 
-      <CmbFxCharts enabled={current.chartBankFx === true} quotes={cmb} />
+      <CmbFxCharts enabled={current.chartBankFx === true} quotes={cmb} span={span} end={windowed[windowed.length - 1]?.tradeDate} />
 
       <LinkedFundCharts
         watch={current}
-        etfPoints={etfPoints}
-        fundPoints={fundPoints}
+        etfPoints={etfWindow}
+        fundPoints={fundWindow}
         phase={phase}
         fundPhase={fundPhase}
+        span={span}
       />
-
-      <LevelNotes watch={current} close={close} observed={observed} reference={reference} bottom={bottom} />
-
-      <div className="footer">
-        <span>点位跟踪 · 仅作数据观察与策略研究</span>
-        <span>收盘为已结算序列</span>
-      </div>
     </>
   );
 }
@@ -246,46 +312,65 @@ const CMB_BID_HELP = '把美元卖给招行（结汇）的成交价，即银行�
 /**
  * 招行汇卖、汇买一行两列。购汇用的汇卖在左。窄屏与传媒 ETF 行同一断点折回单列。
  */
-function CmbFxCharts({ enabled, quotes }: { enabled: boolean; quotes: { points: CmbUsdQuotes; phase: Phase } }) {
+function CmbFxCharts({
+  enabled,
+  quotes,
+  span,
+  end,
+}: {
+  enabled: boolean;
+  quotes: { points: CmbUsdQuotes; phase: Phase };
+  span: CloseSpan;
+  end?: string;
+}) {
   if (!enabled) return null;
+  const ask = sliceSpan(quotes.points.ask, span, end);
+  const bid = sliceSpan(quotes.points.bid, span, end);
   return (
-    <section className="etf-fund-row" aria-label="招行美元汇卖与汇买">
-      <IndexLevelChart
-        wide
-        name="招行汇卖"
-        code="USD.ASK"
-        points={quotes.points.ask}
-        phase={quotes.phase}
-        priceDigits={5}
-        marks={CMB_USD_BUY_MARKS}
-        titleHelp={<HelpTooltip title={CMB_ASK_HELP} />}
-      />
-      <IndexLevelChart
-        wide
-        name="招行汇买"
-        code="USD.BID"
-        points={quotes.points.bid}
-        phase={quotes.phase}
-        priceDigits={4}
-        titleHelp={<HelpTooltip title={CMB_BID_HELP} />}
-      />
+    <section className="fund-block" aria-label="招行美元汇卖与汇买">
+      <div className="fund-grid">
+        <article className="fund-panel">
+          <h3 className="fund-title">
+            招行汇卖 <span className="code">USD.ASK</span>
+            <span className="title-help"><HelpTooltip title={CMB_ASK_HELP} /></span>
+          </h3>
+          <IndexLevelChart bare presliced name="招行汇卖" code="USD.ASK" points={ask} phase={quotes.phase} span={span} priceDigits={5} marks={CMB_USD_BUY_MARKS} />
+        </article>
+        <article className="fund-panel">
+          <h3 className="fund-title">
+            招行汇买 <span className="code">USD.BID</span>
+            <span className="title-help"><HelpTooltip title={CMB_BID_HELP} /></span>
+          </h3>
+          <IndexLevelChart bare presliced name="招行汇买" code="USD.BID" points={bid} phase={quotes.phase} span={span} priceDigits={4} />
+        </article>
+      </div>
     </section>
   );
 }
 
-/** 页头：标题与指数切换器。 */
-function TrackerHead({ current, onSelect }: { current: IndexWatch; onSelect: (next: string) => void }) {
+/** 页头：指数名在左，日期在名字下面，跟踪指数在右。 */
+function TrackerHead({
+  current,
+  date,
+  onSelect,
+}: {
+  current: IndexWatch;
+  date?: string;
+  onSelect: (next: string) => void;
+}) {
   return (
-    <div className="page-head">
-      <div>
-        <h1>指数点位跟踪</h1>
-        <div className="subtitle">跟踪指数估值位置、历史区间与关联 ETF 的买卖信号</div>
+    <header className="head">
+      <div className="title-block">
+        <h1>
+          {current.name} <span className="code">{current.code}</span>
+        </h1>
+        <time className="page-date" dateTime={date}>{date ? date.replaceAll('-', '/') : '—'}</time>
       </div>
-      <div className="selector-wrap">
-        <span className="field-label">跟踪指数</span>
+      <label className="selector">
+        <span className="selector-label">跟踪指数</span>
         <IndexLevelPicker value={current.code} onChange={onSelect} />
-      </div>
-    </div>
+      </label>
+    </header>
   );
 }
 
@@ -309,107 +394,153 @@ function LinkedFundCharts({
   fundPoints,
   phase,
   fundPhase,
+  span,
 }: {
   watch: IndexWatch;
   etfPoints: IndexClosePoint[];
   fundPoints: IndexClosePoint[];
   phase: Phase;
   fundPhase: Phase;
+  span: CloseSpan;
 }) {
   const etf = watch.chartEtf ? (
-    <IndexLevelChart
-      wide
-      name={watch.chartEtf.name}
-      code={watch.chartEtf.code}
-      points={etfPoints}
-      phase={phase}
-      marks={ETF_TRADE_MARKS[watch.chartEtf.code] ?? []}
-      priceDigits={3}
-    />
+    <article className="fund-panel" key={watch.chartEtf.code}>
+      <h3 className="fund-title">
+        {watch.chartEtf.name} <span className="code">{watch.chartEtf.code}</span>
+      </h3>
+      <IndexLevelChart
+        bare
+        presliced
+        name={watch.chartEtf.name}
+        code={watch.chartEtf.code}
+        points={etfPoints}
+        phase={phase}
+        span={span}
+        marks={ETF_TRADE_MARKS[watch.chartEtf.code] ?? []}
+        priceDigits={3}
+      />
+    </article>
   ) : null;
   const fund = watch.chartFund ? (
-    <IndexLevelChart
-      wide
-      name={watch.chartFund.name}
-      code={watch.chartFund.code}
-      points={fundPoints}
-      phase={fundPhase}
-      marks={FUND_TRADE_MARKS[watch.chartFund.code] ?? []}
-      priceDigits={4}
-      codeHref={watch.chartFund.href}
-    />
+    <article className="fund-panel" key={watch.chartFund.code}>
+      <h3 className="fund-title">
+        {watch.chartFund.href ? (
+          <a href={watch.chartFund.href} target="_blank" rel="noreferrer">{watch.chartFund.name}</a>
+        ) : (
+          watch.chartFund.name
+        )}
+        <span className="code">{watch.chartFund.code}</span>
+      </h3>
+      <IndexLevelChart
+        bare
+        presliced
+        name={watch.chartFund.name}
+        code={watch.chartFund.code}
+        points={fundPoints}
+        phase={fundPhase}
+        span={span}
+        marks={FUND_TRADE_MARKS[watch.chartFund.code] ?? []}
+        priceDigits={4}
+      />
+    </article>
   ) : null;
-
-  if (etf && fund) {
-    return (
-      <section className="etf-fund-row" aria-label="关联 ETF 与场外基金走势">
-        {etf}
-        {fund}
-      </section>
-    );
-  }
+  if (!etf && !fund) return null;
   return (
-    <>
-      {etf}
-      {fund}
-    </>
-  );
-}
-
-/** 原文摘录台账 + 关键点位速览。 */
-function LevelNotes({
-  watch,
-  close,
-  observed,
-  reference,
-  bottom,
-}: {
-  watch: IndexWatch;
-  close: IndexLatestClose | null;
-  observed: IndexLevelMark | null | undefined;
-  reference: IndexLevelMark | null | undefined;
-  bottom?: number;
-}) {
-  return (
-    <section className="note-area">
-      <section className="panel notes" aria-label="历史观点摘录">
-        <div className="notes-head">
-          <div className="panel-title">历史观点摘录</div>
-          <span className="pill">{watch.quotes.length} 条记录</span>
+    <section className="fund-block">
+      <div className="group-head">
+        <div className="group-title">
+          <h2>跟踪基金</h2>
         </div>
-        <IndexQuoteLedger quotes={watch.quotes} />
-      </section>
-
-      <aside className="panel insight">
-        <h3>关键点位速览</h3>
-        <div className="insight-row">
-          <span>当前点位</span>
-          <strong>{close ? formatClose(close.close) : '—'}</strong>
-        </div>
-        <div className="insight-row">
-          <span>近期观察位</span>
-          <strong>{observed ? formatPointLabel(observed.point) : '—'}</strong>
-        </div>
-        <div className="insight-row">
-          <span>上方参考位</span>
-          <strong>{reference ? formatPointLabel(reference.point) : '—'}</strong>
-        </div>
-        <div className="insight-row">
-          <span>历史低位</span>
-          <strong>{bottom == null ? '—' : formatPointLabel(bottom)}</strong>
-        </div>
-        <div className="insight-row">
-          <span>数据更新时间</span>
-          <strong>{close ? close.tradeDate.replaceAll('-', '/') : '—'}</strong>
-        </div>
-      </aside>
+      </div>
+      <div className={etf && fund ? 'fund-grid' : 'fund-grid is-single'}>{etf}{fund}</div>
     </section>
   );
 }
 
-function formatPointLabel(value: number): string {
-  if (Math.abs(value) < 10) return value.toFixed(2);
-  return Math.round(value).toLocaleString('zh-CN');
+function QuoteSheet({ quotes }: { quotes: IndexQuote[] }) {
+  return (
+    <section className="level-sheet" aria-live="polite" aria-label="E大贴文">
+      {quotes.map(quote => (
+        <article className="utter" key={quote.postId}>
+          <time dateTime={quote.date}>{quote.date.replaceAll('-', '/')}</time>
+          <p className="words">
+            {quote.text}{' '}
+            <a href={quoteHref(quote)} target="_blank" rel="noreferrer">查看原文</a>
+          </p>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+function ChangeText({ close }: { close: IndexLatestClose | null }) {
+  if (!close) return <span className="chg">—</span>;
+  const change = changePct(close.close, close.previousClose);
+  const kind = classifyChange(change);
+  const text = change == null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(2)}%`;
+  return <span className={`chg ${kind}`}>{text}</span>;
+}
+
+function GapText({ below, above }: { below: IndexLevelMark | null; above: IndexLevelMark | null }) {
+  if (!below || !above) return <span className="gap">—</span>;
+  return (
+    <span className="gap">
+      介于 <b>{`${below.name} ${formatMarkLabel(below.label)}`}</b>
+      {' 与 '}
+      <b>{`${above.name} ${formatMarkLabel(above.label)}`}</b>
+    </span>
+  );
+}
+
+function defaultLevelId(levels: IndexLevelMark[]): string | null {
+  const picked = levels.find(level => level.name === '压力') ?? levels[0];
+  return picked ? String(picked.point) : null;
+}
+
+function brackets(close: number, levels: IndexLevelMark[]): { below: IndexLevelMark | null; above: IndexLevelMark | null } {
+  const sorted = [...levels].sort((a, b) => a.point - b.point);
+  return {
+    below: [...sorted].reverse().find(level => level.point <= close) ?? null,
+    above: sorted.find(level => level.point > close) ?? null,
+  };
+}
+
+/** 原文属于哪一档：点位数字对上，差 10 点以内的近邻（如 1403 → 1400）也算。 */
+function quotesForLevel(quotes: IndexQuote[], level: IndexLevelMark, levels: IndexLevelMark[]): IndexQuote[] {
+  return quotes
+    .filter(quote => quoteMentions(quote.level, level, levels))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.postId - b.postId);
+}
+
+function quoteMentions(text: string, level: IndexLevelMark, levels: IndexLevelMark[]): boolean {
+  if (levels.length === 0) return false;
+  const numbers = numbersIn(text);
+  if (numbers.some(value => value === level.point)) return true;
+  const exact = levels.some(item => numbers.some(value => value === item.point));
+  if (exact) return false;
+  return numbers.some(value => {
+    const nearest = levels.reduce((best, item) => (Math.abs(item.point - value) < Math.abs(best.point - value) ? item : best));
+    return nearest.point === level.point && Math.abs(level.point - value) <= 10;
+  });
+}
+
+function numbersIn(text: string): number[] {
+  const found: number[] = [];
+  const pattern = /\d+(?:\.\d+)?/g;
+  let match = pattern.exec(text);
+  while (match) {
+    found.push(Number(match[0]));
+    match = pattern.exec(text);
+  }
+  return found;
+}
+
+function sliceSpan(points: IndexClosePoint[], span: CloseSpan, endDate?: string): IndexClosePoint[] {
+  if (span === 'all' || points.length === 0) return points;
+  const end = endDate || points[points.length - 1].tradeDate;
+  const [year, month, day] = end.split('-');
+  const cut = `${Number(year) - Number(span)}-${month}-${day}`;
+  return points.filter(point => point.tradeDate >= cut && point.tradeDate <= end);
 }
 
 function latestClose(code: string, points: IndexClosePoint[], phase: Phase): IndexLatestClose | null {

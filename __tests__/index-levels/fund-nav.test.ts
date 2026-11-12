@@ -11,10 +11,18 @@ describe('004752 单位净值', () => {
     expect(parseFundNavScript('var other = [];')).toEqual([]);
   });
 
-  it('发车记录里写明的买卖各 5 笔', () => {
-    expect(MEDIA_LINK_TRADES.filter(mark => mark.side === 'buy')).toHaveLength(5);
-    expect(MEDIA_LINK_TRADES.filter(mark => mark.side === 'sell')).toHaveLength(5);
-    expect(MEDIA_LINK_TRADES.find(mark => mark.tradeDate === '2018-07-16')?.side).toBe('buy');
+  it('发车记录与且慢列表一致，买卖各 7 笔', () => {
+    expect(MEDIA_LINK_TRADES.filter(mark => mark.side === 'buy')).toHaveLength(7);
+    expect(MEDIA_LINK_TRADES.filter(mark => mark.side === 'sell')).toHaveLength(7);
+    expect(MEDIA_LINK_TRADES.find(mark => mark.tradeDate === '2018-01-19')).toMatchObject({
+      side: 'buy',
+      price: 0.9959,
+    });
+    expect(MEDIA_LINK_TRADES.find(mark => mark.tradeDate === '2018-11-30')).toBeUndefined();
+    expect(MEDIA_LINK_TRADES.find(mark => mark.tradeDate === '2025-08-22')).toMatchObject({
+      side: 'sell',
+      price: 0.9836,
+    });
     expect(MEDIA_LINK_TRADES.find(mark => mark.tradeDate === '2026-01-15')).toMatchObject({
       side: 'sell',
       price: 1.2422,
