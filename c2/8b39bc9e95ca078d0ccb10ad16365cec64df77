@@ -1,0 +1,107 @@
+src/components/index-levels/index-level-chart.tsx
+  s_7fb99cd57ad173::t_3e9684aa8d32d6 155-162
+  s_7fb99cd57ad173::t_02a41cf7d184ce 523,539,545-548
+  s_7fb99cd57ad173::t_98af0287709ab8 113-114
+  s_7fb99cd57ad173::t_f8681e236c5f17 126-129
+  s_7fb99cd57ad173::t_4e1eecee858f46 153-154,163
+  s_7fb99cd57ad173::t_0886d7bfb99310 85
+  s_7fb99cd57ad173::t_b3c2614ff285ea 37
+  s_7fb99cd57ad173::t_0819fb66cf7642 598,609-622,624-656
+  s_7fb99cd57ad173::t_0676bcf8e616fc 558-562
+  s_7fb99cd57ad173::t_5a77b06f2ec55f 38-39
+  s_7fb99cd57ad173::t_3453cd10cb4037 234
+  s_7fb99cd57ad173::t_bdfecea562e201 253-254
+  s_7fb99cd57ad173::t_e6184392476ebf 570-572
+  s_7fb99cd57ad173::t_9f47bc99544111 358
+  s_7fb99cd57ad173::t_2575ecdb7cece0 22
+  s_7fb99cd57ad173::t_fc2b41f74aa63a 540
+  s_7fb99cd57ad173::t_f9384ee1f3b890 14-17,19-21
+  s_7fb99cd57ad173::t_6207895b2f3c61 352-353
+  s_7fb99cd57ad173::t_f569f2222de98f 404
+  s_7fb99cd57ad173::t_d13dec0e7e1b45 599-608
+  s_7fb99cd57ad173::t_96bc82d7f21621 551-553,555
+  s_7fb99cd57ad173::t_7f36f6296d92b0 79-81,83-84,101-112,116-117
+  s_7fb99cd57ad173::t_6b90ca8ee57306 82
+  s_7fb99cd57ad173::t_40393404dc1ca0 413-431
+  s_7fb99cd57ad173::t_a1d4e1627a4183 188-190
+  s_7fb99cd57ad173::t_3b16259df52cf2 290-292,295-325
+  s_7fb99cd57ad173::t_d583aa4f2633e7 274
+  s_7fb99cd57ad173::t_d00cc91a8f2ff0 222
+  s_7fb99cd57ad173::t_bc86dd6cb57baa 371-391
+  s_7fb99cd57ad173::t_bde4d04371e03b 434-441,444
+  s_7fb99cd57ad173::t_6790d01ac70be2 335,341
+  s_7fb99cd57ad173::t_3e162070afc656 173
+  s_7fb99cd57ad173::t_c79d542832f314 623
+  s_7fb99cd57ad173::t_2fd3b54d94bc55 524
+  s_7fb99cd57ad173::t_5a3d22be7ecd80 187
+src/app/view/index-levels/index-levels.css
+  s_7fb99cd57ad173::t_27c5716e153e9a 212
+  s_7fb99cd57ad173::t_59d243884ae153 80
+  s_7fb99cd57ad173::t_70c2022729e82c 12
+  s_7fb99cd57ad173::t_d9db75b6a05ed4 36
+  s_7fb99cd57ad173::t_201c48ca5e21a2 38
+  s_7fb99cd57ad173::t_4a70bbe862f6eb 217,220
+  s_7fb99cd57ad173::t_56018f8f2b2608 238,244,247
+  s_7fb99cd57ad173::t_5765591d6e53fb 2-3,7-8,13-18,20-26,33,37,43-46,60-64,66,68-69,73,75-79,81-82,85,87-89,91-92,95-96,99-105,109-110,116-118,121-123,125,128-129,131-132,135-140,142-163,165-166,168-171,173-200,202-203,205,207-211,213,215,219,221-224,227-236,239-240,242-243,245-246,248-249,251-259,262-277,279-283,285-298,300-314,331-351,353-354
+  s_7fb99cd57ad173::t_5eda7bd47e4576 133
+  s_7fb99cd57ad173::t_aed0a2cdceb41d 226
+  s_7fb99cd57ad173::t_800a628d5c5a94 352
+  s_7fb99cd57ad173::t_fc7cd87d68ad81 164
+  s_7fb99cd57ad173::t_e803cde89bbb66 204
+  s_7fb99cd57ad173::t_c003dfb2f5a433 6,9-11
+rules/ui-scope-interpretation.md
+  s_27ea85ff1a170d::t_9a3a4480cca1c3 6-11
+__tests__/index-levels/fund-nav.test.ts
+  s_7fb99cd57ad173::t_073ad3113ad6e0 14-25
+src/components/index-levels/index-level-tracker.tsx
+  s_7fb99cd57ad173::t_f09768b521af34 24
+  s_7fb99cd57ad173::t_5efc164cfec3dc 148-153,155-157,165-168,171-180,183-186,190-230,232-235,237-253,256,260-261,264
+  s_7fb99cd57ad173::t_8b6ff7f95207f3 516
+  s_7fb99cd57ad173::t_e8c243cd0c2797 11,14
+  s_7fb99cd57ad173::t_25fb987340427d 493,527-537
+  s_7fb99cd57ad173::t_2b1dec85052f48 21
+  s_7fb99cd57ad173::t_e048aebe765cc5 315-325,327-328,330-346,351-360,362-367,369-370,372-373
+  s_7fb99cd57ad173::t_eae128fb208944 517
+  s_7fb99cd57ad173::t_ad0441a9c67e2a 397,404,407-422,425-445,447,449-456,460,462-471,476-492
+  s_7fb99cd57ad173::t_d8ab4d7d149e67 495-515,518-526,538-543
+  s_5dc6bf31c0a407::t_5b43580140a51a 494
+src/lib/index-levels/media-link-trades.ts
+  s_7fb99cd57ad173::t_6d66d1c9ea689f 5-6,8,14,17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "c28b39bc9e95ca078d0ccb10ad16365cec64df77",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_27ea85ff1a170d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c9e6-827e-73b0-93b8-669756fe7836",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_5dc6bf31c0a407": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ceae-f519-77d3-89df-1c8e29b70307",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_7fb99cd57ad173": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "eb359759-781f-4fdf-9724-a869213d5fe2",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
