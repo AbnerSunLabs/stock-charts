@@ -1,0 +1,24 @@
+rules/design-system-scope.md
+  s_5dc6bf31c0a407::t_a31eac9b1cf440 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "c2250693c45c8752753d3a48399df3a43cda9c9b",
+  "prompts": {},
+  "humans": {
+    "h_245285a78fca97": {
+      "author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  },
+  "sessions": {
+    "s_5dc6bf31c0a407": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ceae-f519-77d3-89df-1c8e29b70307",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
