@@ -1,0 +1,95 @@
+/* 通用视觉参考：可映射到现有组件，不包含页面业务结构或行为。 */
+.focus-design {
+  --page-bg: #f1f5f9;
+  --surface: #fff;
+  --surface-subtle: #f8fafc;
+  --surface-tint: #f7f7ff;
+  --text-strong: #30334b;
+  --text-body: #4b526c;
+  --text-muted: #69718a;
+  --primary: #6366f1;
+  --primary-active: #4f46e5;
+  --primary-ink: #4338ca;
+  --selection-bg: #eef2ff;
+  --selection-hover: #e0e7ff;
+  --border: #e2e8f0;
+  --border-selected: #a5b4fc;
+  --control-bg: #eef2f7;
+  --segment-bg: #eef1ef;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius-panel: 12px;
+  --radius-control: 8px;
+  --radius-button: 6px;
+  --shadow-float: 0 4px 12px rgb(10 11 13 / .04);
+  --shadow-selected: 0 6px 16px rgb(99 102 241 / .12);
+  --shadow-hover: 0 18px 32px rgb(99 102 241 / .18);
+  --motion-duration: 300ms;
+  background: var(--page-bg);
+  color: var(--text-body);
+  font: 14px/1.6 var(--font-sans);
+}
+.focus-design, .focus-design * { box-sizing: border-box; }
+.focus-design [hidden] { display: none !important; }
+.focus-design :where(button, input, select, textarea) { font: inherit; color: inherit; }
+.focus-design .page-shell { max-width: 1440px; margin: 0 auto; padding: 24px 32px 32px; }
+.focus-design .page-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+.focus-design .heading-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.focus-design :where(.page-title, .section-title) { margin: 0; color: var(--text-strong); font-size: 20px; font-weight: 600; line-height: 1.4; }
+.focus-design .page-title { letter-spacing: -.025em; }
+.focus-design .compact-title { margin: 0; color: var(--text-strong); font-size: 15px; font-weight: 600; line-height: 1.4; }
+.focus-design .display-value { color: var(--text-strong); font-size: 44px; font-weight: 600; line-height: 1; letter-spacing: -.045em; font-variant-numeric: lining-nums proportional-nums; }
+.focus-design .meta { color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.focus-design .numeric { font-variant-numeric: tabular-nums; }
+.focus-design .monospace { font-family: var(--font-mono); }
+.focus-design .surface { padding: 24px; border-radius: var(--radius-panel); background: var(--surface); box-shadow: none; }
+.focus-design .surface--subtle { background: var(--surface-subtle); }
+.focus-design .surface--tint { background: var(--surface-tint); }
+.focus-design .section-stack { display: flex; flex-direction: column; gap: 24px; }
+.focus-design .content-stack { display: flex; flex-direction: column; gap: 16px; }
+.focus-design .action-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.focus-design .field-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.focus-design .field-label { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+.focus-design .control { width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--control-bg); color: var(--text-body); font-size: 13px; transition: background-color var(--motion-duration) ease, border-color var(--motion-duration) ease, box-shadow var(--motion-duration) ease; }
+.focus-design .control:focus { background: var(--surface); border-color: var(--border-selected); box-shadow: 0 0 0 4px rgb(99 102 241 / .20), 0 10px 26px rgb(99 102 241 / .14); }
+.focus-design .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-button); background: var(--surface); color: var(--text-body); font-size: 13px; font-weight: 500; cursor: pointer; }
+.focus-design .button--compact { min-height: 36px; padding: 6px 10px; font-size: 12px; }
+.focus-design .button--soft { border-color: #c7d2fe; background: var(--selection-bg); color: var(--primary-active); }
+.focus-design .button--primary { border-color: var(--primary); background: var(--primary); color: #fff; }
+.focus-design .button[aria-pressed="true"] { border-color: var(--border-selected); background: var(--selection-bg); color: var(--primary-ink); box-shadow: var(--shadow-selected); }
+.focus-design .segmented { display: inline-flex; max-width: 100%; flex-wrap: wrap; padding: 4px; border-radius: 999px; background: var(--segment-bg); }
+.focus-design .segment { min-height: 32px; padding: 6px 14px; border: 0; border-radius: 999px; background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 500; line-height: 20px; cursor: pointer; }
+/* 选用与组件语义匹配的一种状态属性。 */
+.focus-design .segment:is([aria-pressed="true"], [aria-selected="true"]) { background: #fff; color: var(--text-strong); font-weight: 600; box-shadow: 0 1px 2px rgb(16 24 40 / .06), 0 1px 3px rgb(16 24 40 / .08); }
+.focus-design .prose { font-size: 15px; line-height: 1.9; overflow-wrap: anywhere; }
+.focus-design .prose > :first-child { margin-top: 0; }
+.focus-design .prose > :last-child { margin-bottom: 0; }
+.focus-design .prose--aside { padding-left: 16px; border-left: 1px solid #c7d2fe; }
+.focus-design .link { color: var(--primary-active); text-decoration: none; }
+.focus-design .link:hover { color: var(--primary-ink); text-decoration: underline; text-underline-offset: 3px; }
+.focus-design .floating-surface { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-panel); background: rgb(255 255 255 / .97); color: var(--text-body); box-shadow: var(--shadow-float); font-size: 12px; line-height: 1.65; }
+.focus-design :where(.button, .segment, .link) { transition: transform var(--motion-duration) ease-in-out, background-color var(--motion-duration) ease-in-out, border-color var(--motion-duration) ease-in-out, color var(--motion-duration) ease-in-out, box-shadow var(--motion-duration) ease-in-out; }
+.focus-design :where(button, a, input, select, textarea, [tabindex]):focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+.focus-design :is(.button, .segment, .control, button, input, select, textarea):disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+@media (hover: hover) {
+  .focus-design .button:not(:disabled):hover { border-color: var(--border-selected); background: var(--selection-bg); color: var(--primary-ink); }
+  .focus-design .button--primary:not(:disabled):hover { border-color: var(--primary-active); background: var(--primary-active); color: #fff; }
+  .focus-design .button[aria-pressed="true"]:not(:disabled):hover { background: var(--selection-hover); }
+  .focus-design .segment:not(:disabled):hover { color: var(--text-strong); }
+}
+/* 仅在空间允许的独立按钮上显式开启位移。 */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .focus-design .button--lift:not(:disabled):hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+}
+.focus-design .button--lift:not(:disabled):active { transform: scale(.96); box-shadow: inset 0 4px 10px rgb(67 56 202 / .28); }
+@media (max-width: 720px) {
+  .focus-design .page-shell { padding: 24px 14px 28px; }
+  .focus-design .page-header { flex-direction: column; align-items: stretch; gap: 20px; }
+  .focus-design .surface { padding: 16px; }
+  .focus-design .section-stack { gap: 16px; }
+  .focus-design .display-value { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-design :where(.button, .segment, .link, .control) { transition: none; }
+  .focus-design .button--lift:not(:disabled):is(:hover, :active) { transform: none; }
+}
