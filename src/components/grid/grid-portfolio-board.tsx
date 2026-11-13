@@ -7,7 +7,7 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { fetchLatestEtfCloses, type EtfLatestClose } from '@/lib/supabase/etf-daily-repository';
 import type { GridStrategyTrade } from '@/types/grid-strategy-trade';
 import type { SavedGridStrategyV1 } from '@/types/grid-strategy-storage';
-import { Card, Empty, Input, Select, Space } from 'antd';
+import { Card, Empty, Input, Select } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 
 export interface GridPortfolioBoardProps {
@@ -118,8 +118,8 @@ export function GridPortfolioBoard({
   }
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+    <div className="grid-portfolio-board">
+      <div className="grid-portfolio-board__summary">
         {[
           { label: '预计最大投入', value: formatGridAmount(kpis.maxCapital) },
           {
@@ -146,13 +146,13 @@ export function GridPortfolioBoard({
         ].map(item => (
           <div
             key={item.label}
-            className="rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--ds-shadow-md)]"
+            className="grid-portfolio-board__summary-item rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--ds-shadow-md)]"
           >
             <div className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">
               {item.label}
             </div>
             <div
-              className="font-mono text-xl font-semibold tabular-nums tracking-tight"
+              className="grid-portfolio-board__summary-value font-mono text-xl font-semibold tabular-nums tracking-tight"
               style={{ color: item.color ?? 'var(--foreground)' }}
             >
               {item.value}
@@ -173,11 +173,11 @@ export function GridPortfolioBoard({
             宽基估值
           </a>
         </span>
-        <Space wrap>
+        <div className="grid-portfolio-board__filters">
           <Select
             value={sort}
             onChange={v => setSort(v)}
-            style={{ width: 160 }}
+            className="grid-portfolio-board__sort"
             options={[
               { value: 'maxLoss', label: '预计最大亏损' },
               { value: 'occupied', label: '已投入金额' },
@@ -188,12 +188,12 @@ export function GridPortfolioBoard({
             placeholder="搜索标的..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ width: 200 }}
+            className="grid-portfolio-board__search"
           />
-        </Space>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      <div className="grid-portfolio-board__cards">
         {visible.map(view => (
           <GridPortfolioCard
             key={view.s.id}
@@ -204,6 +204,6 @@ export function GridPortfolioBoard({
           />
         ))}
       </div>
-    </Space>
+    </div>
   );
 }

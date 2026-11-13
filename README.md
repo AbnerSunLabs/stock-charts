@@ -48,6 +48,10 @@ cp .env.example .env.local
 - 操作结果通过 Ant Design 的 Message 做成功 / 失败提示。
 - 页面顶部有面包屑，可从「首页」返回首页。
 
+## 页面预览
+
+- [组合看板自适应 Demo](output/portfolio-board-responsive-demo.html)：按实际容器宽度调整卡片列数，支持搜索、排序及原布局对照；正式组合看板已采用此布局，Demo 使用演示数据。见 [实现与验证说明](docs/design/portfolio-board-responsive-demo.md)。
+
 ## 分类结构
 
 旭日图分类树固定为三级结构（A股 / 海外成熟 / 海外新兴及其子分类），定义在 `src/utils/position-category-tree.ts`。用户只需填写各叶子节点的持仓金额，系统按「节点金额 / 总投资额」计算占比。

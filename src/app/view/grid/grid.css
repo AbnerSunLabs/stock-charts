@@ -1032,6 +1032,128 @@
   color: var(--border);
 }
 
+.grid-shell .grid-portfolio-board {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  width: 100%;
+  container: portfolio-board / inline-size;
+}
+
+.grid-shell .grid-portfolio-board__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.grid-shell .grid-portfolio-board__summary-item {
+  min-width: 0;
+}
+
+.grid-shell .grid-portfolio-board__summary-value {
+  overflow-wrap: anywhere;
+}
+
+.grid-shell .grid-portfolio-board__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.grid-shell .grid-portfolio-board__sort {
+  width: 160px;
+  min-width: 0;
+}
+
+.grid-shell .grid-portfolio-board__search {
+  width: 200px;
+  min-width: 0;
+}
+
+.grid-shell .grid-portfolio-board__cards {
+  display: grid;
+  /* 列数取决于看板实宽，避免外层留白让卡片在视口断点处被挤窄。 */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  align-items: stretch;
+  gap: 20px;
+}
+
+.grid-shell .grid-portfolio-board .grid-portfolio-card .ant-card-head {
+  padding-block: 16px;
+}
+
+.grid-shell .grid-portfolio-board .grid-portfolio-card .ant-card-head-wrapper {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.grid-shell .grid-portfolio-board .grid-portfolio-card .ant-card-head-title {
+  flex: 1 1 200px;
+  min-width: 0;
+  white-space: normal;
+}
+
+.grid-shell .grid-portfolio-board .grid-portfolio-card__title-text {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.grid-shell .grid-portfolio-board .grid-portfolio-card .ant-card-extra {
+  margin-inline-start: 0;
+}
+
+.grid-shell .grid-portfolio-board .grid-portfolio-card__quote-main,
+.grid-shell .grid-portfolio-board .grid-portfolio-card__quote-sub {
+  overflow-wrap: anywhere;
+}
+
+.grid-shell .grid-portfolio-board .grid-portfolio-card__kpi {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  overflow-wrap: anywhere;
+}
+
+@container portfolio-board (min-width: 600px) {
+  .grid-shell .grid-portfolio-board__summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container portfolio-board (min-width: 900px) {
+  .grid-shell .grid-portfolio-board__summary {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@container portfolio-board (max-width: 440px) {
+  .grid-shell .grid-portfolio-board__filters {
+    width: 100%;
+  }
+
+  .grid-shell .grid-portfolio-board__sort {
+    flex: 1 1 140px;
+  }
+
+  .grid-shell .grid-portfolio-board__search {
+    flex: 1 1 160px;
+  }
+
+  .grid-shell .grid-portfolio-board .grid-portfolio-card .ant-card-head {
+    padding-inline: 16px;
+  }
+
+  .grid-shell .grid-portfolio-board .grid-portfolio-card .ant-card-body {
+    padding: 16px;
+  }
+}
+
+@container portfolio-board (max-width: 280px) {
+  .grid-shell .grid-portfolio-board .grid-portfolio-card__quotes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .grid-shell .grid-portfolio-board__ref {
   color: var(--primary);
   text-decoration: none;
