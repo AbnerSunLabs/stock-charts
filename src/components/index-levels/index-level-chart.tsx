@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Spin } from 'antd';
 
 import { filterCloseSpan, type CloseSpan, type IndexClosePoint } from '@/lib/index-levels/close-series';
 import type { EtfTradeMark } from '@/lib/index-levels/media-etf-trades';
@@ -59,6 +60,17 @@ function ChartTitle({ name, code, href }: { name: string; code: string; href?: s
       </a>
       {codeNode}
     </>
+  );
+}
+
+/** 折线还没到时占住图高，用 Ant Design 的 Spin。 */
+function ChartLoading() {
+  return (
+    <div className="chart chart-loading">
+      <Spin tip="读取收盘">
+        <div className="chart-loading-holder" />
+      </Spin>
+    </div>
   );
 }
 
@@ -253,44 +265,47 @@ export function IndexLevelChart({
   const plot = (
     <>
       <div className="chart-host" ref={hostRef}>
-        <svg
-          className={dragging ? 'chart dragging' : 'chart'}
-          viewBox={`0 0 ${Math.max(geom.width, 1)} ${Math.max(geom.height, 1)}`}
-          role="img"
-          aria-label={ariaLabel}
-          onMouseMove={onMouseMove}
-          onMouseLeave={() => setHover(null)}
-          onMouseDown={event => {
-            drag.current = { x: event.clientX, view: win, moved: false };
-            setDragging(true);
-          }}
-          onDoubleClick={() => setView(null)}
-        >
-          <ChartPlot
-            geom={geom}
-            code={code}
-            hoverIndex={hover?.index ?? null}
-            hoverLabel={hover && rows[hover.index] ? fmtClose(rows[hover.index].close, digits) : null}
-            onActiveLevel={onActiveLevel}
-          />
-        </svg>
-        {hover && rows[hover.index] ? (
-          <div className="tip show" style={{ left: hover.left, top: hover.top }}>
-            <TipBody
-              name={name}
-              code={code}
-              rows={rows}
-              index={hover.index}
-              digits={digits}
-              mark={geom.marks.find(item => item.index === hover.index)}
-            />
-          </div>
-        ) : null}
+        {phase === 'loading' ? <ChartLoading /> : (
+          <>
+            <svg
+              className={dragging ? 'chart dragging' : 'chart'}
+              viewBox={`0 0 ${Math.max(geom.width, 1)} ${Math.max(geom.height, 1)}`}
+              role="img"
+              aria-label={ariaLabel}
+              onMouseMove={onMouseMove}
+              onMouseLeave={() => setHover(null)}
+              onMouseDown={event => {
+                drag.current = { x: event.clientX, view: win, moved: false };
+                setDragging(true);
+              }}
+              onDoubleClick={() => setView(null)}
+            >
+              <ChartPlot
+                geom={geom}
+                code={code}
+                hoverIndex={hover?.index ?? null}
+                hoverLabel={hover && rows[hover.index] ? fmtClose(rows[hover.index].close, digits) : null}
+                onActiveLevel={onActiveLevel}
+              />
+            </svg>
+            {hover && rows[hover.index] ? (
+              <div className="tip show" style={{ left: hover.left, top: hover.top }}>
+                <TipBody
+                  name={name}
+                  code={code}
+                  rows={rows}
+                  index={hover.index}
+                  digits={digits}
+                  mark={geom.marks.find(item => item.index === hover.index)}
+                />
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
       {bare ? null : (
         <div className="chart-foot">{last ? <span>更新至 {slashDate(last.tradeDate)}</span> : null}</div>
       )}
-      {phase === 'loading' ? <p className="sr">读取收盘</p> : null}
       {phase === 'error' ? <p className="sr">收盘暂时读不出来</p> : null}
     </>
   );

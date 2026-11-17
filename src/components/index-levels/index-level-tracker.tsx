@@ -18,6 +18,8 @@ import {
 import { A500_ETF_TRADES } from '@/lib/index-levels/a500-etf-trades';
 import { A500_LINK_TRADES } from '@/lib/index-levels/a500-link-trades';
 import { essaysForIndex } from '@/lib/index-levels/index-essays';
+import { JOURNAL_LINKED_ETF, resolveEtfChartMarks } from '@/lib/index-levels/etf-journal-marks';
+import { useEtfJournalMarks } from '@/hooks/use-etf-journal-marks';
 import { MEDIA_ETF_TRADES, type EtfTradeMark } from '@/lib/index-levels/media-etf-trades';
 import { MEDIA_LINK_TRADES } from '@/lib/index-levels/media-link-trades';
 import { SECURITIES_ETF_TRADES } from '@/lib/index-levels/securities-etf-trades';
@@ -164,6 +166,9 @@ export function IndexLevelTracker() {
   const [code, setCode] = useWatchedIndex();
   const current = INDEX_WATCHES.find(item => item.code === code) ?? INDEX_WATCHES[0];
   const { points, etfPoints, phase } = useCloseSeries(code, current?.chartEtf?.code);
+  const journalMarks = useEtfJournalMarks(
+    current?.chartEtf?.code === JOURNAL_LINKED_ETF ? JOURNAL_LINKED_ETF : undefined
+  );
   const { fundPoints, fundPhase } = useFundSeries(current?.chartFund?.code);
   const cmb = useCmbFxSeries(current?.chartBankFx === true);
   const [span, setSpan] = useState<CloseSpan>('5');
@@ -267,6 +272,7 @@ export function IndexLevelTracker() {
         phase={phase}
         fundPhase={fundPhase}
         span={span}
+        etfMarks={resolveEtfChartMarks(current.chartEtf?.code, journalMarks, ETF_TRADE_MARKS[current.chartEtf?.code ?? ''] ?? [])}
       />
     </>
   );
@@ -432,6 +438,7 @@ function LinkedFundCharts({
   phase,
   fundPhase,
   span,
+  etfMarks,
 }: {
   watch: IndexWatch;
   etfPoints: IndexClosePoint[];
@@ -439,6 +446,7 @@ function LinkedFundCharts({
   phase: Phase;
   fundPhase: Phase;
   span: CloseSpan;
+  etfMarks: EtfTradeMark[];
 }) {
   const etf = watch.chartEtf ? (
     <article className="fund-panel" key={watch.chartEtf.code}>
@@ -453,7 +461,7 @@ function LinkedFundCharts({
         points={etfPoints}
         phase={phase}
         span={span}
-        marks={ETF_TRADE_MARKS[watch.chartEtf.code] ?? []}
+        marks={etfMarks}
         priceDigits={3}
       />
     </article>

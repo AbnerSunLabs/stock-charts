@@ -311,6 +311,13 @@
 
 .index-levels .chart-host { position: relative; margin-top: 16px; }
 .index-levels .panel .chart { display: block; width: 100%; height: 420px; min-height: 0; overflow: visible; cursor: crosshair; }
+.index-levels .chart.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+.index-levels .chart-loading-holder { width: 88px; height: 48px; }
 .index-levels .fund-panel .chart { height: 232px; }
 .index-levels .chart.dragging { cursor: grabbing; }
 .index-levels .chart text { fill: #69718a; font-family: var(--font-num); font-size: 10px; font-weight: 500; }
