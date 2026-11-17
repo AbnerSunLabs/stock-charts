@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>点位跟踪 · A500 发言的三种摆法</title>
+<style>
+  :root {
+    --text: #30334b;
+    --muted: #69718a;
+    --body: #4b526c;
+    --line: #e2e8f0;
+    --indigo: #4f46e5;
+    --indigo-soft: #eef2ff;
+    --red: #cf202f;
+    --green: #048a52;
+    --bg: #f1f5f9;
+    --card: #fff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  button, a { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+
+  .demo-bar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+    padding: 10px 24px;
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  .demo-bar p { margin: 0; font-size: 12px; color: #94a3b8; }
+  .demo-bar strong { color: #fff; font-weight: 600; }
+  .schemes { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; padding: 3px; border-radius: 999px; background: #1e293b; }
+  .schemes button { flex: none; }
+  .schemes button {
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #cbd5e1;
+    min-height: 32px;
+    padding: 4px 12px;
+    white-space: nowrap;
+  }
+  .schemes button[aria-pressed="true"] { background: #fff; color: #0f172a; font-weight: 600; }
+
+  .page { max-width: 1440px; margin: 0 auto; padding: 24px 32px 48px; }
+  .crumb { margin: 0 0 20px; color: var(--muted); font-size: 12px; }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+  h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.025em; }
+  .code { margin-left: 12px; color: var(--muted); font-size: 12px; font-weight: 400; }
+  .page-date { display: block; margin-top: 4px; color: #8a918c; font-size: 12px; }
+  .head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; max-width: 100%; }
+  .fake-select {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #eef2f7;
+    color: var(--body);
+    font-size: 12px;
+  }
+  .say-btn {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+    background: var(--indigo-soft);
+    color: var(--indigo);
+    font-weight: 600;
+  }
+  body[data-scheme="drawer"] .say-btn { display: inline-flex; }
+  .say-btn b {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--indigo);
+    color: #fff;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  .stage { display: grid; gap: 20px; align-items: start; min-width: 0; }
+  .stage > div { min-width: 0; }
+  body[data-scheme="rail"] .stage { grid-template-columns: minmax(0, 1fr) 400px; }
+  body[data-scheme="drawer"] .stage { grid-template-columns: minmax(0, 1fr); }
+  body[data-scheme="spine"] .stage { grid-template-columns: minmax(0, 1fr) auto; }
+  body[data-scheme="spine"][data-open="true"] .stage { grid-template-columns: minmax(0, 1fr) minmax(320px, 440px) auto; }
+
+  .panel { padding: 22px 24px 8px; border-radius: 12px; background: var(--card); }
+  .readout { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+  .px { font-size: 44px; font-weight: 600; letter-spacing: -0.045em; line-height: 1; }
+  .chg { margin-left: 12px; color: var(--green); font-size: 15px; font-weight: 600; }
+  .gap { display: block; margin-top: 12px; color: var(--muted); font-size: 13px; }
+  .tabs { display: flex; padding: 4px; border-radius: 999px; background: #eef1ef; }
+  .tabs button {
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #8a918c;
+    min-height: 32px;
+    padding: 6px 14px;
+  }
+  .tabs button[aria-pressed="true"] { background: #fff; color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08); }
+  .chart { display: block; width: 100%; height: 300px; margin-top: 12px; }
+  .fund-block { margin-top: 20px; padding: 16px 24px 8px; border-radius: 12px; background: #f8fafc; }
+  .fund-block h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+  .fund-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .fund-title { margin: 8px 0; font-size: 13px; }
+  .fund-title span { margin-left: 8px; color: var(--muted); font-weight: 400; }
+  .spark { width: 100%; height: 92px; }
+
+  #speech { display: contents; }
+  .rail, .sheet, .drawer {
+    background: var(--card);
+    border-radius: 12px;
+  }
+  .rail, .sheet { position: sticky; top: 68px; max-height: calc(100vh - 108px); overflow: auto; }
+  .rail-head, .sheet-head, .drawer-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 16px 18px 12px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+  }
+  .rail-head h2, .sheet-head h2, .drawer-head h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .rail-head p, .sheet-head p, .drawer-head p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+  .post { padding: 16px 18px 4px; }
+  .post + .post { border-top: 1px solid var(--line); }
+  .post time { color: var(--muted); font-size: 12px; }
+  .post p { margin: 8px 0 0; color: var(--body); }
+  .post .src {
+    display: inline-flex;
+    margin: 10px 0 14px;
+    color: var(--indigo);
+    font-size: 12px;
+    text-decoration: none;
+  }
+  .post .src:hover { color: #4338ca; }
+  .year-mark {
+    padding: 14px 18px 0;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .spine {
+    position: sticky;
+    top: 68px;
+    display: flex;
+    flex-direction: column;
+    width: 72px;
+    max-height: calc(100vh - 108px);
+    overflow: auto;
+    padding: 8px 0;
+    border-radius: 12px;
+    background: var(--card);
+  }
+  .spine button {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    min-height: 36px;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+  .spine button[aria-current="true"] { color: var(--indigo); font-weight: 600; background: var(--indigo-soft); }
+  .spine .yr {
+    padding: 8px 0 2px;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .sheet-nav { display: flex; gap: 8px; margin-top: 10px; }
+  .sheet-nav button, .icon-btn, .theme-list button {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    min-height: 32px;
+    padding: 4px 10px;
+  }
+  .icon-btn { padding: 0 10px; }
+
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(15, 23, 42, 0.28);
+  }
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 60;
+    display: grid;
+    grid-template-columns: 196px minmax(0, 1fr);
+    width: min(760px, 100%);
+    height: 100%;
+    border-radius: 0;
+    box-shadow: -12px 0 32px rgba(15, 23, 42, 0.12);
+  }
+  .theme-list { padding: 16px 12px; background: #f8fafc; border-right: 1px solid var(--line); }
+  .theme-list h2 { margin: 8px 8px 12px; font-size: 16px; }
+  .theme-list button { display: flex; width: 100%; justify-content: space-between; margin-bottom: 6px; text-align: left; }
+  .theme-list button[aria-pressed="true"] { border-color: #c7d2fe; background: var(--indigo-soft); color: var(--indigo); font-weight: 600; }
+  .theme-list button span { color: var(--muted); font-weight: 400; }
+  .drawer-main { min-width: 0; overflow: auto; }
+  .hidden { display: none !important; }
+
+  @media (max-width: 1100px) {
+    .demo-bar { flex-wrap: wrap; }
+    .page { padding: 16px; }
+    body[data-scheme="rail"] .stage,
+    body[data-scheme="spine"] .stage,
+    body[data-scheme="spine"][data-open="true"] .stage { grid-template-columns: 1fr; }
+    .fund-grid { grid-template-columns: 1fr; }
+    .rail { position: static; max-height: none; }
+    .sheet { position: static; max-height: none; width: 100%; order: 2; }
+    .spine { order: 1; flex-direction: row; width: 100%; max-width: 100%; max-height: none; overflow-x: auto; }
+    .spine button { flex: none; }
+    .spine .yr { padding: 0 8px; align-self: center; }
+    .drawer { grid-template-columns: 1fr; }
+    .theme-list { display: flex; gap: 6px; overflow: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    .theme-list h2 { display: none; }
+    .theme-list button { width: auto; white-space: nowrap; }
+    .head { align-items: flex-start; flex-direction: column; }
+    .readout { flex-wrap: wrap; align-items: flex-start; }
+    body[data-scheme="rail"] .say-btn { display: inline-flex; }
+    body[data-scheme="rail"] .rail { display: none; }
+    body[data-scheme="rail"][data-open="true"] .rail {
+      display: block;
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 60;
+      width: min(420px, 100%);
+      height: 100%;
+      max-height: none;
+      border-radius: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body data-scheme="rail" data-open="false">
+  <div class="demo-bar">
+    <div class="schemes" role="tablist" aria-label="三种摆法">
+      <button type="button" role="tab" id="tab-rail" aria-pressed="true" data-scheme="rail">方案一 · 常驻栏</button>
+      <button type="button" role="tab" id="tab-drawer" aria-pressed="false" data-scheme="drawer">方案二 · 主题抽屉</button>
+      <button type="button" role="tab" id="tab-spine" aria-pressed="false" data-scheme="spine">方案三 · 日期书脊</button>
+    </div>
+    <p id="scheme-note"><strong>常驻栏。</strong>宽屏时贴在指数图右边，全文按时间往下读，不用再点开。</p>
+  </div>
+
+  <div class="page">
+    <p class="crumb">工具集 / 点位跟踪</p>
+    <header class="head">
+      <div>
+        <h1>中证A500 <span class="code">000510.SH</span></h1>
+        <time class="page-date">2026/11/16</time>
+      </div>
+      <div class="head-actions">
+        <button type="button" class="say-btn" id="open-speech">E大怎么说 <b id="say-count">22</b></button>
+        <div class="fake-select" aria-hidden="true">跟踪指数 · 中证A500　000510.SH</div>
+      </div>
+    </header>
+
+    <div class="stage" id="stage">
+      <div>
+        <section class="panel" aria-label="指数收盘">
+          <div class="readout">
+            <div>
+              <div><b class="px">4,771.05</b><span class="chg">-1.48%</span></div>
+              <span class="gap">这只还没有判断点位</span>
+            </div>
+            <div class="tabs" role="group" aria-label="时间范围">
+              <button type="button" aria-pressed="false">上市以来</button>
+              <button type="button" aria-pressed="false">近 10 年</button>
+              <button type="button" aria-pressed="true">近 5 年</button>
+            </div>
+          </div>
+          <svg class="chart" viewBox="0 0 640 280" role="img" aria-label="中证A500近五年收盘示意">
+            <path d="M40 40 H620 M40 110 H620 M40 180 H620 M40 250 H620" fill="none" stroke="#eceff8" />
+            <text x="8" y="44" fill="#69718a" font-size="10">7,000</text>
+            <text x="8" y="114" fill="#69718a" font-size="10">5,500</text>
+            <text x="8" y="184" fill="#69718a" font-size="10">4,000</text>
+            <text x="8" y="254" fill="#69718a" font-size="10">2,500</text>
+            <path d="M48 168 C 90 160, 120 150, 150 142 C 190 130, 220 118, 260 124 C 300 130, 330 96, 370 88 C 410 80, 440 70, 480 96 C 520 122, 560 150, 600 158" fill="none" stroke="#8183d8" stroke-width="1.8" stroke-linecap="round" />
+            <text x="48" y="272" fill="#69718a" font-size="10">2021</text>
+            <text x="250" y="272" fill="#69718a" font-size="10">2023</text>
+            <text x="560" y="272" fill="#69718a" font-size="10">2026</text>
+          </svg>
+        </section>
+        <section class="fund-block">
+          <h2>跟踪基金</h2>
+          <div class="fund-grid">
+            <div>
+              <h3 class="fund-title">华泰柏瑞中证A500ETF <span>563360</span></h3>
+              <svg class="spark" viewBox="0 0 280 80" aria-hidden="true"><path d="M8 50 C 40 48, 70 40, 100 44 C 140 50, 170 28, 210 24 C 240 22, 260 36, 272 40" fill="none" stroke="#8183d8" stroke-width="1.6" /></svg>
+            </div>
+            <div>
+              <h3 class="fund-title">广发中证A500ETF联接A <span>022424</span></h3>
+              <svg class="spark" viewBox="0 0 280 80" aria-hidden="true"><path d="M8 36 C 40 34, 80 30, 120 38 C 160 46, 200 42, 240 52 C 255 56, 266 60, 272 62" fill="none" stroke="#8183d8" stroke-width="1.6" /></svg>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div id="speech"></div>
+    </div>
+  </div>
+
+  <div id="overlay"></div>
+
+<script>
+const THEMES = [
+  { id: "view", name: "怎么看", hint: "估值、业绩，以及这只指数在名单里的位置" },
+  { id: "position", name: "仓位", hint: "为什么买、买了几份、离目标还差多少" },
+  { id: "rhythm", name: "节奏", hint: "什么时候买，什么时候先不买，反弹以后卖不卖" },
+];
+
+const POSTS = [
+  { id: "2026-11-06", date: "2026-11-06", postId: 95497, theme: "rhythm", paragraphs: ["下周如果A500有回调，不出意外应该会买点。时间窗口打开了。", "上涨就算了，也不是非得买。"] },
+  { id: "2026-11-05", date: "2026-11-05", postId: 95203, theme: "rhythm", paragraphs: ["是不是上半年红利跌我们买红利，跌越狠买越多。", "下半年红利上涨我们一分钱不再追入，反而开始买下跌的A500和含科技的二级债基。以及中概这样持续下跌的品种。", "可以预见的未来，如果宽基继续反弹，我们又会暂停买入，转身再买下跌的红利。", "这就是一种交易的节奏。不是说这种节奏好不好。而是希望你感受到这种节奏中的不为外界环境所影响，坚持自己的交易策略，游刃有余笑看风云的舒适感。", "还有你会发现，没有什么涨上去就买不到的品种。任何目前看起来特别强势的品种，都会给你再次低位买入的机会。只是看到时候你够不够胆子买入了。"] },
+  { id: "2026-11-04", date: "2026-11-04", postId: 95011, theme: "rhythm", paragraphs: ["上次买入的那份A500，又回到了买入价格之上。可能有朋友问，为什么昨天不继续买A500，而是买入二级债。", "今天涨了，好像昨天应该买入宽基。但是如果下午没有反弹呢。这些朋友可能又是另一种情绪。", "距离上次买入A500，无论是时间还是空间，都没有拉开。如果这么频繁的买，我怕各位撑不到如果最坏情况发生的那时候。"] },
+  { id: "2026-10-29", date: "2026-10-29", postId: 93919, theme: "view", paragraphs: ["大盘指数，比如300、500、a500等等，这些指数的跌幅，极限恐怕在20%-25%之间。不是说一定到，而是到了的话真的是好机会。", "而个股，如果要真的极限底，恐怕是平均要跌35%-40%之间。同样不是说一定到，而是如果到了就是特别特别好的机会。", "都是说从现在起。", "基本上就是这样判断的。看看这一次速度如何。", "我肯定不会等这些点位到了再买。而是在过程中将仓位布置进去。原因很简单，因为不一定到。总想等最低买是一种病。", "之所以判断最低区域，是为了给自己的布局有一个规划空间。"] },
+  { id: "2026-10-23-b", date: "2026-10-23", postId: 93181, theme: "rhythm", paragraphs: ["我会在建仓的时候控制好节奏，也会参考技术指标。如果您只是害怕或者贪婪，其实有点浪费我选买点的精力。", "我不敢说自己的买卖点一定是最高最低。但它们一定包含了很多东西。你可以在技术面或者基本面不认同我。如果仅仅是情绪，我认为很难战胜我的理性。", "A500的浮亏已经回到了4%多一点。未来如果真的大幅反弹，我不排除会有波段卖出的操作。当然要比较大的涨幅了。"] },
+  { id: "2026-10-23-a", date: "2026-10-23", postId: 93157, theme: "position", paragraphs: ["现在A500反弹1%，我们今年开始建仓的A500指数基金目前浮亏5%多一点。", "这个建仓节奏各位是否能顶得住？"] },
+  { id: "2026-10-20", date: "2026-10-20", postId: 92497, theme: "position", note: "同一篇笔记的第一条和第八条", paragraphs: ["首先是大量卖出宽基指数中证500。最主要的逻辑是太贵了。所以这一次卖出不是小卖，而是大卖。整个S计划卖到只剩一份，150计划每个500品种也只剩1-3份，绝大多数全部卖出。", "市场下跌后，开始买回宽基。买了两份A500。距离目标仓位以及高位减持的部分依然太少，继续找机会买。"] },
+  { id: "2026-10-15", date: "2026-10-15", postId: 92005, theme: "view", paragraphs: ["在这个位置，如果你还想继续卖出宽基，请一定谨慎。真正好的卖点，是上半年我们不停卖出中证500的那个阶段（那里甚至比3月份神秘资金清仓救市买入的指数基金的位置还要好）。现在，我不认为再卖宽基是理智的。不是说肯定不会跌了，只从估值看，也不是绝对底部。但在这里继续卖，我认为不合理。", "虽然300算是便宜，500、A500也不贵，但是科创板依然是60多倍估值。"] },
+  { id: "2026-10-12", date: "2026-10-12", postId: 91327, theme: "position", paragraphs: ["我会找机会继续增持A500。这一次非常游刃有余。不仅是没有新人跟车可以放开手脚，更因为高位大量减持中证500，给宽基的仓位完全腾出来了。"] },
+  { id: "2026-09-29", date: "2026-09-29", postId: 90307, theme: "rhythm", paragraphs: ["比如昨天的A500，跟车人数就比平常少几千人。可能各位觉得暴跌买入比较困难，希望等等更低价买入。", "上次跟车人数出现类似的情况，是6月底的红利。"] },
+  { id: "2026-09-28-b", date: "2026-09-28", postId: 90175, theme: "position", paragraphs: ["7月底一次，9月底一次，两次补入A500的主要原因，是高位卖掉的中证500实在是太多了。整个150就剩4份中证500了，最多的时候，持仓20多份。", "无论玩哪个市场，宽基一定不能太少。这是保底的仓位，一定要有一部分。", "卖掉那么多，只买回两份，还早呢，慢慢买吧。"] },
+  { id: "2026-09-28-a", date: "2026-09-28", postId: 90127, theme: "position", paragraphs: ["又顺利买到了一份A500，相当于低位接回一点点高位卖出的500，心情还是不错的。"] },
+  { id: "2026-09-24-b", date: "2026-09-24", postId: 89869, theme: "view", paragraphs: ["11年前我在雪球写过A股值得买的六个品种。分别是：上证50、中证500、创业板、医药、消费、信息。", "2026年，如果让我更新这个名单，那么将是这样：", "大仓位：红利、A500、创业板。", "小仓位：医药、消费、信息。", "两版的不同，是加入了红利，随之相应降低行业比重。同时，上证50与中证500合并为A500，整个名单更加简洁。", "而投资这里最重要两个点：", "第一，千万别买高。", "第二，高了一定要跑。哪怕不全跑，也要跑一部分。"] },
+  { id: "2026-09-24-a", date: "2026-09-24", postId: 89857, theme: "rhythm", paragraphs: ["A500本周或者下周依然可能出现买入窗口。"] },
+  { id: "2026-09-22", date: "2026-09-22", postId: 89689, theme: "rhythm", paragraphs: ["A500差一点点没有买到的遗憾，在中概上面补偿回来一些。"] },
+  { id: "2026-09-12", date: "2026-09-12", postId: 88837, theme: "view", paragraphs: ["中证1000的利润增速是3%，甚至还比不上全市场。", "沪深300是11%。中证500是9.7%。A50是4%。A500是14%。", "最大的A50和最小的1000，利润增速都是个位数。300比500好一些，最好的反而是A500。", "也就是说，如果分层来看，二季度A股业绩增速最好的，是比较大的公司。不是最大，也不是最小的那些。", "目前的一个小结论：", "从历史估值与业绩增长的角度看，沪深300以及A500，已经不算贵了。", "这里，我请各位关注A500这个指数。", "当然话说在前面。A500这个指数的历史，是指数编制者模拟回测出来的。它不是真的跑出来的，所以这个点依然比较存疑。但是从回测的历史看，在数字宽基指数（300、500、50等）中，它的历史收益率，确实是最好的。比它好的，是波动非常巨大的创业板（跑出的真实数据）。", "我个人认为，在未来的A股指数投资中，如果一定要投资宽基，A500应该是值得关注的。在合适的时候，多买点创业板也不会差。", "从二季度看，A500的业绩增速也跑赢50、300、500。"] },
+  { id: "2026-09-11", date: "2026-09-11", postId: 88693, theme: "position", paragraphs: ["回顾这几个月，我们在高位大量卖出中证500，几乎已经清仓。", "清仓环保、券商、传媒、金融。", "减仓医疗、消费波段。大幅减仓恒生。", "加仓的只有一点点A500，一点点中概。", "大量加仓短债。大量加仓红利。买入一些美元债。", "A股仓位降低到40%左右，其中还有十几个点红利。", "港股仓位降低到不足9%。", "现金+债券仓位接近50%。", "各位，没必要恐慌。继续跌的话，之前卖出的波段仓位会买回来，也会买长线仓位，包括大量红利和一些宽基。"] },
+  { id: "2026-08-07", date: "2026-08-07", postId: 84907, theme: "rhythm", paragraphs: ["我能想到月底之前最好的交易就是A500涨上去然后卖掉，红利跌下去然后买回。", "反向交易上个月的操作。"] },
+  { id: "2026-08-05", date: "2026-08-05", postId: 84625, theme: "position", paragraphs: ["这次买A500，我看最多朋友问的是，便宜吗？好像不便宜，为什么买？", "以我越来越深的体会，在证券投资领域，便宜当然是非常重要，甚至可以说最重要的一个因素。然而，它必然不能是所有因素。", "我想，决定一个品种该买还是卖，至少还要考虑：", "我目前的资产配置是否合理，还缺什么，又多了什么；", "我这一笔交易，是为了长期持有，还是为了波段操作降低成本增加利润；", "目前这个品种的状态如何。短期是否跌太多，又是否涨太多。技术形态如何，是否有交易机会。", "以A股宽基来说，我们在6月大量卖出中证500指数，导致宽基配置越来越低。在十个点的空间跌出来以后，买回一份是否可以是考虑的选项？", "安全性来讲，A500的估值小于中证500，虽然科技行情中弹性略低，但又强于沪深300。这又是一个平衡的选择。"] },
+  { id: "2026-08-04", date: "2026-08-04", postId: 84481, theme: "position", paragraphs: ["A500涨了，你低位杀跌割肉了吗。没有。甚至你还买了点。虽然还浮亏0.*%，但你不应该慌对不对。", "你没做错任何交易。不要慌。"] },
+  { id: "2026-05-16", date: "2026-05-16", postId: 75529, theme: "view", note: "百分比分位在原文附图里", paragraphs: ["大家可以注意到，宽基估值图比之前的清新了不少。是因为减少了一些品种，显得没那么拥挤了。", "减少的是上证180、深证100（这两个都是上一轮计划的主力品种，一直在估值图中没有去掉。）、德国DAX和日经225。", "增加了A50和A500。"] },
+  { id: "2026-04-28", date: "2026-04-28", postId: 74371, theme: "view", paragraphs: ["目前宽基的特质，至少到目前为止，我理解，依然是周期性的癫狂和绝望。", "为什么这么说，非常简单，你去打开沪深300、中证500、A50、A500的持仓名单。你看看上面有多少家前几天我说的具备国际市场、定价权、技术垄断带来的护城河的企业。", "不是说没有，是有多少。", "还是说，都是因为行业周期到了火一把，周期高位加大产能建设，然后周期结束一地鸡毛。", "只要这个根本问题不改变，那么投资宽基，请低买高卖。因为宽基的意义就是要被成长为巨头的巨型企业一直带着往上走。投资宽基向某些超级大资金学习，低买高卖，一定不会错的。"] },
+];
+
+const NOTES = {
+  rail: "<strong>常驻栏。</strong>宽屏时贴在指数图右边，全文按时间往下读，不用再点开。窄屏收成按钮。",
+  drawer: "<strong>主题抽屉。</strong>指数图保持整行。点右上角「E大怎么说」，从右边按怎么看、仓位、节奏读全文。",
+  spine: "<strong>日期书脊。</strong>右边只留一列日期。点中一篇，全文才在书脊左边展开，一次只读一篇。",
+};
+
+const speech = document.getElementById("speech");
+const overlay = document.getElementById("overlay");
+const note = document.getElementById("scheme-note");
+let scheme = "rail";
+let theme = "view";
+let activeId = POSTS[0].id;
+let drawerOpen = false;
+
+document.getElementById("say-count").textContent = String(POSTS.length);
+
+function slash(date) {
+  return date.replaceAll("-", "/");
+}
+
+function href(post) {
+  return `https://qieman.com/content/content-detail?postId=${post.postId}`;
+}
+
+function postHtml(post) {
+  const noteLine = post.note ? `<p class="gap">${post.note}</p>` : "";
+  const body = post.paragraphs.map(text => `<p>${text}</p>`).join("");
+  return `<article class="post" id="post-${post.id}">
+    <time datetime="${post.date}">${slash(post.date)}</time>
+    ${noteLine}
+    ${body}
+    <a class="src" href="${href(post)}" target="_blank" rel="noreferrer">查看原文</a>
+  </article>`;
+}
+
+function withYears(posts) {
+  let year = "";
+  return posts.map(post => {
+    const next = post.date.slice(0, 4);
+    const mark = next === year ? "" : `<div class="year-mark">${next}</div>`;
+    year = next;
+    return mark + postHtml(post);
+  }).join("");
+}
+
+function renderRail() {
+  speech.innerHTML = `<aside class="rail" aria-label="E大怎么说">
+    <div class="rail-head">
+      <h2>E大怎么说</h2>
+      <p>估值、仓位、买卖节奏。对照性的一句没有单列。${POSTS.length} 篇。</p>
+    </div>
+    ${withYears(POSTS)}
+  </aside>`;
+}
+
+function renderSheet() {
+  const index = POSTS.findIndex(post => post.id === activeId);
+  const post = POSTS[index];
+  speech.innerHTML = `<aside class="sheet" aria-label="E大怎么说">
+    <div class="sheet-head">
+      <h2>${slash(post.date)}</h2>
+      <p>${THEMES.find(item => item.id === post.theme).name} · ${THEMES.find(item => item.id === post.theme).hint}</p>
+      <div class="sheet-nav">
+        <button type="button" id="prev-post" ${index === 0 ? "disabled" : ""}>上一篇</button>
+        <button type="button" id="next-post" ${index === POSTS.length - 1 ? "disabled" : ""}>下一篇</button>
+        <button type="button" id="close-sheet">收起</button>
+      </div>
+    </div>
+    ${postHtml(post)}
+  </aside>`;
+  document.getElementById("prev-post").onclick = () => { activeId = POSTS[index - 1].id; paint(); };
+  document.getElementById("next-post").onclick = () => { activeId = POSTS[index + 1].id; paint(); };
+  document.getElementById("close-sheet").onclick = () => { document.body.dataset.open = "false"; paint(); };
+}
+
+function renderSpine() {
+  let year = "";
+  const ticks = POSTS.map(post => {
+    const next = post.date.slice(0, 4);
+    const mark = next === year ? "" : `<div class="yr">${next}</div>`;
+    year = next;
+    const current = document.body.dataset.open === "true" && post.id === activeId;
+    return `${mark}<button type="button" data-id="${post.id}" aria-current="${current ? "true" : "false"}">${post.date.slice(5).replace("-", "/")}</button>`;
+  }).join("");
+  const sheet = document.body.dataset.open === "true" ? renderSheetHtml() : "";
+  speech.innerHTML = sheet + `<nav class="spine" aria-label="按日期读">${ticks}</nav>`;
+  speech.querySelectorAll(".spine button").forEach(button => {
+    button.onclick = () => {
+      activeId = button.dataset.id;
+      document.body.dataset.open = "true";
+      paint();
+    };
+  });
+}
+
+function renderSheetHtml() {
+  const index = POSTS.findIndex(post => post.id === activeId);
+  const post = POSTS[index];
+  const themeMeta = THEMES.find(item => item.id === post.theme);
+  return `<aside class="sheet" aria-label="这篇发言">
+    <div class="sheet-head">
+      <h2>${slash(post.date)}</h2>
+      <p>${themeMeta.name} · ${themeMeta.hint}</p>
+      <div class="sheet-nav">
+        <button type="button" data-step="-1" ${index === 0 ? "disabled" : ""}>上一篇</button>
+        <button type="button" data-step="1" ${index === POSTS.length - 1 ? "disabled" : ""}>下一篇</button>
+        <button type="button" data-step="0">收起</button>
+      </div>
+    </div>
+    ${postHtml(post)}
+  </aside>`;
+}
+
+function renderDrawer() {
+  const posts = POSTS.filter(post => post.theme === theme);
+  const current = THEMES.find(item => item.id === theme);
+  const buttons = THEMES.map(item => {
+    const count = POSTS.filter(post => post.theme === item.id).length;
+    return `<button type="button" data-theme="${item.id}" aria-pressed="${item.id === theme}">${item.name} <span>${count}</span></button>`;
+  }).join("");
+  overlay.innerHTML = `<div class="backdrop" data-close="1"></div>
+    <div class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <div class="theme-list">
+        <h2 id="drawer-title">E大怎么说</h2>
+        ${buttons}
+      </div>
+      <div class="drawer-main">
+        <div class="drawer-head">
+          <button type="button" class="icon-btn" data-close="1">关闭</button>
+          <h2>${current.name}</h2>
+          <p>${current.hint}</p>
+        </div>
+        ${posts.map(postHtml).join("")}
+      </div>
+    </div>`;
+  overlay.querySelectorAll("[data-close]").forEach(node => {
+    node.onclick = closeDrawer;
+  });
+  overlay.querySelectorAll("[data-theme]").forEach(button => {
+    button.onclick = () => { theme = button.dataset.theme; renderDrawer(); };
+  });
+}
+
+function closeDrawer() {
+  drawerOpen = false;
+  document.body.dataset.open = "false";
+  overlay.innerHTML = "";
+  document.getElementById("open-speech").focus();
+}
+
+function paint() {
+  overlay.innerHTML = "";
+  speech.innerHTML = "";
+  document.body.dataset.scheme = scheme;
+  if (scheme !== "spine" && scheme !== "rail") document.body.dataset.open = "false";
+  if (scheme === "rail") {
+    document.body.dataset.open = window.matchMedia("(max-width: 1100px)").matches && document.body.dataset.open === "true" ? "true" : "false";
+    renderRail();
+    if (window.matchMedia("(max-width: 1100px)").matches && document.body.dataset.open !== "true") speech.innerHTML = "";
+    if (document.body.dataset.open === "true" && window.matchMedia("(max-width: 1100px)").matches) renderRail();
+  }
+  if (scheme === "spine") renderSpine();
+  if (scheme === "spine" && document.body.dataset.open === "true") {
+    speech.querySelectorAll("[data-step]").forEach(button => {
+      button.onclick = () => {
+        const step = Number(button.dataset.step);
+        if (step === 0) {
+          document.body.dataset.open = "false";
+        } else {
+          const index = POSTS.findIndex(post => post.id === activeId);
+          activeId = POSTS[index + step].id;
+        }
+        paint();
+      };
+    });
+  }
+  if (scheme === "drawer" && drawerOpen) renderDrawer();
+  note.innerHTML = NOTES[scheme];
+  document.querySelectorAll(".schemes button").forEach(button => {
+    button.setAttribute("aria-pressed", button.dataset.scheme === scheme ? "true" : "false");
+  });
+}
+
+document.querySelectorAll(".schemes button").forEach(button => {
+  button.onclick = () => {
+    scheme = button.dataset.scheme;
+    drawerOpen = false;
+    document.body.dataset.open = "false";
+    paint();
+  };
+});
+
+document.getElementById("open-speech").onclick = () => {
+  if (scheme === "drawer") {
+    drawerOpen = true;
+    document.body.dataset.open = "true";
+    renderDrawer();
+    return;
+  }
+  document.body.dataset.open = "true";
+  paint();
+};
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && (drawerOpen || document.body.dataset.open === "true")) {
+    drawerOpen = false;
+    document.body.dataset.open = "false";
+    paint();
+  }
+});
+
+document.querySelectorAll(".tabs button").forEach(button => {
+  button.onclick = () => {
+    document.querySelectorAll(".tabs button").forEach(item => item.setAttribute("aria-pressed", "false"));
+    button.setAttribute("aria-pressed", "true");
+  };
+});
+
+paint();
+</script>
+</body>
+</html>

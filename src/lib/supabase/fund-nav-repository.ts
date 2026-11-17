@@ -4,7 +4,7 @@ import type { IndexClosePoint } from '@/lib/index-levels/close-series';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 /** 已由定时任务落库的场外基金。 */
-export const STORED_FUND_CODES: ReadonlySet<string> = new Set(['004752', '502010']);
+export const STORED_FUND_CODES: ReadonlySet<string> = new Set(['004752', '502010', '022424']);
 
 const SERIES_PAGE = 1000;
 

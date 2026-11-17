@@ -1,8 +1,9 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { EssayRail } from '@/components/index-levels/index-essay-rail';
 import { IndexLevelChart } from '@/components/index-levels/index-level-chart';
 import { HelpTooltip } from '@/components/shared/help-tooltip';
 import { IndexLevelPicker } from '@/components/index-levels/index-level-picker';
@@ -14,6 +15,9 @@ import {
   type IndexQuote,
   type IndexWatch,
 } from '@/lib/index-levels/catalog';
+import { A500_ETF_TRADES } from '@/lib/index-levels/a500-etf-trades';
+import { A500_LINK_TRADES } from '@/lib/index-levels/a500-link-trades';
+import { essaysForIndex } from '@/lib/index-levels/index-essays';
 import { MEDIA_ETF_TRADES, type EtfTradeMark } from '@/lib/index-levels/media-etf-trades';
 import { MEDIA_LINK_TRADES } from '@/lib/index-levels/media-link-trades';
 import { SECURITIES_ETF_TRADES } from '@/lib/index-levels/securities-etf-trades';
@@ -109,7 +113,7 @@ function useCloseSeries(code: string, etfCode?: string): {
   return { points, etfPoints, phase };
 }
 
-/** 场外基金单位净值。004752 与 502010 优先读已落库序列，其余走 fund-nav 接口。 */
+/** 场外基金单位净值。004752、502010 与 022424 优先读已落库序列，其余走 fund-nav 接口。 */
 function useFundSeries(fundCode?: string): { fundPoints: IndexClosePoint[]; fundPhase: Phase } {
   const [fundPoints, setFundPoints] = useState<IndexClosePoint[]>([]);
   const [fundPhase, setFundPhase] = useState<Phase>('ready');
@@ -164,8 +168,16 @@ export function IndexLevelTracker() {
   const cmb = useCmbFxSeries(current?.chartBankFx === true);
   const [span, setSpan] = useState<CloseSpan>('5');
   const [levelId, setLevelId] = useState<string | null>(defaultLevelId(current?.levels ?? []));
+  const [essayOpen, setEssayOpen] = useState(false);
+  const closeEssays = useCallback(() => {
+    setEssayOpen(false);
+    document.getElementById('essay-open')?.focus();
+  }, []);
 
-  useResetOnChange(code, () => setLevelId(defaultLevelId(current?.levels ?? [])));
+  useResetOnChange(code, () => {
+    setLevelId(defaultLevelId(current?.levels ?? []));
+    setEssayOpen(false);
+  });
 
   const close = useMemo(() => latestClose(code, points, phase), [code, points, phase]);
   const windowed = useMemo(() => sliceSpan(points, span), [points, span]);
@@ -184,16 +196,9 @@ export function IndexLevelTracker() {
   const edge = close ? brackets(close.close, current.levels) : { below: null, above: null };
   const quotes = selected ? quotesForLevel(current.quotes, selected, current.levels) : [];
   const chooseLevel = (id: string) => setLevelId(currentId => (currentId === id ? null : id));
-
-  return (
+  const essays = essaysForIndex(current.code);
+  const main = (
     <>
-      <p className="crumb">
-        <a href="/">工具集</a>
-        {' / '}
-        点位跟踪
-      </p>
-      <TrackerHead current={current} date={close?.tradeDate} onSelect={setCode} />
-
       <section className="panel">
         <div className="group-head">
           <div className="readout">
@@ -263,6 +268,25 @@ export function IndexLevelTracker() {
         fundPhase={fundPhase}
         span={span}
       />
+    </>
+  );
+
+  return (
+    <>
+      <p className="crumb">
+        <a href="/">工具集</a>
+        {' / '}
+        点位跟踪
+      </p>
+      <TrackerHead
+        current={current}
+        date={close?.tradeDate}
+        essayCount={essays.length}
+        onOpenEssays={() => setEssayOpen(true)}
+        onSelect={setCode}
+      />
+      {main}
+      {essayOpen ? <EssayRail essays={essays} open onClose={closeEssays} /> : null}
     </>
   );
 }
@@ -352,10 +376,14 @@ function CmbFxCharts({
 function TrackerHead({
   current,
   date,
+  essayCount,
+  onOpenEssays,
   onSelect,
 }: {
   current: IndexWatch;
   date?: string;
+  essayCount: number;
+  onOpenEssays: () => void;
   onSelect: (next: string) => void;
 }) {
   return (
@@ -366,10 +394,17 @@ function TrackerHead({
         </h1>
         <time className="page-date" dateTime={date}>{date ? date.replaceAll('-', '/') : '—'}</time>
       </div>
-      <label className="selector">
-        <span className="selector-label">跟踪指数</span>
-        <IndexLevelPicker value={current.code} onChange={onSelect} />
-      </label>
+      <div className="head-actions">
+        {essayCount > 0 ? (
+          <button type="button" className="essay-open" id="essay-open" onClick={onOpenEssays}>
+            E大怎么说 <b>{essayCount}</b>
+          </button>
+        ) : null}
+        <label className="selector">
+          <span className="selector-label">跟踪指数</span>
+          <IndexLevelPicker value={current.code} onChange={onSelect} />
+        </label>
+      </div>
     </header>
   );
 }
@@ -377,11 +412,13 @@ function TrackerHead({
 const ETF_TRADE_MARKS: Record<string, EtfTradeMark[]> = {
   '512980': MEDIA_ETF_TRADES,
   '512880': SECURITIES_ETF_TRADES,
+  '563360': A500_ETF_TRADES,
 };
 
 const FUND_TRADE_MARKS: Record<string, EtfTradeMark[]> = {
   '004752': MEDIA_LINK_TRADES,
   '502010': SECURITIES_LINK_TRADES,
+  '022424': A500_LINK_TRADES,
 };
 
 /**

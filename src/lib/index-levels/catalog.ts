@@ -555,6 +555,19 @@ export const INDEX_WATCHES: IndexWatch[] = [
       },
     ],
   },
+  {
+    // 同花顺行情代码是 1B0510。中证官网与 indices.code 用 000510。
+    code: '000510.SH',
+    name: '中证A500',
+    chartEtf: { code: '563360', name: '华泰柏瑞中证A500ETF' },
+    chartFund: {
+      code: '022424',
+      name: '广发中证A500ETF联接A',
+      href: 'https://qieman.com/longwin/funds/022424?prodCode=LONG_WIN',
+    },
+    levels: [],
+    quotes: [],
+  },
 ];
 
 /** 地址栏里的指数代码。对不上名单时用第一只。 */
