@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 
 import { INDEX_WATCHES } from '@/lib/index-levels/catalog';
 
@@ -79,10 +79,10 @@ function IndexMenu({
   value: string;
   onPick: (code: string) => void;
 }) {
-  const move = (event: KeyboardEvent<HTMLUListElement>): void => {
+  const move = (event: ReactKeyboardEvent<HTMLUListElement>): void => {
     const step = MENU_KEYS[event.key];
     if (step === undefined) return;
-    const options = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]')];
+    const options = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'));
     const index = options.findIndex(node => node === document.activeElement);
     event.preventDefault();
     const next = step === 'start' ? 0 : step === 'end' ? options.length - 1 : index + step;
