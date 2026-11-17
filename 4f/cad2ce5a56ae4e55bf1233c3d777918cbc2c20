@@ -1,0 +1,44 @@
+__tests__/index-levels/a500-trades.test.ts
+  s_56adf5e66eff35::t_740d858dbbb025 20-45
+  s_56adf5e66eff35::t_5a3afca531f450 4
+  s_56adf5e66eff35::t_8d20917f7b3280 19
+src/components/index-levels/index-level-tracker.tsx
+  s_56adf5e66eff35::t_8c55545f99bb4b 441,449
+  s_56adf5e66eff35::t_e4afd71d0f7026 464
+  s_56adf5e66eff35::t_909c2e8059b2f0 169-171
+  s_56adf5e66eff35::t_4c5854929d694f 275
+  s_56adf5e66eff35::t_21504faa68c247 21-22
+src/lib/index-levels/a500-etf-trades.ts
+  s_56adf5e66eff35::t_397523cdef048d 3
+src/app/view/index-levels/index-levels.css
+  s_56adf5e66eff35::t_8d9fa20eaf8065 315-319
+  s_56adf5e66eff35::t_b326ed3bcd71bf 314
+  s_56adf5e66eff35::t_6a7917cd9f4541 320
+src/components/index-levels/index-level-chart.tsx
+  s_56adf5e66eff35::t_5e3cd15e1eac20 66,69-72
+  s_56adf5e66eff35::t_6f2cfbb9fb1371 4
+  s_56adf5e66eff35::t_d23f359b35363b 268-304
+  s_56adf5e66eff35::t_28435fa64882d8 67-68,73-76
+src/hooks/use-etf-journal-marks.ts
+  s_56adf5e66eff35::t_78107c7be2e022 1-62
+src/lib/index-levels/etf-journal-marks.ts
+  s_56adf5e66eff35::t_7a42d64ca10650 1-52
+docs/superpowers/specs/2026-10-20-index-level-sync.md
+  s_56adf5e66eff35::t_59783f0903625b 55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4fcad2ce5a56ae4e55bf1233c3d777918cbc2c20",
+  "prompts": {},
+  "sessions": {
+    "s_56adf5e66eff35": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bbe26fb2-06c1-43bb-afff-40970dc40af9",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
