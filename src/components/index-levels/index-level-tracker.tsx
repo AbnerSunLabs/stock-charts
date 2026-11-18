@@ -18,7 +18,8 @@ import {
 import { A500_ETF_TRADES } from '@/lib/index-levels/a500-etf-trades';
 import { A500_LINK_TRADES } from '@/lib/index-levels/a500-link-trades';
 import { essaysForIndex } from '@/lib/index-levels/index-essays';
-import { JOURNAL_LINKED_ETF, resolveEtfChartMarks } from '@/lib/index-levels/etf-journal-marks';
+import { isJournalLinkedEtf, resolveEtfChartMarks } from '@/lib/index-levels/etf-journal-marks';
+import { MEDICAL_LINK_TRADES } from '@/lib/index-levels/medical-link-trades';
 import { useEtfJournalMarks } from '@/hooks/use-etf-journal-marks';
 import { MEDIA_ETF_TRADES, type EtfTradeMark } from '@/lib/index-levels/media-etf-trades';
 import { MEDIA_LINK_TRADES } from '@/lib/index-levels/media-link-trades';
@@ -115,7 +116,7 @@ function useCloseSeries(code: string, etfCode?: string): {
   return { points, etfPoints, phase };
 }
 
-/** 场外基金单位净值。004752、502010 与 022424 优先读已落库序列，其余走 fund-nav 接口。 */
+/** 场外基金单位净值。已列入共享表的代码优先读落库序列，没有行时走 fund-nav 接口。 */
 function useFundSeries(fundCode?: string): { fundPoints: IndexClosePoint[]; fundPhase: Phase } {
   const [fundPoints, setFundPoints] = useState<IndexClosePoint[]>([]);
   const [fundPhase, setFundPhase] = useState<Phase>('ready');
@@ -166,9 +167,8 @@ export function IndexLevelTracker() {
   const [code, setCode] = useWatchedIndex();
   const current = INDEX_WATCHES.find(item => item.code === code) ?? INDEX_WATCHES[0];
   const { points, etfPoints, phase } = useCloseSeries(code, current?.chartEtf?.code);
-  const journalMarks = useEtfJournalMarks(
-    current?.chartEtf?.code === JOURNAL_LINKED_ETF ? JOURNAL_LINKED_ETF : undefined
-  );
+  const chartEtfCode = current?.chartEtf?.code;
+  const journalMarks = useEtfJournalMarks(isJournalLinkedEtf(chartEtfCode) ? chartEtfCode : undefined);
   const { fundPoints, fundPhase } = useFundSeries(current?.chartFund?.code);
   const cmb = useCmbFxSeries(current?.chartBankFx === true);
   const [span, setSpan] = useState<CloseSpan>('5');
@@ -425,6 +425,7 @@ const FUND_TRADE_MARKS: Record<string, EtfTradeMark[]> = {
   '004752': MEDIA_LINK_TRADES,
   '502010': SECURITIES_LINK_TRADES,
   '022424': A500_LINK_TRADES,
+  '162412': MEDICAL_LINK_TRADES,
 };
 
 /**

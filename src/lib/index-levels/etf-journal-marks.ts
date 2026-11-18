@@ -1,8 +1,13 @@
 import { extractEtfCode } from '@/lib/grid/grid-board-close-quote';
 import type { EtfTradeMark } from '@/lib/index-levels/media-etf-trades';
 
-/** 点位页上跟网格流水走的场内代码。 */
-export const JOURNAL_LINKED_ETF = '563360';
+/** 点位页上跟网格流水走的场内代码。512170 不另存一份快照。 */
+export const JOURNAL_LINKED_ETFS = ['563360', '512170'] as const;
+
+/** 这只场内基金的买卖点是否必须跟网格流水走。 */
+export function isJournalLinkedEtf(code: string | undefined): boolean {
+  return code != null && (JOURNAL_LINKED_ETFS as readonly string[]).includes(code);
+}
 
 export interface JournalMarkStrategy {
   id: string;
@@ -39,13 +44,16 @@ export function journalTradesToMarks(
     .map(item => ({ tradeDate: item.tradeDate, price: item.price, side: item.side }));
 }
 
-/** 563360 已登录用流水；还在读时先不画，未登录用写死的快照。其余 ETF 仍用快照。 */
+/**
+ * 已登录且标的在关联名单里时只用流水。还在读时先不画。
+ * 未登录用调用方给的快照；512170 没有快照，所以未登录不画点。
+ */
 export function resolveEtfChartMarks(
   code: string | undefined,
   journal: EtfJournalMarks,
   staticMarks: EtfTradeMark[]
 ): EtfTradeMark[] {
-  if (code !== JOURNAL_LINKED_ETF) return staticMarks;
+  if (!isJournalLinkedEtf(code)) return staticMarks;
   if (journal.status === 'live') return journal.marks;
   if (journal.status === 'pending') return [];
   return staticMarks;

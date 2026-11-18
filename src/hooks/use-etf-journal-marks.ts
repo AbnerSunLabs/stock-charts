@@ -10,8 +10,12 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { GridStrategyRepository } from '@/lib/supabase/grid-strategy-repository';
 import { GridStrategyTradeRepository } from '@/lib/supabase/grid-strategy-trade-repository';
 
+/** 页面还开着时，隔这段时间再对一次流水。 */
+const JOURNAL_MARK_REFRESH_MS = 15_000;
+
 /**
- * 已登录时读当前用户网格流水。切回这个标签页或登录态变化时再读一次。
+ * 已登录时读当前用户网格流水。
+ * 回到标签页、窗口重新聚焦，或页面开着时每隔一段时间再读，流水变更会画到折线上。
  */
 export function useEtfJournalMarks(etfCode?: string): EtfJournalMarks {
   const [state, setState] = useState<EtfJournalMarks>({ status: 'pending' });
@@ -33,15 +37,19 @@ export function useEtfJournalMarks(etfCode?: string): EtfJournalMarks {
           }
         });
     };
-    load();
-    const onVisible = () => {
+    const refreshIfVisible = () => {
       if (document.visibilityState === 'visible') load();
     };
-    document.addEventListener('visibilitychange', onVisible);
+    load();
+    document.addEventListener('visibilitychange', refreshIfVisible);
+    window.addEventListener('focus', refreshIfVisible);
+    const timer = window.setInterval(refreshIfVisible, JOURNAL_MARK_REFRESH_MS);
     const { data } = createBrowserSupabaseClient().auth.onAuthStateChange(() => load());
     return () => {
       cancelled = true;
-      document.removeEventListener('visibilitychange', onVisible);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
+      window.removeEventListener('focus', refreshIfVisible);
+      window.clearInterval(timer);
       data.subscription.unsubscribe();
     };
   }, [etfCode]);

@@ -96,6 +96,12 @@ export const INDEX_WATCHES: IndexWatch[] = [
   {
     code: '399989.SZ',
     name: '中证医疗',
+    chartEtf: { code: '512170', name: '华宝中证医疗ETF' },
+    chartFund: {
+      code: '162412',
+      name: '华宝医疗ETF联接A',
+      href: 'https://qieman.com/longwin/funds/162412?prodCode=LONG_WIN',
+    },
     levels: [
       { name: '压力', point: 8600, label: '8600' },
       { name: '共振支撑', point: 8100, label: '8100' },

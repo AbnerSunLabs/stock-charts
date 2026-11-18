@@ -5,6 +5,7 @@ const FUND_NAV_SCRIPTS: Record<string, string> = {
   '004752': 'https://fund.eastmoney.com/pingzhongdata/004752.js',
   '502010': 'https://fund.eastmoney.com/pingzhongdata/502010.js',
   '022424': 'https://fund.eastmoney.com/pingzhongdata/022424.js',
+  '162412': 'https://fund.eastmoney.com/pingzhongdata/162412.js',
 };
 
 const SHANGHAI_DATE = new Intl.DateTimeFormat('en-CA', {
