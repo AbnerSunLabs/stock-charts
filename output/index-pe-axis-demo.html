@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>指数市盈率双轴 · 三版</title>
+    <style>
+      :root {
+        --text: #1c2430;
+        --body: #3d4a5c;
+        --muted: #8a95a5;
+        --line: #e2e8f0;
+        --red: #cf202f;
+        --green: #0b7a56;
+        --bg: #f4f6f8;
+        --indigo: #8183d8;
+        --gold: #c4a15a;
+        --pink: #e7a3ad;
+        --brown: #a67c6d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+      }
+      header {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 28px 24px 8px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 22px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+      header p {
+        margin: 0;
+        color: var(--body);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      header p + p {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 18px 24px 56px;
+        display: grid;
+        gap: 16px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px 18px 18px;
+      }
+      .card h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 650;
+      }
+      .why {
+        margin: 4px 0 12px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .px {
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+      }
+      .px span {
+        margin-left: 8px;
+        color: var(--green);
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .tools {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .tabs {
+        display: flex;
+        padding: 4px;
+        border-radius: 999px;
+        background: #eef1ef;
+      }
+      .tab {
+        border: 0;
+        background: transparent;
+        color: #8a918c;
+        min-height: 28px;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font: inherit;
+        font-size: 12px;
+      }
+      .tab.on {
+        background: #fff;
+        color: #30334b;
+        font-weight: 600;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+      }
+      .switch-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--body);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        user-select: none;
+      }
+      .switch {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        border-radius: 999px;
+        background: #d5dbe3;
+        transition: background 0.2s;
+      }
+      .switch i {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.2);
+        transition: left 0.2s;
+      }
+      .switch.on {
+        background: var(--indigo);
+      }
+      .switch.on i {
+        left: 18px;
+      }
+      .plot {
+        position: relative;
+        margin-top: 12px;
+      }
+      svg.chart {
+        width: 100%;
+        height: 300px;
+        display: block;
+        cursor: crosshair;
+      }
+      .float-switch {
+        position: absolute;
+        top: 8px;
+        right: 58px;
+        z-index: 2;
+        padding: 4px 8px 4px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.94);
+      }
+      .legend {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-top: 8px;
+        color: var(--body);
+        font-size: 12px;
+      }
+      .legend .key {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .swatch {
+        width: 18px;
+        height: 2px;
+        border-radius: 2px;
+      }
+      .swatch.price {
+        background: var(--indigo);
+      }
+      .swatch.pe {
+        background: var(--gold);
+      }
+      .tip {
+        position: absolute;
+        z-index: 3;
+        display: none;
+        padding: 11px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.97);
+        box-shadow: 0 8px 28px rgba(31, 44, 37, 0.14);
+        color: var(--body);
+        font-size: 12px;
+        line-height: 1.55;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .tip.show {
+        display: block;
+      }
+      .tip-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .tip-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--indigo);
+      }
+      .tip-date {
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .row em {
+        color: var(--muted);
+        font-style: normal;
+      }
+      .up {
+        color: var(--red);
+        font-weight: 600;
+      }
+      .down {
+        color: var(--green);
+        font-weight: 600;
+      }
+      .split {
+        display: flex;
+        align-items: stretch;
+      }
+      .split .tip {
+        position: static;
+        box-shadow: none;
+      }
+      .split .pe-pane {
+        border-left: 0;
+        border-radius: 0 12px 12px 0;
+      }
+      .split .base {
+        border-radius: 12px 0 0 12px;
+      }
+      .pe-block {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed #e2e8f0;
+      }
+      .pe-group {
+        display: grid;
+        grid-template-columns: 10px 1fr;
+        gap: 8px;
+      }
+      .pe-group + .pe-group {
+        margin-top: 8px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        margin-top: 5px;
+        border-radius: 50%;
+      }
+      .dot.gold {
+        background: #e0b15a;
+      }
+      .dot.pink {
+        background: var(--pink);
+      }
+      .dot.brown {
+        background: var(--brown);
+      }
+      .pe-group b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .sub {
+        color: #5c6b7a;
+      }
+      .pane-card {
+        position: absolute;
+        filter: drop-shadow(0 8px 28px rgba(31, 44, 37, 0.14));
+      }
+      .pe-pane .pe-block {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+      }
+      .pane-card .tip {
+        box-shadow: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>指数市盈率双轴 · 三版</h1>
+      <p>
+        中证传媒的点位折线加一条市盈率。左轴是点位，右轴是市盈率。滑动开关关掉时，右轴和市盈率线一起收起。
+      </p>
+      <p>
+        悬停在现有提示上增加市盈率、历史 / 五年 /
+        十年分位，以及五年、十年均值和现值偏离。图上的数字按这段示意序列现算。
+      </p>
+    </header>
+    <main id="app"></main>
+    <script>
+      const N = 130;
+      const START = Date.parse("2016-01-04T00:00:00Z");
+      const SERIES = Array.from({ length: N }, (_, i) => {
+        const date = new Date(START + i * 24 * 86400000);
+        const iso = date.toISOString().slice(0, 10);
+        const wave = Math.sin(i / 9) * 180 + Math.sin(i / 21) * 90;
+        const close = Math.round((1180 + wave - i * 0.4) * 100) / 100;
+        const pe =
+          Math.round(
+            (22.4 + Math.sin(i / 11) * 4.2 + Math.cos(i / 17) * 1.6) * 100,
+          ) / 100;
+        return { date: iso, close, pe };
+      });
+
+      const mean = (values) =>
+        values.reduce((sum, value) => sum + value, 0) / values.length;
+      const rank = (value, values) =>
+        (values.filter((item) => item <= value).length / values.length) * 100;
+      const pct = (value) => {
+        const text = `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+        const kind = value < -0.005 ? "down" : value > 0.005 ? "up" : "";
+        return `<span class="${kind}">${text}</span>`;
+      };
+      const money = (value) =>
+        value.toLocaleString("zh-CN", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
+      function statsAt(index) {
+        const point = SERIES[index];
+        const all = SERIES.slice(0, index + 1).map((item) => item.pe);
+        const five = all.slice(-60);
+        const ten = all.slice(-120);
+        const avg5 = mean(five);
+        const avg10 = mean(ten);
+        let peak = point.close;
+        for (let i = 0; i <= index; i += 1)
+          peak = Math.max(peak, SERIES[i].close);
+        const base = SERIES[0].close;
+        return {
+          ...point,
+          cumulative: (point.close / base - 1) * 100,
+          fromPeak: (point.close / peak - 1) * 100,
+          hist: rank(point.pe, all),
+          five: rank(point.pe, five),
+          ten: rank(point.pe, ten),
+          avg5,
+          avg10,
+          dev5: (point.pe / avg5 - 1) * 100,
+          dev10: (point.pe / avg10 - 1) * 100,
+        };
+      }
+
+      function peBlock(item) {
+        return `<div class="pe-block">
+        <div class="pe-group"><i class="dot gold"></i><div>
+          <div><b>市盈率:</b> ${item.pe.toFixed(2)}</div>
+          <div class="sub">历史分位: ${item.hist.toFixed(2)}%</div>
+          <div class="sub">五年分位: ${item.five.toFixed(2)}%</div>
+          <div class="sub">十年分位: ${item.ten.toFixed(2)}%</div>
+        </div></div>
+        <div class="pe-group"><i class="dot pink"></i><div>
+          <div><b>市盈五年均值:</b> ${item.avg5.toFixed(2)}</div>
+          <div class="sub">现值偏离: ${pct(item.dev5)}</div>
+        </div></div>
+        <div class="pe-group"><i class="dot brown"></i><div>
+          <div><b>市盈十年均值:</b> ${item.avg10.toFixed(2)}</div>
+          <div class="sub">现值偏离: ${pct(item.dev10)}</div>
+        </div></div>
+      </div>`;
+      }
+
+      function baseTip(item) {
+        return `<div class="tip-title"><i class="tip-dot"></i><b>中证传媒 (399971.SZ)</b></div>
+        <div class="tip-date">${item.date}</div>
+        <div class="row"><em>收盘价</em><span>${money(item.close)}</span></div>
+        <div class="row"><em>历史累计涨跌</em>${pct(item.cumulative)}</div>
+        <div class="row"><em>距前高下跌</em>${pct(item.fromPeak)}</div>`;
+      }
+
+      function tipHtml(item, peOn, layout) {
+        if (layout === "side" && peOn) {
+          return `<div class="pane-card split"><div class="tip base show">${baseTip(item)}</div><div class="tip pe-pane show">${peBlock(item)}</div></div>`;
+        }
+        return `<div class="tip show">${baseTip(item)}${peOn ? peBlock(item) : ""}</div>`;
+      }
+
+      const VERSIONS = [
+        {
+          id: "a",
+          title: "甲 · 开关跟时间",
+          why: "滑动开关放在时间范围旁边。悬停仍是一张卡，市盈率块接在现有三行下面。",
+          layout: "stack",
+          place: "head",
+        },
+        {
+          id: "b",
+          title: "乙 · 开关浮在图上",
+          why: "开关贴在绘图区右上角。市盈率块单独成一栏，挨在原来的提示右边。",
+          layout: "side",
+          place: "float",
+        },
+        {
+          id: "c",
+          title: "丙 · 开关在图例",
+          why: "图下面用图例区分点位和市盈率，开关只控制金色那条。悬停卡片和甲一样往下接。",
+          layout: "stack",
+          place: "legend",
+        },
+      ];
+
+      const app = document.getElementById("app");
+      VERSIONS.forEach((version) => {
+        const card = document.createElement("section");
+        card.className = "card";
+        card.dataset.id = version.id;
+        card.innerHTML = `
+        <h2>${version.title}</h2>
+        <p class="why">${version.why}</p>
+        <div class="head">
+          <div class="px">1,131.84 <span>-0.42%</span></div>
+          <div class="tools">
+            <div class="tabs"><span class="tab">上市以来</span><span class="tab">近 10 年</span><span class="tab on">近 5 年</span></div>
+            ${version.place === "head" ? switchHtml(true) : ""}
+          </div>
+        </div>
+        <div class="plot">
+          ${version.place === "float" ? `<div class="float-switch">${switchHtml(true)}</div>` : ""}
+          <svg class="chart" viewBox="0 0 880 300" role="img" aria-label="${version.title}"></svg>
+          <div class="tip-host"></div>
+        </div>
+        ${version.place === "legend" ? `<div class="legend"><span class="key"><i class="swatch price"></i>点位</span><span class="key"><i class="swatch pe"></i>${switchHtml(true)}</span></div>` : ""}
+      `;
+        app.appendChild(card);
+        bind(card, version);
+      });
+
+      function switchHtml(on) {
+        return `<label class="switch-label"><span class="switch${on ? " on" : ""}"><i></i></span>市盈率</label>`;
+      }
+
+      function bind(card, version) {
+        const svg = card.querySelector("svg");
+        const host = card.querySelector(".tip-host");
+        let peOn = true;
+        const state = { peOn };
+        draw(svg, state);
+        card.querySelectorAll(".switch-label").forEach((label) => {
+          label.addEventListener("click", (event) => {
+            event.preventDefault();
+            state.peOn = !state.peOn;
+            card
+              .querySelectorAll(".switch")
+              .forEach((node) => node.classList.toggle("on", state.peOn));
+            draw(svg, state);
+            host.innerHTML = "";
+          });
+        });
+        svg.addEventListener("mousemove", (event) => {
+          const rect = svg.getBoundingClientRect();
+          const x = ((event.clientX - rect.left) / rect.width) * 880;
+          const index = nearest(x);
+          const item = statsAt(index);
+          host.innerHTML = tipHtml(item, state.peOn, version.layout);
+          const tip = host.firstElementChild;
+          const width = tip.getBoundingClientRect().width;
+          let left = event.clientX - rect.left + 16;
+          if (left + width > rect.width - 8)
+            left = event.clientX - rect.left - width - 16;
+          tip.style.left = `${Math.max(8, left)}px`;
+          tip.style.top = `${Math.max(8, event.clientY - rect.top - 28)}px`;
+        });
+        svg.addEventListener("mouseleave", () => {
+          host.innerHTML = "";
+        });
+      }
+
+      function nearest(x) {
+        const left = 46;
+        const right = 46;
+        const inner = 880 - left - right;
+        const ratio = Math.min(1, Math.max(0, (x - left) / inner));
+        return Math.round(ratio * (N - 1));
+      }
+
+      function draw(svg, state) {
+        const left = 46;
+        const right = 46;
+        const top = 16;
+        const bottom = 28;
+        const width = 880;
+        const height = 300;
+        const innerW = width - left - right;
+        const innerH = height - top - bottom;
+        const closes = SERIES.map((item) => item.close);
+        const pes = SERIES.map((item) => item.pe);
+        const cMin = Math.min(...closes) - 40;
+        const cMax = Math.max(...closes) + 40;
+        const pMin = Math.min(...pes) - 2;
+        const pMax = Math.max(...pes) + 2;
+        const xAt = (i) => left + (i / (N - 1)) * innerW;
+        const yClose = (value) =>
+          top + (1 - (value - cMin) / (cMax - cMin)) * innerH;
+        const yPe = (value) =>
+          top + (1 - (value - pMin) / (pMax - pMin)) * innerH;
+        const price = SERIES.map(
+          (item, i) =>
+            `${i ? "L" : "M"}${xAt(i).toFixed(1)} ${yClose(item.close).toFixed(1)}`,
+        ).join(" ");
+        const pe = SERIES.map(
+          (item, i) =>
+            `${i ? "L" : "M"}${xAt(i).toFixed(1)} ${yPe(item.pe).toFixed(1)}`,
+        ).join(" ");
+        const grids = [0, 1, 2, 3, 4]
+          .map((step) => {
+            const y = top + (innerH / 4) * step;
+            return `<line x1="${left}" y1="${y}" x2="${width - right}" y2="${y}" stroke="#eceff8" />`;
+          })
+          .join("");
+        const leftLabels = [cMax, (cMax + cMin) / 2, cMin]
+          .map((value, i) => {
+            const y = [top + 10, top + innerH / 2, top + innerH - 2][i];
+            return `<text x="${left - 8}" y="${y}" text-anchor="end" fill="#69718a" font-size="10">${Math.round(value)}</text>`;
+          })
+          .join("");
+        const rightLabels = state.peOn
+          ? [pMax, (pMax + pMin) / 2, pMin]
+              .map((value, i) => {
+                const y = [top + 10, top + innerH / 2, top + innerH - 2][i];
+                return `<text x="${width - right + 8}" y="${y}" fill="#a6843d" font-size="10">${value.toFixed(1)}</text>`;
+              })
+              .join("")
+          : "";
+        const years = [];
+        let last = "";
+        SERIES.forEach((item, i) => {
+          const year = item.date.slice(0, 4);
+          if (year === last || i % 26 !== 0) return;
+          last = year;
+          years.push(
+            `<text x="${xAt(i)}" y="${height - 8}" fill="#69718a" font-size="10">${year}</text>`,
+          );
+        });
+        svg.innerHTML = `${grids}${leftLabels}${rightLabels}<path d="${price}" fill="none" stroke="#8183d8" stroke-width="1.8" />${state.peOn ? `<path d="${pe}" fill="none" stroke="#c4a15a" stroke-width="1.6" />` : ""}${years.join("")}`;
+      }
+    </script>
+  </body>
+</html>

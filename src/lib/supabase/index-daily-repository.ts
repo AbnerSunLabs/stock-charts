@@ -1,6 +1,7 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { isSettledAshareClose } from '@/lib/market/ashare-close';
+import { isSettledAshareClose } from "@/lib/market/ashare-close";
+import { isValidPeTtm } from "@/lib/index-levels/pe-series";
 
 /** index_daily_metrics 最新已收盘点位（只读） */
 export interface IndexLatestClose {
@@ -18,20 +19,22 @@ interface MetricRow {
 }
 
 function parseClose(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string') {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
 }
 
-function settledCloses(rows: MetricRow[]): Array<{ tradeDate: string; close: number }> {
+function settledCloses(
+  rows: MetricRow[],
+): Array<{ tradeDate: string; close: number }> {
   const picked: Array<{ tradeDate: string; close: number }> = [];
   for (const row of rows) {
     const close = parseClose(row.close);
-    const tradeDate = String(row.trade_date ?? '').slice(0, 10);
-    const updatedAt = String(row.updated_at ?? '');
+    const tradeDate = String(row.trade_date ?? "").slice(0, 10);
+    const updatedAt = String(row.updated_at ?? "");
     if (close == null || !isSettledAshareClose(tradeDate, updatedAt)) continue;
     picked.push({ tradeDate, close });
   }
@@ -39,7 +42,10 @@ function settledCloses(rows: MetricRow[]): Array<{ tradeDate: string; close: num
 }
 
 /** 从按日期倒序的行里取出最新收盘和前一收盘。 */
-export function pickLatestClose(indexCode: string, rows: MetricRow[]): IndexLatestClose | null {
+export function pickLatestClose(
+  indexCode: string,
+  rows: MetricRow[],
+): IndexLatestClose | null {
   const settled = settledCloses(rows);
   const latest = settled[0];
   if (!latest) return null;
@@ -56,23 +62,23 @@ export function pickLatestClose(indexCode: string, rows: MetricRow[]): IndexLate
  */
 export async function fetchLatestIndexCloses(
   client: SupabaseClient,
-  indexCodes: string[]
+  indexCodes: string[],
 ): Promise<Map<string, IndexLatestClose>> {
   const unique = Array.from(new Set(indexCodes.filter(Boolean)));
   const result = new Map<string, IndexLatestClose>();
   if (unique.length === 0) return result;
 
   const rows = await Promise.all(
-    unique.map(async code => {
+    unique.map(async (code) => {
       const { data, error } = await client
-        .from('index_daily_metrics')
-        .select('index_code, trade_date, close, updated_at')
-        .eq('index_code', code)
-        .order('trade_date', { ascending: false })
+        .from("index_daily_metrics")
+        .select("index_code, trade_date, close, updated_at")
+        .eq("index_code", code)
+        .order("trade_date", { ascending: false })
         .limit(8);
       if (error || !data) return null;
       return pickLatestClose(code, data);
-    })
+    }),
   );
 
   for (const row of rows) {
@@ -89,25 +95,30 @@ const SERIES_PAGE = 1000;
  */
 export async function fetchIndexCloseSeries(
   client: SupabaseClient,
-  indexCode: string
-): Promise<Array<{ tradeDate: string; close: number }>> {
-  const points: Array<{ tradeDate: string; close: number }> = [];
+  indexCode: string,
+): Promise<Array<{ tradeDate: string; close: number; peTtm?: number }>> {
+  const points: Array<{ tradeDate: string; close: number; peTtm?: number }> =
+    [];
   for (let offset = 0; offset < 20000; offset += SERIES_PAGE) {
     const { data, error } = await client
-      .from('index_daily_metrics')
-      .select('trade_date, close, updated_at')
-      .eq('index_code', indexCode)
-      .not('close', 'is', null)
-      .order('trade_date', { ascending: true })
+      .from("index_daily_metrics")
+      .select("trade_date, close, pe_ttm, updated_at")
+      .eq("index_code", indexCode)
+      .not("close", "is", null)
+      .order("trade_date", { ascending: true })
       .range(offset, offset + SERIES_PAGE - 1);
     if (error) throw error;
-    const rows = data ?? [];
+    const rows = (data ?? []) as Array<MetricRow & { pe_ttm?: unknown }>;
     for (const row of rows) {
       const close = parseClose(row.close);
-      const tradeDate = String(row.trade_date ?? '').slice(0, 10);
-      const updatedAt = String(row.updated_at ?? '');
-      if (close == null || !isSettledAshareClose(tradeDate, updatedAt)) continue;
-      points.push({ tradeDate, close });
+      const tradeDate = String(row.trade_date ?? "").slice(0, 10);
+      const updatedAt = String(row.updated_at ?? "");
+      if (close == null || !isSettledAshareClose(tradeDate, updatedAt))
+        continue;
+      const peTtm = parseClose(row.pe_ttm);
+      points.push(
+        isValidPeTtm(peTtm) ? { tradeDate, close, peTtm } : { tradeDate, close },
+      );
     }
     if (rows.length < SERIES_PAGE) break;
   }

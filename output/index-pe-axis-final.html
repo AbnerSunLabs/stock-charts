@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>点位跟踪 | 投资图表</title>
+  <style>
+    :root {
+      --text: #30334b;
+      --muted: #69718a;
+      --body: #4b526c;
+      --line: #e2e8f0;
+      --green-deep: #048a52;
+      --red: #cf202f;
+      --bg: #f1f5f9;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", sans-serif; }
+    .page { max-width: 1440px; margin: 0 auto; padding: 24px 32px 40px; }
+    .crumb { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+    .crumb a { color: #4f46e5; text-decoration: none; }
+    h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.03em; }
+    h1 .code { margin-left: 8px; color: var(--muted); font-size: 14px; font-weight: 400; }
+    .page-date { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
+    .panel { margin-top: 18px; padding: 22px 24px 0; background: #fff; border-radius: 12px; }
+    .readout { display: flex; align-items: center; justify-content: space-between; gap: 32px; }
+    .px { font-size: 44px; font-weight: 600; line-height: 1; letter-spacing: -0.045em; }
+    .chg { margin-left: 12px; color: var(--green-deep); font-size: 15px; font-weight: 600; }
+    .gap { display: block; margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .gap b { color: var(--text); font-weight: 600; }
+    .tabs { display: flex; padding: 4px; border-radius: 999px; background: #eef1ef; }
+    .tab { border: 0; background: transparent; color: #8a918c; min-height: 32px; padding: 6px 14px; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; }
+    .tab.on { background: #fff; color: #30334b; font-weight: 600; box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08); }
+    .plot { position: relative; margin-top: 16px; }
+    svg.chart { width: 100%; height: 420px; display: block; cursor: crosshair; }
+    .legend { display: flex; justify-content: center; gap: 28px; margin: 4px 0 0; padding: 0; }
+    .legend button {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 0; background: transparent; color: var(--text);
+      font: inherit; font-size: 13px; cursor: pointer;
+    }
+    .legend button .swatch { width: 18px; height: 3px; border-radius: 2px; }
+    .legend button[data-key="price"] .swatch { background: #8183d8; }
+    .legend button[data-key="pe"] .swatch { background: #c4a15a; }
+    .legend button.off { color: #b4bcc8; }
+    .legend button.off .swatch { background: #d5dbe3; }
+    .level-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding-bottom: 24px; }
+    .level-picker button {
+      display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 10px 12px;
+      border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; color: var(--muted);
+      font: inherit; font-size: 12px; cursor: pointer;
+    }
+    .level-picker button b { color: var(--body); font-weight: 500; }
+    .level-picker button.on { background: #eef2ff; color: #4338ca; border-color: #a5b4fc; box-shadow: 0 6px 16px rgba(99,102,241,.12); }
+    .level-picker button.on b { color: #4338ca; }
+    .tip {
+      position: absolute; z-index: 3; display: none; padding: 11px 14px;
+      border: 1px solid #e2e8f0; border-radius: 12px; background: rgba(255,255,255,.97);
+      box-shadow: 0 8px 28px rgba(31,44,37,.14); color: var(--body); font-size: 12px; line-height: 1.55;
+      white-space: nowrap; pointer-events: none;
+    }
+    .tip.show { display: block; }
+    .tip-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text); }
+    .tip-dot { width: 9px; height: 9px; border-radius: 50%; background: #8183d8; }
+    .tip-date { margin-bottom: 4px; color: var(--muted); font-size: 11px; }
+    .row { display: flex; justify-content: space-between; gap: 18px; }
+    .row em { color: var(--muted); font-style: normal; }
+    .up { color: var(--red); font-weight: 600; }
+    .down { color: var(--green-deep); font-weight: 600; }
+    .pe-block { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; }
+    .pe-group { display: grid; grid-template-columns: 10px 1fr; gap: 8px; }
+    .pe-group + .pe-group { margin-top: 8px; }
+    .dot { width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; }
+    .dot.gold { background: #e0b15a; }
+    .dot.pink { background: #e7a3ad; }
+    .dot.brown { background: #a67c6d; }
+    .pe-group b { color: var(--text); font-weight: 600; }
+    .sub { color: #5c6b7a; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <p class="crumb"><a href="/">工具集</a> / 点位跟踪</p>
+    <h1>中证传媒 <span class="code">399971.SZ</span></h1>
+    <time class="page-date">2026/11/17</time>
+    <section class="panel">
+      <div class="readout">
+        <div>
+          <div><b class="px" id="px">1,131.84</b><span class="chg" id="chg">-0.42%</span></div>
+          <span class="gap" id="gap">低于减持 <b>268</b> 点</span>
+        </div>
+        <div class="tabs" id="tabs">
+          <button type="button" class="tab" data-span="all">上市以来</button>
+          <button type="button" class="tab" data-span="10">近 10 年</button>
+          <button type="button" class="tab on" data-span="5">近 5 年</button>
+        </div>
+      </div>
+      <div class="plot">
+        <svg class="chart" id="chart" viewBox="0 0 960 420" role="img" aria-label="中证传媒历史走势"></svg>
+        <div class="tip" id="tip"></div>
+      </div>
+      <div class="legend" id="legend">
+        <button type="button" data-key="price" aria-pressed="true"><i class="swatch"></i>点位</button>
+        <button type="button" data-key="pe" aria-pressed="true"><i class="swatch"></i>市盈率</button>
+      </div>
+      <div class="level-picker" id="levels"></div>
+    </section>
+  </div>
+  <script>
+    const LEVELS = [
+      ['前低', 931], ['80位置', 950], ['梭哈', 1000], ['压力', 1220],
+      ['减持', 1400], ['压力线', 1605], ['上方压力', 1630], ['再减持', 1700],
+    ];
+    const FULL = buildSeries();
+    const state = { span: '5', price: true, pe: true, level: null, hover: null };
+
+    function buildSeries() {
+      const start = Date.parse('2014-01-02T00:00:00Z');
+      return Array.from({ length: 320 }, (_, i) => {
+        const date = new Date(start + i * 14 * 86400000).toISOString().slice(0, 10);
+        const wave = Math.sin(i / 14) * 210 + Math.sin(i / 33) * 80;
+        const close = Math.round((1120 + wave + (i > 180 ? -80 : 40)) * 100) / 100;
+        const pe = Math.round((21.6 + Math.sin(i / 16) * 4.4 + Math.cos(i / 27) * 1.4) * 100) / 100;
+        return { date, close, pe };
+      });
+    }
+
+    function windowed() {
+      const last = Date.parse(FULL[FULL.length - 1].date);
+      const years = state.span === 'all' ? 99 : Number(state.span);
+      const from = last - years * 365 * 86400000;
+      return FULL.filter(item => Date.parse(item.date) >= from);
+    }
+
+    function mean(values) { return values.reduce((sum, value) => sum + value, 0) / values.length; }
+    function rank(value, values) { return values.filter(item => item <= value).length / values.length * 100; }
+    function fmtPct(value) {
+      const text = `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+      const kind = value < -0.005 ? 'down' : value > 0.005 ? 'up' : '';
+      return `<span class="${kind}">${text}</span>`;
+    }
+    function money(value) {
+      return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function stats(rows, index) {
+      const point = rows[index];
+      const history = FULL.filter(item => item.date <= point.date);
+      const all = history.map(item => item.pe);
+      const five = all.slice(-130);
+      const ten = all.slice(-260);
+      const avg5 = mean(five);
+      const avg10 = mean(ten);
+      let peak = point.close;
+      for (let i = 0; i <= index; i += 1) peak = Math.max(peak, rows[i].close);
+      return {
+        ...point,
+        cumulative: (point.close / rows[0].close - 1) * 100,
+        fromPeak: (point.close / peak - 1) * 100,
+        hist: rank(point.pe, all),
+        five: rank(point.pe, five),
+        ten: rank(point.pe, ten),
+        avg5, avg10,
+        dev5: (point.pe / avg5 - 1) * 100,
+        dev10: (point.pe / avg10 - 1) * 100,
+      };
+    }
+
+    function peBlock(item) {
+      return `<div class="pe-block">
+        <div class="pe-group"><i class="dot gold"></i><div>
+          <div><b>市盈率:</b> ${item.pe.toFixed(2)}</div>
+          <div class="sub">历史分位: ${item.hist.toFixed(2)}%</div>
+          <div class="sub">五年分位: ${item.five.toFixed(2)}%</div>
+          <div class="sub">十年分位: ${item.ten.toFixed(2)}%</div>
+        </div></div>
+        <div class="pe-group"><i class="dot pink"></i><div>
+          <div><b>市盈五年均值:</b> ${item.avg5.toFixed(2)}</div>
+          <div class="sub">现值偏离: ${fmtPct(item.dev5)}</div>
+        </div></div>
+        <div class="pe-group"><i class="dot brown"></i><div>
+          <div><b>市盈十年均值:</b> ${item.avg10.toFixed(2)}</div>
+          <div class="sub">现值偏离: ${fmtPct(item.dev10)}</div>
+        </div></div>
+      </div>`;
+    }
+
+    const chart = document.getElementById('chart');
+    const tip = document.getElementById('tip');
+    const geom = { left: 52, right: 52, top: 18, bottom: 32, width: 960, height: 420 };
+
+    function draw() {
+      const rows = windowed();
+      const { left, right, top, bottom, width, height } = geom;
+      const innerW = width - left - right;
+      const innerH = height - top - bottom;
+      const closes = rows.map(item => item.close);
+      const pes = rows.map(item => item.pe);
+      const extras = state.level == null ? [] : [state.level];
+      const cMin = state.price || state.level != null ? Math.min(...closes, ...extras) : 0;
+      const cMax = state.price || state.level != null ? Math.max(...closes, ...extras) : 1;
+      const pad = Math.max((cMax - cMin) * 0.08, 20);
+      const y0 = state.span === 'all' && state.price ? 0 : Math.max(0, cMin - pad);
+      const y1 = cMax + pad;
+      const pMin = Math.min(...pes) - 1.5;
+      const pMax = Math.max(...pes) + 1.5;
+      const t0 = Date.parse(rows[0].date);
+      const t1 = Date.parse(rows[rows.length - 1].date);
+      const xAt = date => left + ((Date.parse(date) - t0) / (t1 - t0 || 1)) * innerW;
+      const yClose = value => top + (1 - (value - y0) / (y1 - y0 || 1)) * innerH;
+      const yPe = value => top + (1 - (value - pMin) / (pMax - pMin || 1)) * innerH;
+      const grids = [0, 1, 2, 3, 4].map(step => {
+        const y = top + innerH * step / 4;
+        return `<line x1="${left}" y1="${y}" x2="${width - right}" y2="${y}" stroke="#eceff8"/>`;
+      }).join('');
+      const leftAxis = state.price ? [y1, (y1 + y0) / 2, y0].map((value, i) => {
+        const y = [top + 12, top + innerH / 2, top + innerH][i];
+        return `<text x="${left - 8}" y="${y}" text-anchor="end" fill="#69718a" font-size="11">${Math.round(value).toLocaleString('zh-CN')}</text>`;
+      }).join('') : '';
+      const rightAxis = state.pe ? [pMax, (pMax + pMin) / 2, pMin].map((value, i) => {
+        const y = [top + 12, top + innerH / 2, top + innerH][i];
+        return `<text x="${width - right + 8}" y="${y}" fill="#a6843d" font-size="11">${value.toFixed(1)}</text>`;
+      }).join('') : '';
+      const price = rows.map((item, i) => `${i ? 'L' : 'M'}${xAt(item.date).toFixed(1)} ${yClose(item.close).toFixed(1)}`).join(' ');
+      const pe = rows.map((item, i) => `${i ? 'L' : 'M'}${xAt(item.date).toFixed(1)} ${yPe(item.pe).toFixed(1)}`).join(' ');
+      let years = '';
+      let lastYear = '';
+      rows.forEach(item => {
+        const year = item.date.slice(0, 4);
+        if (year === lastYear) return;
+        lastYear = year;
+        years += `<text x="${xAt(item.date)}" y="${height - 10}" fill="#69718a" font-size="11">${year}</text>`;
+      });
+      const level = state.level == null ? '' : `<line x1="${left}" y1="${yClose(state.level)}" x2="${width - right}" y2="${yClose(state.level)}" stroke="#4f46e5" stroke-dasharray="4 4"/>`;
+      const hover = state.hover == null ? '' : `<line x1="${xAt(rows[state.hover].date)}" y1="${top}" x2="${xAt(rows[state.hover].date)}" y2="${top + innerH}" stroke="#69718a" stroke-dasharray="3 3"/>`;
+      chart.innerHTML = `${grids}${leftAxis}${rightAxis}${level}${state.price ? `<path d="${price}" fill="none" stroke="#8183d8" stroke-width="1.8"/>` : ''}${state.pe ? `<path d="${pe}" fill="none" stroke="#c4a15a" stroke-width="1.6"/>` : ''}${years}${hover}`;
+      chart.dataset.count = String(rows.length);
+    }
+
+    function fillTip(rows, index) {
+      const item = stats(rows, index);
+      tip.className = 'tip show';
+      tip.innerHTML = `<div class="tip-title"><i class="tip-dot"></i><b>中证传媒 (399971.SZ)</b></div>
+        <div class="tip-date">${item.date}</div>
+        <div class="row"><em>收盘价</em><span>${money(item.close)}</span></div>
+        <div class="row"><em>历史累计涨跌</em>${fmtPct(item.cumulative)}</div>
+        <div class="row"><em>距前高下跌</em>${fmtPct(item.fromPeak)}</div>
+        ${state.pe ? peBlock(item) : ''}`;
+    }
+
+    function placeTip(event) {
+      const rows = windowed();
+      const rect = chart.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * geom.width;
+      if (x < geom.left || x > geom.width - geom.right) { hideTip(); return; }
+      const ratio = (x - geom.left) / (geom.width - geom.left - geom.right);
+      const index = Math.max(0, Math.min(rows.length - 1, Math.round(ratio * (rows.length - 1))));
+      state.hover = index;
+      fillTip(rows, index);
+      const width = tip.offsetWidth;
+      let left = event.clientX - rect.left + 16;
+      if (left + width > rect.width - 8) left = event.clientX - rect.left - width - 16;
+      tip.style.left = `${Math.max(8, left)}px`;
+      tip.style.top = '18px';
+      draw();
+    }
+
+    function hideTip() {
+      state.hover = null;
+      tip.className = 'tip';
+      draw();
+    }
+
+    document.getElementById('tabs').addEventListener('click', event => {
+      const button = event.target.closest('.tab');
+      if (!button) return;
+      state.span = button.dataset.span;
+      document.querySelectorAll('.tab').forEach(node => node.classList.toggle('on', node === button));
+      hideTip();
+    });
+    document.getElementById('legend').addEventListener('click', event => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      const key = button.dataset.key;
+      state[key] = !state[key];
+      button.classList.toggle('off', !state[key]);
+      button.setAttribute('aria-pressed', String(state[key]));
+      if (state.hover != null && tip.classList.contains('show')) fillTip(windowed(), state.hover);
+      draw();
+    });
+    const levels = document.getElementById('levels');
+    LEVELS.forEach(([name, point]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.innerHTML = `<span>${name}</span><b>${point.toLocaleString('zh-CN')}</b>`;
+      button.addEventListener('click', () => {
+        state.level = state.level === point ? null : point;
+        levels.querySelectorAll('button').forEach(node => node.classList.toggle('on', node === button && state.level != null));
+        draw();
+      });
+      levels.appendChild(button);
+    });
+    chart.addEventListener('mousemove', placeTip);
+    chart.addEventListener('mouseleave', hideTip);
+    draw();
+  </script>
+</body>
+</html>

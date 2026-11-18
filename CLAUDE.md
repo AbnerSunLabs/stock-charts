@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## 1. 项目概览
 - **项目描述**：当前项目主要是一个投研工具的集成网站，给用户提供一些工具从宏观层面了解自己的投资现状
-- **技术栈**：Next.js 14 (App Router)、React 18、TypeScript 5、Ant Design 5、@ant-design/charts（Sunburst 等图表）、Tailwind CSS（Design Tokens 亮/暗主题）、Google Fonts（Outfit、DM Sans）、Jest + Playwright 测试、Vercel 部署；无后端/数据库
+- **技术栈**：Next.js 14 (App Router)、React 18、TypeScript 5、Ant Design 5、@ant-design/charts（Sunburst 等图表）、Tailwind CSS（Design Tokens 亮/暗主题）、Google Fonts（Outfit、DM Sans）、Jest + Playwright 测试、Vercel 部署；Supabase 负责共享行情只读查询与用户数据 CRUD，数据职责见 `.cursor/rules/dual-repo-data-boundary.mdc`
 - **当前阶段**：开发阶段
 
 ## 2. 代码规范

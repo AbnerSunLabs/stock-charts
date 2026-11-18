@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { EssayRail } from '@/components/index-levels/index-essay-rail';
-import { IndexLevelChart } from '@/components/index-levels/index-level-chart';
-import { HelpTooltip } from '@/components/shared/help-tooltip';
-import { IndexLevelPicker } from '@/components/index-levels/index-level-picker';
+import { EssayRail } from "@/components/index-levels/index-essay-rail";
+import { IndexLevelChart } from "@/components/index-levels/index-level-chart";
+import { attachIndexPe, type PePoint } from "@/lib/index-levels/pe-series";
+import { HelpTooltip } from "@/components/shared/help-tooltip";
+import { IndexLevelPicker } from "@/components/index-levels/index-level-picker";
 import {
   INDEX_WATCHES,
   quoteHref,
@@ -15,29 +16,46 @@ import {
   type IndexLevelMark,
   type IndexQuote,
   type IndexWatch,
-} from '@/lib/index-levels/catalog';
-import { A500_ETF_TRADES } from '@/lib/index-levels/a500-etf-trades';
-import { A500_LINK_TRADES } from '@/lib/index-levels/a500-link-trades';
-import { essaysForIndex } from '@/lib/index-levels/index-essays';
-import { isJournalLinkedEtf, resolveEtfChartMarks } from '@/lib/index-levels/etf-journal-marks';
-import { MEDICAL_LINK_TRADES } from '@/lib/index-levels/medical-link-trades';
-import { useEtfJournalMarks } from '@/hooks/use-etf-journal-marks';
-import { MEDIA_ETF_TRADES, type EtfTradeMark } from '@/lib/index-levels/media-etf-trades';
-import { MEDIA_LINK_TRADES } from '@/lib/index-levels/media-link-trades';
-import { SECURITIES_ETF_TRADES } from '@/lib/index-levels/securities-etf-trades';
-import { SECURITIES_LINK_TRADES } from '@/lib/index-levels/securities-link-trades';
-import type { CloseSpan, IndexClosePoint } from '@/lib/index-levels/close-series';
-import type { CmbUsdQuotes } from '@/lib/index-levels/cmb-fx';
-import { CMB_USD_BUY_MARKS } from '@/lib/index-levels/cmb-fx-trades';
-import { changePct, classifyChange, formatClose, formatMarkLabel } from '@/lib/index-levels/position';
-import { createBrowserSupabaseClient } from '@/lib/supabase/client';
-import { fetchEtfCloseSeries } from '@/lib/supabase/etf-daily-repository';
-import { loadChartFundNav } from '@/lib/supabase/fund-nav-repository';
-import { fetchIndexCloseSeries, type IndexLatestClose } from '@/lib/supabase/index-daily-repository';
+} from "@/lib/index-levels/catalog";
+import { A500_ETF_TRADES } from "@/lib/index-levels/a500-etf-trades";
+import { A500_LINK_TRADES } from "@/lib/index-levels/a500-link-trades";
+import { essaysForIndex } from "@/lib/index-levels/index-essays";
+import {
+  isJournalLinkedEtf,
+  resolveEtfChartMarks,
+} from "@/lib/index-levels/etf-journal-marks";
+import { MEDICAL_LINK_TRADES } from "@/lib/index-levels/medical-link-trades";
+import { useEtfJournalMarks } from "@/hooks/use-etf-journal-marks";
+import {
+  MEDIA_ETF_TRADES,
+  type EtfTradeMark,
+} from "@/lib/index-levels/media-etf-trades";
+import { MEDIA_LINK_TRADES } from "@/lib/index-levels/media-link-trades";
+import { SECURITIES_ETF_TRADES } from "@/lib/index-levels/securities-etf-trades";
+import { SECURITIES_LINK_TRADES } from "@/lib/index-levels/securities-link-trades";
+import type {
+  CloseSpan,
+  IndexClosePoint,
+} from "@/lib/index-levels/close-series";
+import type { CmbUsdQuotes } from "@/lib/index-levels/cmb-fx";
+import { CMB_USD_BUY_MARKS } from "@/lib/index-levels/cmb-fx-trades";
+import {
+  changePct,
+  classifyChange,
+  formatClose,
+  formatMarkLabel,
+} from "@/lib/index-levels/position";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { fetchEtfCloseSeries } from "@/lib/supabase/etf-daily-repository";
+import { loadChartFundNav } from "@/lib/supabase/fund-nav-repository";
+import {
+  fetchIndexCloseSeries,
+  type IndexLatestClose,
+} from "@/lib/supabase/index-daily-repository";
 
-type Phase = 'loading' | 'ready' | 'error';
+type Phase = "loading" | "ready" | "error";
 
-const INDEX_QUERY = 'index';
+const INDEX_QUERY = "index";
 
 function useWatchedIndex(): [string, (next: string) => void] {
   const router = useRouter();
@@ -74,25 +92,28 @@ function useResetOnChange(key: unknown, reset: () => void): void {
 }
 
 /** 指数与场内 ETF 的收盘序列。 */
-function useCloseSeries(code: string, etfCode?: string): {
+function useCloseSeries(
+  code: string,
+  etfCode?: string,
+): {
   points: IndexClosePoint[];
   etfPoints: IndexClosePoint[];
   phase: Phase;
 } {
   const [points, setPoints] = useState<IndexClosePoint[]>([]);
   const [etfPoints, setEtfPoints] = useState<IndexClosePoint[]>([]);
-  const [phase, setPhase] = useState<Phase>('loading');
+  const [phase, setPhase] = useState<Phase>("loading");
 
   useResetOnChange(code, () => {
     setPoints([]);
     setEtfPoints([]);
-    setPhase('loading');
+    setPhase("loading");
   });
 
   useEffect(() => {
     if (!code) return undefined;
     let cancelled = false;
-    setPhase('loading');
+    setPhase("loading");
     setPoints([]);
     setEtfPoints([]);
     const client = createBrowserSupabaseClient();
@@ -100,14 +121,17 @@ function useCloseSeries(code: string, etfCode?: string): {
       fetchIndexCloseSeries(client, code),
       etfCode ? fetchEtfCloseSeries(client, etfCode) : Promise.resolve(null),
     ])
-      .then(([series, etfSeries]) => {
+      .then(async ([series, etfSeries]) => {
         if (cancelled) return;
         setPoints(series);
         setEtfPoints(etfSeries ?? []);
-        setPhase('ready');
+        setPhase("ready");
+        // 收盘先画出来。库里没有市盈率时再补中证官网，补上后折线才出现右轴。
+        const withPe = await attachIndexPe(code, series);
+        if (!cancelled) setPoints(withPe);
       })
       .catch(() => {
-        if (!cancelled) setPhase('error');
+        if (!cancelled) setPhase("error");
       });
     return () => {
       cancelled = true;
@@ -118,32 +142,35 @@ function useCloseSeries(code: string, etfCode?: string): {
 }
 
 /** 场外基金单位净值。已列入共享表的代码优先读落库序列，没有行时走 fund-nav 接口。 */
-function useFundSeries(fundCode?: string): { fundPoints: IndexClosePoint[]; fundPhase: Phase } {
+function useFundSeries(fundCode?: string): {
+  fundPoints: IndexClosePoint[];
+  fundPhase: Phase;
+} {
   const [fundPoints, setFundPoints] = useState<IndexClosePoint[]>([]);
-  const [fundPhase, setFundPhase] = useState<Phase>('ready');
+  const [fundPhase, setFundPhase] = useState<Phase>("ready");
 
   useResetOnChange(fundCode, () => {
     setFundPoints([]);
-    setFundPhase(fundCode ? 'loading' : 'ready');
+    setFundPhase(fundCode ? "loading" : "ready");
   });
 
   useEffect(() => {
     let cancelled = false;
     setFundPoints([]);
     if (!fundCode) {
-      setFundPhase('ready');
+      setFundPhase("ready");
       return undefined;
     }
-    setFundPhase('loading');
+    setFundPhase("loading");
     loadChartFundNav(fundCode)
-      .then(points => {
+      .then((points) => {
         if (!cancelled) {
           setFundPoints(points);
-          setFundPhase('ready');
+          setFundPhase("ready");
         }
       })
       .catch(() => {
-        if (!cancelled) setFundPhase('error');
+        if (!cancelled) setFundPhase("error");
       });
     return () => {
       cancelled = true;
@@ -154,9 +181,9 @@ function useFundSeries(fundCode?: string): { fundPoints: IndexClosePoint[]; fund
 }
 
 const SPANS: Array<{ id: CloseSpan; label: string }> = [
-  { id: 'all', label: '上市以来' },
-  { id: '10', label: '近 10 年' },
-  { id: '5', label: '近 5 年' },
+  { id: "all", label: "上市以来" },
+  { id: "10", label: "近 10 年" },
+  { id: "5", label: "近 5 年" },
 ];
 
 /**
@@ -166,18 +193,26 @@ const SPANS: Array<{ id: CloseSpan; label: string }> = [
  */
 export function IndexLevelTracker() {
   const [code, setCode] = useWatchedIndex();
-  const current = INDEX_WATCHES.find(item => item.code === code) ?? INDEX_WATCHES[0];
-  const { points, etfPoints, phase } = useCloseSeries(code, current?.chartEtf?.code);
+  const current =
+    INDEX_WATCHES.find((item) => item.code === code) ?? INDEX_WATCHES[0];
+  const { points, etfPoints, phase } = useCloseSeries(
+    code,
+    current?.chartEtf?.code,
+  );
   const chartEtfCode = current?.chartEtf?.code;
-  const journalMarks = useEtfJournalMarks(isJournalLinkedEtf(chartEtfCode) ? chartEtfCode : undefined);
+  const journalMarks = useEtfJournalMarks(
+    isJournalLinkedEtf(chartEtfCode) ? chartEtfCode : undefined,
+  );
   const { fundPoints, fundPhase } = useFundSeries(current?.chartFund?.code);
   const cmb = useCmbFxSeries(current?.chartBankFx === true);
-  const [span, setSpan] = useState<CloseSpan>('5');
-  const [levelId, setLevelId] = useState<string | null>(defaultLevelId(current?.levels ?? []));
+  const [span, setSpan] = useState<CloseSpan>("5");
+  const [levelId, setLevelId] = useState<string | null>(
+    defaultLevelId(current?.levels ?? []),
+  );
   const [essayOpen, setEssayOpen] = useState(false);
   const closeEssays = useCallback(() => {
     setEssayOpen(false);
-    document.getElementById('essay-open')?.focus();
+    document.getElementById("essay-open")?.focus();
   }, []);
 
   useResetOnChange(code, () => {
@@ -185,23 +220,44 @@ export function IndexLevelTracker() {
     setEssayOpen(false);
   });
 
-  const close = useMemo(() => latestClose(code, points, phase), [code, points, phase]);
+  const close = useMemo(
+    () => latestClose(code, points, phase),
+    [code, points, phase],
+  );
   const windowed = useMemo(() => sliceSpan(points, span), [points, span]);
   const etfWindow = useMemo(
     () => sliceSpan(etfPoints, span, windowed[windowed.length - 1]?.tradeDate),
-    [etfPoints, span, windowed]
+    [etfPoints, span, windowed],
   );
   const fundWindow = useMemo(
     () => sliceSpan(fundPoints, span, windowed[windowed.length - 1]?.tradeDate),
-    [fundPoints, span, windowed]
+    [fundPoints, span, windowed],
   );
-  const levelPoints = useMemo(() => (current?.levels ?? []).map(level => level.point), [current]);
+  const levelPoints = useMemo(
+    () => (current?.levels ?? []).map((level) => level.point),
+    [current],
+  );
+  const peHistory = useMemo<PePoint[]>(
+    () =>
+      points.flatMap((point) =>
+        point.peTtm == null
+          ? []
+          : [{ tradeDate: point.tradeDate, peTtm: point.peTtm }],
+      ),
+    [points],
+  );
 
   if (!current) return null;
-  const selected = current.levels.find(level => String(level.point) === levelId) ?? null;
-  const edge = close ? brackets(close.close, current.levels) : { below: null, above: null };
-  const quotes = selected ? quotesForLevel(current.quotes, selected, current.levels) : [];
-  const chooseLevel = (id: string) => setLevelId(currentId => (currentId === id ? null : id));
+  const selected =
+    current.levels.find((level) => String(level.point) === levelId) ?? null;
+  const edge = close
+    ? brackets(close.close, current.levels)
+    : { below: null, above: null };
+  const quotes = selected
+    ? quotesForLevel(current.quotes, selected, current.levels)
+    : [];
+  const chooseLevel = (id: string) =>
+    setLevelId((currentId) => (currentId === id ? null : id));
   const essays = essaysForIndex(current.code);
   const main = (
     <>
@@ -210,18 +266,18 @@ export function IndexLevelTracker() {
           <div className="readout">
             <div className="quote">
               <div className="px-row">
-                <b className="px">{close ? formatClose(close.close) : '—'}</b>
+                <b className="px">{close ? formatClose(close.close) : "—"}</b>
                 <ChangeText close={close} />
               </div>
               <GapText below={edge.below} above={edge.above} />
             </div>
             <div className="time-side">
               <div className="tabs" role="group" aria-label="时间范围">
-                {SPANS.map(item => (
+                {SPANS.map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    className={span === item.id ? 'tab active' : 'tab'}
+                    className={span === item.id ? "tab active" : "tab"}
                     aria-pressed={span === item.id}
                     onClick={() => setSpan(item.id)}
                   >
@@ -242,12 +298,15 @@ export function IndexLevelTracker() {
           phase={phase}
           span={span}
           levels={levelPoints}
+          peHistory={peHistory}
           activeLevel={selected?.point ?? null}
-          onActiveLevel={selected ? () => chooseLevel(String(selected.point)) : undefined}
+          onActiveLevel={
+            selected ? () => chooseLevel(String(selected.point)) : undefined
+          }
         />
         {current.levels.length > 0 ? (
           <div className="level-picker" role="group" aria-label="关键点位">
-            {current.levels.map(level => (
+            {current.levels.map((level) => (
               <button
                 key={level.point}
                 type="button"
@@ -264,7 +323,12 @@ export function IndexLevelTracker() {
         {quotes.length > 0 ? <QuoteSheet quotes={quotes} /> : null}
       </section>
 
-      <CmbFxCharts enabled={current.chartBankFx === true} quotes={cmb} span={span} end={windowed[windowed.length - 1]?.tradeDate} />
+      <CmbFxCharts
+        enabled={current.chartBankFx === true}
+        quotes={cmb}
+        span={span}
+        end={windowed[windowed.length - 1]?.tradeDate}
+      />
 
       <LinkedFundCharts
         watch={current}
@@ -273,7 +337,11 @@ export function IndexLevelTracker() {
         phase={phase}
         fundPhase={fundPhase}
         span={span}
-        etfMarks={resolveEtfChartMarks(current.chartEtf?.code, journalMarks, ETF_TRADE_MARKS[current.chartEtf?.code ?? ''] ?? [])}
+        etfMarks={resolveEtfChartMarks(
+          current.chartEtf?.code,
+          journalMarks,
+          ETF_TRADE_MARKS[current.chartEtf?.code ?? ""] ?? [],
+        )}
       />
     </>
   );
@@ -282,7 +350,7 @@ export function IndexLevelTracker() {
     <>
       <p className="crumb">
         <a href="/">工具集</a>
-        {' / '}
+        {" / "}
         点位跟踪
       </p>
       <TrackerHead
@@ -293,41 +361,46 @@ export function IndexLevelTracker() {
         onSelect={setCode}
       />
       {main}
-      {essayOpen ? <EssayRail essays={essays} open onClose={closeEssays} /> : null}
+      {essayOpen ? (
+        <EssayRail essays={essays} open onClose={closeEssays} />
+      ) : null}
     </>
   );
 }
 
 /** 招行美元汇买、汇卖。未配置时不请求。 */
-function useCmbFxSeries(enabled: boolean): { points: CmbUsdQuotes; phase: Phase } {
+function useCmbFxSeries(enabled: boolean): {
+  points: CmbUsdQuotes;
+  phase: Phase;
+} {
   const [points, setPoints] = useState<CmbUsdQuotes>({ bid: [], ask: [] });
-  const [phase, setPhase] = useState<Phase>(enabled ? 'loading' : 'ready');
+  const [phase, setPhase] = useState<Phase>(enabled ? "loading" : "ready");
 
   useResetOnChange(enabled, () => {
     setPoints({ bid: [], ask: [] });
-    setPhase(enabled ? 'loading' : 'ready');
+    setPhase(enabled ? "loading" : "ready");
   });
 
   useEffect(() => {
     let cancelled = false;
     setPoints({ bid: [], ask: [] });
     if (!enabled) {
-      setPhase('ready');
+      setPhase("ready");
       return undefined;
     }
-    setPhase('loading');
-    fetch('/api/index-levels/cmb-fx')
-      .then(response => {
-        if (!response.ok) throw new Error('cmb fx failed');
+    setPhase("loading");
+    fetch("/api/index-levels/cmb-fx")
+      .then((response) => {
+        if (!response.ok) throw new Error("cmb fx failed");
         return response.json() as Promise<Partial<CmbUsdQuotes>>;
       })
-      .then(body => {
+      .then((body) => {
         if (cancelled) return;
         setPoints({ bid: body.bid ?? [], ask: body.ask ?? [] });
-        setPhase('ready');
+        setPhase("ready");
       })
       .catch(() => {
-        if (!cancelled) setPhase('error');
+        if (!cancelled) setPhase("error");
       });
     return () => {
       cancelled = true;
@@ -337,8 +410,10 @@ function useCmbFxSeries(enabled: boolean): { points: CmbUsdQuotes; phase: Phase 
   return { points, phase };
 }
 
-const CMB_ASK_HELP = '在招行买入美元（购汇）的成交价，即银行卖出价。按 1 美元计。';
-const CMB_BID_HELP = '把美元卖给招行（结汇）的成交价，即银行买入价。按 1 美元计。';
+const CMB_ASK_HELP =
+  "在招行买入美元（购汇）的成交价，即银行卖出价。按 1 美元计。";
+const CMB_BID_HELP =
+  "把美元卖给招行（结汇）的成交价，即银行买入价。按 1 美元计。";
 
 /**
  * 招行汇卖、汇买一行两列。购汇用的汇卖在左。窄屏与传媒 ETF 行同一断点折回单列。
@@ -363,16 +438,39 @@ function CmbFxCharts({
         <article className="fund-panel">
           <h3 className="fund-title">
             招行汇卖 <span className="code">USD.ASK</span>
-            <span className="title-help"><HelpTooltip title={CMB_ASK_HELP} /></span>
+            <span className="title-help">
+              <HelpTooltip title={CMB_ASK_HELP} />
+            </span>
           </h3>
-          <IndexLevelChart bare presliced name="招行汇卖" code="USD.ASK" points={ask} phase={quotes.phase} span={span} priceDigits={5} marks={CMB_USD_BUY_MARKS} />
+          <IndexLevelChart
+            bare
+            presliced
+            name="招行汇卖"
+            code="USD.ASK"
+            points={ask}
+            phase={quotes.phase}
+            span={span}
+            priceDigits={5}
+            marks={CMB_USD_BUY_MARKS}
+          />
         </article>
         <article className="fund-panel">
           <h3 className="fund-title">
             招行汇买 <span className="code">USD.BID</span>
-            <span className="title-help"><HelpTooltip title={CMB_BID_HELP} /></span>
+            <span className="title-help">
+              <HelpTooltip title={CMB_BID_HELP} />
+            </span>
           </h3>
-          <IndexLevelChart bare presliced name="招行汇买" code="USD.BID" points={bid} phase={quotes.phase} span={span} priceDigits={4} />
+          <IndexLevelChart
+            bare
+            presliced
+            name="招行汇买"
+            code="USD.BID"
+            points={bid}
+            phase={quotes.phase}
+            span={span}
+            priceDigits={4}
+          />
         </article>
       </div>
     </section>
@@ -399,11 +497,18 @@ function TrackerHead({
         <h1>
           {current.name} <span className="code">{current.code}</span>
         </h1>
-        <time className="page-date" dateTime={date}>{date ? date.replaceAll('-', '/') : '—'}</time>
+        <time className="page-date" dateTime={date}>
+          {date ? date.replaceAll("-", "/") : "—"}
+        </time>
       </div>
       <div className="head-actions">
         {essayCount > 0 ? (
-          <button type="button" className="essay-open" id="essay-open" onClick={onOpenEssays}>
+          <button
+            type="button"
+            className="essay-open"
+            id="essay-open"
+            onClick={onOpenEssays}
+          >
             E大怎么说 <b>{essayCount}</b>
           </button>
         ) : null}
@@ -417,16 +522,16 @@ function TrackerHead({
 }
 
 const ETF_TRADE_MARKS: Record<string, EtfTradeMark[]> = {
-  '512980': MEDIA_ETF_TRADES,
-  '512880': SECURITIES_ETF_TRADES,
-  '563360': A500_ETF_TRADES,
+  "512980": MEDIA_ETF_TRADES,
+  "512880": SECURITIES_ETF_TRADES,
+  "563360": A500_ETF_TRADES,
 };
 
 const FUND_TRADE_MARKS: Record<string, EtfTradeMark[]> = {
-  '004752': MEDIA_LINK_TRADES,
-  '502010': SECURITIES_LINK_TRADES,
-  '022424': A500_LINK_TRADES,
-  '162412': MEDICAL_LINK_TRADES,
+  "004752": MEDIA_LINK_TRADES,
+  "502010": SECURITIES_LINK_TRADES,
+  "022424": A500_LINK_TRADES,
+  "162412": MEDICAL_LINK_TRADES,
 };
 
 /**
@@ -453,7 +558,8 @@ function LinkedFundCharts({
   const etf = watch.chartEtf ? (
     <article className="fund-panel" key={watch.chartEtf.code}>
       <h3 className="fund-title">
-        {watch.chartEtf.name} <span className="code">{watch.chartEtf.code}</span>
+        {watch.chartEtf.name}{" "}
+        <span className="code">{watch.chartEtf.code}</span>
       </h3>
       <IndexLevelChart
         bare
@@ -472,7 +578,9 @@ function LinkedFundCharts({
     <article className="fund-panel" key={watch.chartFund.code}>
       <h3 className="fund-title">
         {watch.chartFund.href ? (
-          <a href={watch.chartFund.href} target="_blank" rel="noreferrer">{watch.chartFund.name}</a>
+          <a href={watch.chartFund.href} target="_blank" rel="noreferrer">
+            {watch.chartFund.name}
+          </a>
         ) : (
           watch.chartFund.name
         )}
@@ -499,7 +607,10 @@ function LinkedFundCharts({
           <h2>跟踪基金</h2>
         </div>
       </div>
-      <div className={etf && fund ? 'fund-grid' : 'fund-grid is-single'}>{etf}{fund}</div>
+      <div className={etf && fund ? "fund-grid" : "fund-grid is-single"}>
+        {etf}
+        {fund}
+      </div>
     </section>
   );
 }
@@ -507,14 +618,16 @@ function LinkedFundCharts({
 function QuoteSheet({ quotes }: { quotes: IndexQuote[] }) {
   return (
     <section className="level-sheet" aria-live="polite" aria-label="E大贴文">
-      {quotes.map(quote => {
+      {quotes.map((quote) => {
         const href = quoteHref(quote);
         return (
           <article className="utter" key={quote.postId}>
-            <time dateTime={quote.date}>{quote.date.replaceAll('-', '/')}</time>
+            <time dateTime={quote.date}>{quote.date.replaceAll("-", "/")}</time>
             <p className="words">
-              {quote.text}{' '}
-              <a href={href} data-source={quoteSource(href)} target="_blank" rel="noreferrer">查看原文</a>
+              {quote.text}{" "}
+              <a href={href} data-source={quoteSource(href)} target="_blank" rel="noreferrer">
+                查看原文
+              </a>
             </p>
           </article>
         );
@@ -527,49 +640,71 @@ function ChangeText({ close }: { close: IndexLatestClose | null }) {
   if (!close) return <span className="chg">—</span>;
   const change = changePct(close.close, close.previousClose);
   const kind = classifyChange(change);
-  const text = change == null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(2)}%`;
+  const text =
+    change == null ? "—" : `${change > 0 ? "+" : ""}${change.toFixed(2)}%`;
   return <span className={`chg ${kind}`}>{text}</span>;
 }
 
-function GapText({ below, above }: { below: IndexLevelMark | null; above: IndexLevelMark | null }) {
+function GapText({
+  below,
+  above,
+}: {
+  below: IndexLevelMark | null;
+  above: IndexLevelMark | null;
+}) {
   if (!below || !above) return <span className="gap">—</span>;
   return (
     <span className="gap">
       介于 <b>{`${below.name} ${formatMarkLabel(below.label)}`}</b>
-      {' 与 '}
+      {" 与 "}
       <b>{`${above.name} ${formatMarkLabel(above.label)}`}</b>
     </span>
   );
 }
 
 function defaultLevelId(levels: IndexLevelMark[]): string | null {
-  const picked = levels.find(level => level.name === '压力') ?? levels[0];
+  const picked = levels.find((level) => level.name === "压力") ?? levels[0];
   return picked ? String(picked.point) : null;
 }
 
-function brackets(close: number, levels: IndexLevelMark[]): { below: IndexLevelMark | null; above: IndexLevelMark | null } {
+function brackets(
+  close: number,
+  levels: IndexLevelMark[],
+): { below: IndexLevelMark | null; above: IndexLevelMark | null } {
   const sorted = [...levels].sort((a, b) => a.point - b.point);
   return {
-    below: [...sorted].reverse().find(level => level.point <= close) ?? null,
-    above: sorted.find(level => level.point > close) ?? null,
+    below: [...sorted].reverse().find((level) => level.point <= close) ?? null,
+    above: sorted.find((level) => level.point > close) ?? null,
   };
 }
 
 /** 原文属于哪一档：点位数字对上，差 10 点以内的近邻（如 1403 → 1400）也算。 */
-function quotesForLevel(quotes: IndexQuote[], level: IndexLevelMark, levels: IndexLevelMark[]): IndexQuote[] {
+function quotesForLevel(
+  quotes: IndexQuote[],
+  level: IndexLevelMark,
+  levels: IndexLevelMark[],
+): IndexQuote[] {
   return quotes
-    .filter(quote => quoteMentions(quote.level, level, levels))
+    .filter((quote) => quoteMentions(quote.level, level, levels))
     .sort((a, b) => a.date.localeCompare(b.date) || a.postId - b.postId);
 }
 
-function quoteMentions(text: string, level: IndexLevelMark, levels: IndexLevelMark[]): boolean {
+function quoteMentions(
+  text: string,
+  level: IndexLevelMark,
+  levels: IndexLevelMark[],
+): boolean {
   if (levels.length === 0) return false;
   const numbers = numbersIn(text);
-  if (numbers.some(value => value === level.point)) return true;
-  const exact = levels.some(item => numbers.some(value => value === item.point));
+  if (numbers.some((value) => value === level.point)) return true;
+  const exact = levels.some((item) =>
+    numbers.some((value) => value === item.point),
+  );
   if (exact) return false;
-  return numbers.some(value => {
-    const nearest = levels.reduce((best, item) => (Math.abs(item.point - value) < Math.abs(best.point - value) ? item : best));
+  return numbers.some((value) => {
+    const nearest = levels.reduce((best, item) =>
+      Math.abs(item.point - value) < Math.abs(best.point - value) ? item : best,
+    );
     return nearest.point === level.point && Math.abs(level.point - value) <= 10;
   });
 }
@@ -585,16 +720,26 @@ function numbersIn(text: string): number[] {
   return found;
 }
 
-function sliceSpan(points: IndexClosePoint[], span: CloseSpan, endDate?: string): IndexClosePoint[] {
-  if (span === 'all' || points.length === 0) return points;
+function sliceSpan(
+  points: IndexClosePoint[],
+  span: CloseSpan,
+  endDate?: string,
+): IndexClosePoint[] {
+  if (span === "all" || points.length === 0) return points;
   const end = endDate || points[points.length - 1].tradeDate;
-  const [year, month, day] = end.split('-');
+  const [year, month, day] = end.split("-");
   const cut = `${Number(year) - Number(span)}-${month}-${day}`;
-  return points.filter(point => point.tradeDate >= cut && point.tradeDate <= end);
+  return points.filter(
+    (point) => point.tradeDate >= cut && point.tradeDate <= end,
+  );
 }
 
-function latestClose(code: string, points: IndexClosePoint[], phase: Phase): IndexLatestClose | null {
-  if (phase !== 'ready') return null;
+function latestClose(
+  code: string,
+  points: IndexClosePoint[],
+  phase: Phase,
+): IndexLatestClose | null {
+  if (phase !== "ready") return null;
   const latest = points[points.length - 1];
   if (!latest) return null;
   return {

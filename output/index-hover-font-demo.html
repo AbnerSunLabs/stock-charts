@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>指数悬停字号预览</title>
+  <style>
+    :root { color-scheme: light; --text: #4b5565; --muted: #697386; --line: #e9edf1; --up: #cf202f; --down: #36b53e; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f6f8; color: var(--text); font: 14px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    button { font: inherit; }
+    main { max-width: 1240px; margin: 0 auto; padding: 32px; }
+    .crumb { margin: 0 0 18px; color: var(--muted); font-size: 12px; }
+    h1 { margin: 0 0 4px; color: #30334b; font-size: 26px; font-weight: 600; }
+    h1 small { margin-left: 8px; color: var(--muted); font-size: 13px; font-weight: 400; }
+    .note { margin: 0 0 24px; color: var(--muted); font-size: 12px; }
+    .panel { padding: 24px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .quote { font-size: 34px; font-weight: 600; line-height: 1.2; letter-spacing: -.035em; color: #30334b; }
+    .date { margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .tabs { display: inline-flex; flex-shrink: 0; padding: 4px; border-radius: 999px; background: #eef1ef; }
+    .tabs button { min-height: 34px; padding: 5px 15px; border: 0; border-radius: 999px; background: transparent; color: #828b86; cursor: pointer; }
+    .tabs button[aria-pressed="true"] { background: #fff; color: #30334b; font-weight: 600; box-shadow: 0 1px 3px #1018281a; }
+    button:focus-visible { outline: 2px solid #6366f1; outline-offset: 3px; }
+    .plot { position: relative; height: 478px; margin-top: 22px; }
+    .chart { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: pan-y; }
+    .chart text { fill: #8c95a4; font-size: 11px; }
+    .tip { position: absolute; top: 15px; left: 45%; z-index: 2; min-width: 272px; max-width: calc(100% - 16px); padding: 14px 16px; border: 1px solid #eef0f2; border-radius: 6px; background: rgba(255,255,255,.94); box-shadow: 0 3px 13px #27303d29; color: var(--text); font-size: 12px; line-height: 1.42; pointer-events: none; font-variant-numeric: tabular-nums; }
+    .tip-group { display: grid; grid-template-columns: 10px minmax(0,1fr); align-items: start; column-gap: 10px; }
+    .tip-group + .tip-group { margin-top: 9px; }
+    .dot { width: 10px; height: 10px; margin-top: 7px; border-radius: 50%; }
+    .dot.title { background: #4b5565; }
+    .dot.price { background: #b5c5b2; }
+    .dot.pe { background: #d4b48a; }
+    .dot.five { background: #edaca2; }
+    .dot.ten { background: #bb8e90; }
+    .tip-heading { font-size: 13px; line-height: 1.4; white-space: nowrap; }
+    .tip-heading strong { font-weight: 650; }
+    .tip-code, .tip-date { color: var(--muted); font-weight: 400; }
+    .tip-date { margin-top: 1px; font-size: 11px; }
+    .tip-row { white-space: nowrap; }
+    .tip-row + .tip-row { margin-top: 1px; }
+    .up { color: var(--up); }
+    .down { color: var(--down); }
+    .legend { display: flex; justify-content: center; gap: 28px; margin-top: 6px; color: #4b526c; font-size: 12px; }
+    .legend span { display: inline-flex; align-items: center; gap: 8px; }
+    .legend i { width: 18px; height: 3px; border-radius: 2px; background: #8183d8; }
+    .legend .pe { background: #c4a15a; }
+    .hint { margin: 16px 0 0; color: var(--muted); font-size: 12px; }
+    @media (max-width: 720px) {
+      main { padding: 20px 12px; }
+      h1 { font-size: 23px; }
+      .panel { padding: 18px 12px; }
+      .panel-head { align-items: flex-start; flex-direction: column; gap: 16px; }
+      .tabs { align-self: stretch; }
+      .tabs button { flex: 1; padding-inline: 10px; }
+      .plot { height: 478px; margin-top: 18px; }
+      .tip { left: 12px; min-width: 0; width: 280px; padding: 14px 15px; font-size: 12px; }
+      .tip-heading { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="crumb">工具集 / 点位跟踪</p>
+    <h1>中证传媒 <small>399971.SZ</small></h1>
+    <p class="note">悬停字号预览 · 使用演示数据，非实时行情</p>
+    <section class="panel">
+      <div class="panel-head">
+        <div><div class="quote">887.7272</div><div class="date">2024 / 08 / 19</div></div>
+        <div class="tabs" role="group" aria-label="时间范围">
+          <button type="button" data-span="all" aria-pressed="false">上市以来</button>
+          <button type="button" data-span="10" aria-pressed="false">近 10 年</button>
+          <button type="button" data-span="5" aria-pressed="true">近 5 年</button>
+        </div>
+      </div>
+      <div class="plot" id="plot">
+        <svg class="chart" id="chart" viewBox="0 0 1000 478" preserveAspectRatio="none" role="img" aria-label="中证传媒走势演示"></svg>
+        <div class="tip" id="tip" role="status" aria-live="polite"></div>
+      </div>
+      <div class="legend"><span><i></i>点位</span><span><i class="pe"></i>市盈率</span></div>
+    </section>
+    <p class="hint">切换时间胶囊查看累计涨跌文案；移动或点按图表查看不同日期。默认显示参考图中的日期。</p>
+  </main>
+  <script>
+    const SNAPSHOT = {
+      tradeDate: '2024-08-19', close: 887.7272, peTtm: 27.09,
+      historyRank: 16.39, fiveYearRank: 23.89, tenYearRank: 16.97,
+      fiveYearMean: 31.69, tenYearMean: 43.36,
+    };
+    const START = Date.parse('2010-08-19T00:00:00Z');
+    const END = Date.parse('2024-08-19T00:00:00Z');
+    const FIVE_BASE = SNAPSHOT.close / (1 - 0.282);
+    const series = [];
+    for (let time = START, i = 0; time <= END; time += 86400000, i += 1) {
+      const date = new Date(time).toISOString().slice(0, 10);
+      if (new Date(time).getUTCDay() % 6 === 0) continue;
+      const wave = Math.sin(i / 190) * 310 + Math.sin(i / 53) * 85 + Math.sin(i / 7) * 27;
+      let close = 1290 + wave + 3000 * Math.exp(-(((i - 1770) / 160) ** 2)) - Math.max(0, i - 3600) * .22;
+      if (date === '2015-06-12') close = SNAPSHOT.close / (1 - .8117);
+      if (date === '2019-08-19') close = FIVE_BASE;
+      if (date === '2024-08-19') close = SNAPSHOT.close;
+      const peTtm = date === SNAPSHOT.tradeDate ? SNAPSHOT.peTtm : 37 + Math.sin(i / 210) * 12 + Math.cos(i / 90) * 4;
+      series.push({ tradeDate: date, close, peTtm });
+    }
+    const state = { span: '5', date: SNAPSHOT.tradeDate };
+    const chart = document.getElementById('chart');
+    const plot = document.getElementById('plot');
+    const tip = document.getElementById('tip');
+    const labels = { all: '上市以来累计涨跌', '10': '10年累计涨跌', '5': '5年累计涨跌' };
+    const pct = value => `<span class="${value < 0 ? 'down' : value > 0 ? 'up' : ''}">${value > 0 ? '+' : ''}${value.toFixed(2)}%</span>`;
+    const cutoff = (date, years) => `${Number(date.slice(0, 4)) - years}${date.slice(4)}`;
+
+    function visibleRows() {
+      return state.span === 'all' ? series : series.filter(row => row.tradeDate >= cutoff(SNAPSHOT.tradeDate, Number(state.span)));
+    }
+
+    function valuation(point) {
+      if (point.tradeDate === SNAPSHOT.tradeDate) return SNAPSHOT;
+      const history = series.filter(row => row.tradeDate <= point.tradeDate);
+      const five = history.filter(row => row.tradeDate >= cutoff(point.tradeDate, 5));
+      const ten = history.filter(row => row.tradeDate >= cutoff(point.tradeDate, 10));
+      const rank = rows => rows.filter(row => row.peTtm <= point.peTtm).length / rows.length * 100;
+      const mean = rows => rows.reduce((sum, row) => sum + row.peTtm, 0) / rows.length;
+      return { ...point, historyRank: rank(history), fiveYearRank: rank(five), tenYearRank: rank(ten), fiveYearMean: mean(five), tenYearMean: mean(ten) };
+    }
+
+    function fillTip() {
+      const rows = visibleRows();
+      const point = rows.find(row => row.tradeDate === state.date) ?? rows[rows.length - 1];
+      const pe = valuation(point);
+      const cumulative = (point.close / rows[0].close - 1) * 100;
+      const peak = Math.max(...series.filter(row => row.tradeDate <= point.tradeDate).map(row => row.close));
+      const drawdown = (point.close / peak - 1) * 100;
+      tip.innerHTML = `
+        <div class="tip-group"><i class="dot title"></i><div>
+          <div class="tip-heading"><strong>中证传媒</strong> <span class="tip-code">(399971.SZ)</span></div>
+          <div class="tip-date">${point.tradeDate}</div>
+        </div></div>
+        <div class="tip-group"><i class="dot price"></i><div>
+          <div class="tip-row">收盘价: ${point.close.toFixed(4)}</div>
+          <div class="tip-row"><span id="cumulative-label">${labels[state.span]}</span>: ${pct(cumulative)}</div>
+          <div class="tip-row">距前高下跌: ${pct(drawdown)}</div>
+        </div></div>
+        <div class="tip-group"><i class="dot pe"></i><div>
+          <div class="tip-row">市盈率: ${pe.peTtm.toFixed(2)}</div>
+          <div class="tip-row">历史分位: ${pe.historyRank.toFixed(2)}%</div>
+          <div class="tip-row">五年分位: ${pe.fiveYearRank.toFixed(2)}%</div>
+          <div class="tip-row">十年分位: ${pe.tenYearRank.toFixed(2)}%</div>
+        </div></div>
+        <div class="tip-group"><i class="dot five"></i><div>
+          <div class="tip-row">市盈五年均值: ${pe.fiveYearMean.toFixed(2)}</div>
+          <div class="tip-row">现值偏离: ${pct((pe.peTtm / pe.fiveYearMean - 1) * 100)}</div>
+        </div></div>
+        <div class="tip-group"><i class="dot ten"></i><div>
+          <div class="tip-row">市盈十年均值: ${pe.tenYearMean.toFixed(2)}</div>
+          <div class="tip-row">现值偏离: ${pct((pe.peTtm / pe.tenYearMean - 1) * 100)}</div>
+        </div></div>`;
+    }
+
+    function draw() {
+      const rows = visibleRows();
+      const width = chart.clientWidth || 1000, height = 478, left = 40, right = 40, top = 18, bottom = 28;
+      chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      const min = Math.min(...rows.map(row => row.close)) * .85;
+      const max = Math.max(...rows.map(row => row.close)) * 1.05;
+      const xAt = index => left + index / Math.max(1, rows.length - 1) * (width - left - right);
+      const yAt = value => top + (1 - (value - min) / (max - min)) * (height - top - bottom);
+      const path = rows.map((row, index) => `${index ? 'L' : 'M'}${xAt(index).toFixed(1)} ${yAt(row.close).toFixed(1)}`).join(' ');
+      const pePath = rows.map((row, index) => `${index ? 'L' : 'M'}${xAt(index).toFixed(1)} ${(top + (1 - (row.peTtm - 19) / 39) * (height - top - bottom)).toFixed(1)}`).join(' ');
+      const grids = [0, 1, 2, 3, 4].map(i => `<line x1="${left}" y1="${top + i * 108}" x2="${width - right}" y2="${top + i * 108}" stroke="#edf0f3"/>`).join('');
+      const years = [0, .25, .5, .75, 1].map(fraction => {
+        const index = Math.round((rows.length - 1) * fraction);
+        return `<text x="${xAt(index)}" y="${height - 5}" text-anchor="middle">${rows[index].tradeDate.slice(0, 4)}</text>`;
+      }).join('');
+      const index = rows.findIndex(row => row.tradeDate === state.date);
+      const marker = index < 0 ? '' : `<line x1="${xAt(index)}" x2="${xAt(index)}" y1="${top}" y2="${height - bottom}" stroke="#aeb7bd" stroke-dasharray="4 4"/>`;
+      chart.innerHTML = `${grids}<path d="${path}" fill="none" stroke="#8183d8" stroke-width="1.5" opacity=".55"/><path d="${pePath}" fill="none" stroke="#c4a15a" stroke-width="1.4" opacity=".6"/>${marker}${years}`;
+    }
+
+    document.querySelectorAll('[data-span]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.span = button.dataset.span;
+        state.date = SNAPSHOT.tradeDate;
+        document.querySelectorAll('[data-span]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+        tip.style.left = '';
+        tip.style.top = '';
+        draw();
+        fillTip();
+      });
+    });
+
+    function hoverAt(event) {
+      const rect = chart.getBoundingClientRect();
+      const rows = visibleRows();
+      const fraction = Math.max(0, Math.min(1, (event.clientX - rect.left - 40) / (rect.width - 80)));
+      state.date = rows[Math.round(fraction * (rows.length - 1))].tradeDate;
+      fillTip();
+      if (rect.width > 560) {
+        const mouseX = event.clientX - rect.left;
+        const preferred = mouseX + 18;
+        const nextLeft = preferred + tip.offsetWidth <= rect.width - 8 ? preferred : mouseX - tip.offsetWidth - 18;
+        tip.style.left = `${Math.max(8, Math.min(rect.width - tip.offsetWidth - 8, nextLeft))}px`;
+      }
+      draw();
+    }
+    chart.addEventListener('pointermove', hoverAt);
+    chart.addEventListener('pointerdown', hoverAt);
+    chart.addEventListener('pointerleave', event => {
+      if (event.pointerType === 'touch') return;
+      state.date = SNAPSHOT.tradeDate;
+      draw();
+      fillTip();
+    });
+    window.addEventListener('resize', () => {
+      tip.style.left = '';
+      draw();
+    });
+    draw();
+    fillTip();
+  </script>
+</body>
+</html>

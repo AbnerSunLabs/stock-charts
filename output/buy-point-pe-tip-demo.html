@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>买点提示 · 三版</title>
+  <style>
+    :root {
+      --text: #1c2430;
+      --body: #3d4a5c;
+      --muted: #8a95a5;
+      --line: #e2e8f0;
+      --red: #cf202f;
+      --green: #05b169;
+      --green-deep: #0b7a56;
+      --bg: #f4f6f8;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+    }
+    header {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 24px 8px;
+    }
+    h1 { margin: 0 0 6px; font-size: 22px; font-weight: 650; letter-spacing: -0.02em; }
+    header p { margin: 0; color: var(--body); font-size: 14px; line-height: 1.6; }
+    header p + p { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    main { max-width: 1180px; margin: 0 auto; padding: 18px 24px 48px; }
+    .board {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .list {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      max-height: 640px;
+      overflow: auto;
+    }
+    .list button {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 8px;
+      width: 100%;
+      padding: 9px 12px;
+      border: 0;
+      border-bottom: 1px solid #f1f5f9;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .list button:hover { background: #f8fafc; }
+    .list button.on { background: #eefbf4; }
+    .list button b { font-weight: 600; }
+    .list .pe { color: var(--green-deep); font-variant-numeric: tabular-nums; }
+    .versions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .version {
+      min-height: 280px;
+      padding: 14px 14px 18px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+    .version h2 { margin: 0 0 2px; font-size: 14px; font-weight: 650; }
+    .version .why { min-height: 36px; margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .stage {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 210px;
+      padding: 8px 4px 0;
+    }
+    .tip {
+      padding: 11px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 0 8px 28px rgba(31, 44, 37, 0.14);
+      color: var(--body);
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: nowrap;
+    }
+    .tip b { color: var(--text); }
+    .tip-title { display: flex; align-items: center; gap: 6px; margin-bottom: 1px; font-size: 13px; font-weight: 700; }
+    .tip-dot { width: 9px; height: 9px; border-radius: 50%; background: #8183d8; flex: none; }
+    .tip-date { margin-bottom: 5px; color: var(--muted); font-size: 11px; }
+    .tip em { margin-right: 10px; color: var(--muted); font-style: normal; }
+    .tip .up { color: var(--red); font-weight: 600; }
+    .tip .down { color: var(--green-deep); font-weight: 600; }
+    .row { display: flex; justify-content: space-between; gap: 18px; }
+    .tip-trade { margin-top: 5px; padding-top: 5px; border-top: 1px dashed #e2e8f0; }
+    .tip-trade em { color: var(--text); font-weight: 600; }
+    .tip-trade.buy em { color: #05b169; }
+    .extra em { color: var(--muted); font-weight: 400; }
+    .extra b { font-variant-numeric: tabular-nums; }
+    .strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin-top: 6px;
+      padding: 6px 0 2px;
+      border-top: 1px solid #d8f3e6;
+      background: linear-gradient(#f3fbf7, #f3fbf7);
+      border-radius: 0 0 8px 8px;
+    }
+    .strip span { display: flex; flex-direction: column; padding: 0 10px; line-height: 1.35; }
+    .strip span + span { border-left: 1px solid #d8f3e6; }
+    .strip small { color: var(--muted); font-size: 11px; }
+    .strip strong { color: var(--green-deep); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .with-badge { display: flex; align-items: stretch; filter: drop-shadow(0 8px 28px rgba(31, 44, 37, 0.14)); }
+    .with-badge .tip { box-shadow: none; border-right: 0; border-radius: 12px 0 0 12px; }
+    .badge {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      min-width: 92px;
+      padding: 10px 12px;
+      border: 1px solid #b7e7cf;
+      border-radius: 0 12px 12px 0;
+      background: #f3fbf7;
+    }
+    .badge span { display: flex; flex-direction: column; line-height: 1.3; }
+    .badge small { color: var(--muted); font-size: 11px; }
+    .badge strong { color: var(--green-deep); font-size: 14px; font-variant-numeric: tabular-nums; }
+    .chart-card {
+      margin-top: 16px;
+      padding: 16px 16px 8px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+    .chart-card h2 { margin: 0 0 2px; font-size: 13px; font-weight: 600; }
+    .chart-card p { margin: 0 0 8px; color: var(--muted); font-size: 12px; }
+    svg.chart { width: 100%; height: 220px; display: block; }
+    svg.chart circle { cursor: pointer; }
+    svg.chart circle.on { stroke: #1c2430; stroke-width: 2; }
+    @media (max-width: 980px) {
+      .board, .versions { grid-template-columns: 1fr; }
+      .list { max-height: 240px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>买点提示 · 三版</h1>
+    <p>挂在现在的悬停提示上。买入多两样：当天滚动市盈率，以及距离上一笔买入的间隔。卖出仍只显示成交价。</p>
+    <p>市盈率是中证传媒当日滚动市盈率。点左侧列表或图上的绿点切换一笔，三版一起变。</p>
+  </header>
+  <main>
+    <div class="board">
+      <div class="list" id="list"></div>
+      <div>
+        <div class="versions">
+          <section class="version">
+            <h2>甲 · 续行</h2>
+            <p class="why">沿用现在的「标签 + 数字」，买点下面再加两行。</p>
+            <div class="stage" id="v-a"></div>
+          </section>
+          <section class="version">
+            <h2>乙 · 色条</h2>
+            <p class="why">两样收成一条，并排贴在买入价下面。</p>
+            <div class="stage" id="v-b"></div>
+          </section>
+          <section class="version">
+            <h2>丙 · 侧栏</h2>
+            <p class="why">原提示一字不改，市盈率和间隔放到右侧。</p>
+            <div class="stage" id="v-c"></div>
+          </section>
+        </div>
+        <section class="chart-card">
+          <h2>传媒ETF 512980 · 买入</h2>
+          <p>绿点是买点。点一下，上面三张卡换成这一笔。</p>
+          <svg class="chart" id="chart" viewBox="0 0 920 220" role="img" aria-label="买入点"></svg>
+        </section>
+      </div>
+    </div>
+  </main>
+  <script>
+    const BUYS = [
+      ["2020-12-16", 0.86, 0.864, 24.82],
+      ["2021-03-15", 0.8, 0.802, 23.01],
+      ["2021-07-26", 0.74, 0.712, 18.57],
+      ["2021-07-28", 0.679, 0.683, 17.89],
+      ["2021-10-27", 0.679, 0.679, 17.85],
+      ["2021-11-29", 0.74, 0.743, 21.01],
+      ["2022-01-24", 0.8, 0.804, 22.37],
+      ["2022-01-27", 0.74, 0.723, 20.29],
+      ["2022-03-08", 0.679, 0.662, 18.54],
+      ["2022-04-25", 0.576, 0.55, 15.48],
+      ["2023-09-08", 0.775, 0.765, 25.87],
+      ["2023-10-20", 0.698, 0.7, 23.56],
+      ["2023-12-25", 0.698, 0.707, 21.97],
+      ["2024-02-05", 0.585, 0.58, 18.4],
+      ["2024-04-15", 0.698, 0.703, 22.32],
+      ["2024-07-08", 0.586, 0.589, 18.08],
+      ["2024-10-11", 0.698, 0.682, 21.38],
+      ["2024-12-31", 0.775, 0.774, 23.2],
+      ["2025-04-07", 0.775, 0.735, 22.05],
+      ["2025-04-09", 0.698, 0.75, 22.95],
+      ["2026-07-14", 0.775, 0.784, 22.71],
+      ["2026-10-08", 0.775, 0.769, 23.41],
+    ].map(([date, price, close, pe], index, all) => {
+      const prev = all[index - 1];
+      const days = prev ? Math.round((Date.parse(date) - Date.parse(prev[0])) / 86400000) : null;
+      let peak = close;
+      for (let i = 0; i <= index; i += 1) peak = Math.max(peak, all[i][2]);
+      const base = all[0][2];
+      return {
+        date,
+        price,
+        close,
+        pe,
+        days,
+        cumulative: (close / base - 1) * 100,
+        fromPeak: (close / peak - 1) * 100,
+      };
+    });
+
+    const money = n => n.toFixed(3);
+    const pct = n => {
+      const kind = n < -0.005 ? "down" : n > 0.005 ? "up" : "";
+      const text = `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
+      return `<span class="${kind}">${text}</span>`;
+    };
+    const gapText = days => (days == null ? "首笔" : `${days} 天`);
+    const peText = pe => `${pe.toFixed(2)} 倍`;
+
+    function baseRows(item) {
+      return `
+        <div class="tip-title"><i class="tip-dot"></i><b>传媒ETF (512980)</b></div>
+        <div class="tip-date">${item.date}</div>
+        <div class="row"><em>收盘价</em><span>${money(item.close)}</span></div>
+        <div class="row"><em>历史累计涨跌</em>${pct(item.cumulative)}</div>
+        <div class="row"><em>距前高下跌</em>${pct(item.fromPeak)}</div>
+        <div class="row tip-trade buy"><em>买入 B</em><span>${money(item.price)}</span></div>`;
+    }
+
+    function tipA(item) {
+      return `<div class="tip">${baseRows(item)}
+        <div class="row extra"><em>市盈率（PE-TTM）</em><b>${peText(item.pe)}</b></div>
+        <div class="row extra"><em>距上一买点</em><b>${gapText(item.days)}</b></div>
+      </div>`;
+    }
+
+    function tipB(item) {
+      return `<div class="tip">${baseRows(item)}
+        <div class="strip">
+          <span><small>市盈率（PE-TTM）</small><strong>${peText(item.pe)}</strong></span>
+          <span><small>距上一买点</small><strong>${gapText(item.days)}</strong></span>
+        </div>
+      </div>`;
+    }
+
+    function tipC(item) {
+      return `<div class="with-badge"><div class="tip">${baseRows(item)}</div>
+        <div class="badge">
+          <span><small>市盈率（PE-TTM）</small><strong>${peText(item.pe)}</strong></span>
+          <span><small>距上一买点</small><strong>${gapText(item.days)}</strong></span>
+        </div></div>`;
+    }
+
+    const list = document.getElementById("list");
+    const chart = document.getElementById("chart");
+    let current = 9;
+
+    function render(index) {
+      current = index;
+      const item = BUYS[index];
+      document.getElementById("v-a").innerHTML = tipA(item);
+      document.getElementById("v-b").innerHTML = tipB(item);
+      document.getElementById("v-c").innerHTML = tipC(item);
+      [...list.children].forEach((button, i) => button.classList.toggle("on", i === index));
+      [...chart.querySelectorAll("circle")].forEach((dot, i) => dot.classList.toggle("on", i === index));
+    }
+
+    BUYS.forEach((item, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.innerHTML = `<b>${item.date.slice(2)}</b><span class="pe">${item.pe.toFixed(2)} · ${gapText(item.days)}</span>`;
+      button.addEventListener("click", () => render(index));
+      list.appendChild(button);
+    });
+
+    const padL = 36;
+    const padR = 16;
+    const padT = 16;
+    const padB = 28;
+    const width = 920;
+    const height = 220;
+    const t0 = Date.parse(BUYS[0].date);
+    const t1 = Date.parse(BUYS[BUYS.length - 1].date);
+    const closes = BUYS.map(item => item.close);
+    const minC = Math.min(...closes) - 0.04;
+    const maxC = Math.max(...closes) + 0.04;
+    const xAt = date => padL + ((Date.parse(date) - t0) / (t1 - t0)) * (width - padL - padR);
+    const yAt = close => padT + ((maxC - close) / (maxC - minC)) * (height - padT - padB);
+    const line = BUYS.map(item => `${xAt(item.date).toFixed(1)},${yAt(item.close).toFixed(1)}`).join(" ");
+    chart.innerHTML = `
+      <polyline points="${line}" fill="none" stroke="#8183d8" stroke-width="2" />
+      ${BUYS.map((item, index) => `<circle data-i="${index}" cx="${xAt(item.date)}" cy="${yAt(item.close)}" r="5.5" fill="#05b169" />`).join("")}
+    `;
+    chart.addEventListener("click", event => {
+      const dot = event.target.closest("circle");
+      if (!dot) return;
+      render(Number(dot.dataset.i));
+    });
+
+    render(current);
+  </script>
+</body>
+</html>

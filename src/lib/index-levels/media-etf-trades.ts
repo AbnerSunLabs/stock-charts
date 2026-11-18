@@ -4,6 +4,13 @@ export interface EtfTradeMark {
   tradeDate: string;
   side: 'buy' | 'sell';
   price: number;
+  /** 买入当日跟踪指数的滚动市盈率。卖出和未核对的买点没有。 */
+  peTtm?: number;
+}
+
+export interface BuyPointNote {
+  peTtm: number;
+  gapLabel: string;
 }
 
 /** 收益列有值记为卖出，否则记为买入。价格用实际交易价格。 */
@@ -56,12 +63,57 @@ const MEDIA_ETF_ROWS: Array<[string, number, 'buy' | 'sell']> = [
   ['2026-11-05', 0.852, 'sell'],
 ];
 
+/** 买入当日中证传媒滚动市盈率，取自中证指数官网。 */
+const MEDIA_ETF_PE: Record<string, number> = {
+  '2020-12-16': 24.82,
+  '2021-03-15': 23.01,
+  '2021-07-26': 18.57,
+  '2021-07-28': 17.89,
+  '2021-10-27': 17.85,
+  '2021-11-29': 21.01,
+  '2022-01-24': 22.37,
+  '2022-01-27': 20.29,
+  '2022-03-08': 18.54,
+  '2022-04-25': 15.48,
+  '2023-09-08': 25.87,
+  '2023-10-20': 23.56,
+  '2023-12-25': 21.97,
+  '2024-02-05': 18.4,
+  '2024-04-15': 22.32,
+  '2024-07-08': 18.08,
+  '2024-10-11': 21.38,
+  '2024-12-31': 23.2,
+  '2025-04-07': 22.05,
+  '2025-04-09': 22.95,
+  '2026-07-14': 22.71,
+  '2026-10-08': 23.41,
+};
+
 /** 512980 成交流水。来自已核对的历史成交表。 */
 export const MEDIA_ETF_TRADES: EtfTradeMark[] = MEDIA_ETF_ROWS.map(([tradeDate, price, side]) => ({
   tradeDate,
   price,
   side,
+  ...(side === 'buy' ? { peTtm: MEDIA_ETF_PE[tradeDate] } : {}),
 }));
+
+/** 买入色条。间隔只数上一笔买入，中间的卖出跳过。第一笔没有间隔。 */
+export function buyPointNote(marks: EtfTradeMark[], tradeDate: string): BuyPointNote | null {
+  const buys = marks.filter(mark => mark.side === 'buy');
+  const index = buys.findIndex(mark => mark.tradeDate === tradeDate);
+  const current = buys[index];
+  if (!current || current.peTtm == null) return null;
+  const prev = buys[index - 1];
+  return {
+    peTtm: current.peTtm,
+    gapLabel: prev ? `${daysBetween(prev.tradeDate, current.tradeDate)} 天` : '首笔',
+  };
+}
+
+function daysBetween(earlier: string, later: string): number {
+  const ms = Date.parse(`${later}T00:00:00Z`) - Date.parse(`${earlier}T00:00:00Z`);
+  return Math.round(ms / 86_400_000);
+}
 
 const MATCH_DAYS = 4;
 
