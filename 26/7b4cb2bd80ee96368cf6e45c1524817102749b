@@ -1,0 +1,36 @@
+docs/superpowers/specs/2026-10-20-index-level-sync.md
+  s_0feecf2cd95346::t_d54e20a327f6bc 31
+  s_0feecf2cd95346::t_fc757f6e00a502 48
+  s_0feecf2cd95346::t_4fcede203a8197 22
+  s_0feecf2cd95346::t_7977cca73440a1 46
+src/components/index-levels/index-essay-rail.tsx
+  s_0feecf2cd95346::t_32e0914f8a9385 44-58
+  s_0feecf2cd95346::t_67a50e7c4e38b3 5
+__tests__/index-levels/quote-source.test.ts
+  s_0feecf2cd95346::t_31b7a93987a5ba 1-10
+src/app/view/index-levels/index-levels.css
+  s_0feecf2cd95346::t_747f1abe418c0f 394-398
+src/lib/index-levels/catalog.ts
+  s_0feecf2cd95346::t_783aad5495ba2e 461-472
+  s_0feecf2cd95346::t_cef48dd5d8fb75 52-62
+  s_0feecf2cd95346::t_1c6e6aef28c342 460
+src/components/index-levels/index-level-tracker.tsx
+  s_0feecf2cd95346::t_cd6827c6cdad5f 13
+  s_0feecf2cd95346::t_c0c9ac45c8beba 510-521
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "267b4cb2bd80ee96368cf6e45c1524817102749b",
+  "prompts": {},
+  "sessions": {
+    "s_0feecf2cd95346": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "36fabedc-ab25-4ad5-be3b-9c6a1bb56695",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
