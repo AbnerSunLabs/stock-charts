@@ -1,0 +1,19 @@
+.cursor/rules/dual-repo-branch-sync.mdc
+  s_bcb64ec1b887bb::t_d0dd1c5231ad4e 32-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5a26e9599ec942b6e24bbad325c3b617ab0046de",
+  "prompts": {},
+  "sessions": {
+    "s_bcb64ec1b887bb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "088de07c-c2ba-4f48-8cf1-13a51dacf877",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
