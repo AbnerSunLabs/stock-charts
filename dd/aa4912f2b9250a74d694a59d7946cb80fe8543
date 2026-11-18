@@ -1,0 +1,46 @@
+src/lib/index-levels/catalog.ts
+  s_f849232bbdd1d6::t_accbcc8159eafe 99-104
+src/lib/supabase/fund-nav-repository.ts
+  s_f849232bbdd1d6::t_e10d873aee561d 7
+src/components/index-levels/index-level-tracker.tsx
+  s_f849232bbdd1d6::t_30d4a299cfec13 428
+  s_f849232bbdd1d6::t_df44eb8f8ad915 119
+  s_f849232bbdd1d6::t_045d0bfd1fb00d 21-22
+  s_f849232bbdd1d6::t_90c662f514fcee 170-171
+docs/superpowers/specs/2026-10-20-index-level-sync.md
+  s_f849232bbdd1d6::t_af66c1eceba33f 55-56
+src/lib/index-levels/fund-nav.ts
+  s_f849232bbdd1d6::t_93be627e8370b0 8
+docs/superpowers/specs/2026-11-08-fund-nav-502010.md
+  s_f849232bbdd1d6::t_02e0cdd7d0a644 3
+  s_f849232bbdd1d6::t_7611170f002dac 9
+  s_f849232bbdd1d6::t_38b9f3b8083f13 19
+  s_f849232bbdd1d6::t_359f6ef1051b94 23
+src/lib/index-levels/medical-link-trades.ts
+  s_f849232bbdd1d6::t_2559b9fb74cae4 9
+  s_f849232bbdd1d6::t_bfd44fd1d4f4bb 1-8,10-19
+src/lib/index-levels/etf-journal-marks.ts
+  s_f849232bbdd1d6::t_b6f30a4c2f2871 47-50,56
+  s_f849232bbdd1d6::t_b9737ca86d6655 4-10
+__tests__/index-levels/medical-trades.test.ts
+  s_f849232bbdd1d6::t_e80db9409f149f 1-60,62-67
+  s_f849232bbdd1d6::t_f8bd9bf8aa2758 61
+src/hooks/use-etf-journal-marks.ts
+  s_f849232bbdd1d6::t_e0de576bc727c4 13-15,17-18,40,43-46,50-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ddaa4912f2b9250a74d694a59d7946cb80fe8543",
+  "prompts": {},
+  "sessions": {
+    "s_f849232bbdd1d6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "de350960-0187-4461-bc5a-f17cfdb24ee5",
+        "model": "grok-4.7"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
