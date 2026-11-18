@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
+import { quoteSource } from '@/lib/index-levels/catalog';
 import { essayHref, type IndexEssay } from '@/lib/index-levels/index-essays';
 
 /** 点开后从右侧盖上来，不占指数图的位置。 */
@@ -40,18 +41,21 @@ export function EssayRail({
           <button type="button" className="essay-close" ref={closeRef} onClick={onClose}>关闭</button>
         </div>
         <section className="level-sheet" aria-label="发言列表">
-          {essays.map(essay => (
-            <article className="utter" key={essay.id}>
-              <time dateTime={essay.date}>{essay.date.replaceAll('-', '/')}</time>
-              <div className="words">
-                {essay.note ? <p className="essay-note">{essay.note}</p> : null}
-                {essay.paragraphs.map((text, index) => (
-                  <p key={`${essay.id}-${index}`}>{text}</p>
-                ))}
-                <a href={essayHref(essay.postId)} target="_blank" rel="noreferrer">查看原文</a>
-              </div>
-            </article>
-          ))}
+          {essays.map(essay => {
+            const href = essayHref(essay.postId);
+            return (
+              <article className="utter" key={essay.id}>
+                <time dateTime={essay.date}>{essay.date.replaceAll('-', '/')}</time>
+                <div className="words">
+                  {essay.note ? <p className="essay-note">{essay.note}</p> : null}
+                  {essay.paragraphs.map((text, index) => (
+                    <p key={`${essay.id}-${index}`}>{text}</p>
+                  ))}
+                  <a href={href} data-source={quoteSource(href)} target="_blank" rel="noreferrer">查看原文</a>
+                </div>
+              </article>
+            );
+          })}
         </section>
       </div>
     </aside>

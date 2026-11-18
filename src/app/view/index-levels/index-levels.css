@@ -391,6 +391,11 @@
   vertical-align: -3px;
 }
 .index-levels .words a:hover { color: #4338ca; }
+.index-levels .words a[data-source="qieman"]::before {
+  background: url("./qieman-mark.png") center / contain no-repeat;
+  -webkit-mask: none;
+  mask: none;
+}
 .index-levels .words a::before {
   content: "";
   width: 14px;

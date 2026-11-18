@@ -49,6 +49,17 @@ export function quoteHref(quote: IndexQuote): string {
   return quote.url ?? quoteUrl(quote.postId);
 }
 
+/** 原文图标跟链接域名走。且慢帖没有微博地址，不能一律画成微博。 */
+export function quoteSource(href: string): 'qieman' | 'weibo' {
+  try {
+    const host = new URL(href).hostname;
+    if (host === 'qieman.com' || host.endsWith('.qieman.com')) return 'qieman';
+  } catch {
+    return 'weibo';
+  }
+  return 'weibo';
+}
+
 export const INDEX_WATCHES: IndexWatch[] = [
   {
     code: '000905.SH',
@@ -443,6 +454,19 @@ export const INDEX_WATCHES: IndexWatch[] = [
         level: '大压力 2570',
         text: '创业板在2570附近有个大压力。\n但毕竟只有S持仓一份，并不是大问题。所以我不准备减仓。\n跌了没卖别骂我。',
         url: 'https://weibo.com/7519797263/MoAOqBxZT',
+      },
+    ],
+  },
+  {
+    code: '399606.SZ',
+    name: '创业板R',
+    levels: [{ name: '压力测试', point: 2100, label: '2100' }],
+    quotes: [
+      {
+        postId: 92155,
+        date: '2026-10-16',
+        level: '压力测试 2100',
+        text: '创业板的压力测试点位。\n\n我个人根据各方面资料综合估计，这次创业板的极限跌幅应该不会到7080，除非发生08年级别的危机。\n\n极限应该在最高点下跌60%左右，取整的话就是2100左右。随着时间推移，这个点位每年也会增加一些。\n\n我说的是创业板R（399606）\n\n不是说一定跌到，而是各位如果有布局计划，用这个点位作为压力测试以及布局策略规划位置，我觉得应该是比较合理以及足够保守的。',
       },
     ],
   },

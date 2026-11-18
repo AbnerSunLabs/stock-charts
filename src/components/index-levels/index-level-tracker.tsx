@@ -10,6 +10,7 @@ import { IndexLevelPicker } from '@/components/index-levels/index-level-picker';
 import {
   INDEX_WATCHES,
   quoteHref,
+  quoteSource,
   resolveWatchedIndex,
   type IndexLevelMark,
   type IndexQuote,
@@ -506,15 +507,18 @@ function LinkedFundCharts({
 function QuoteSheet({ quotes }: { quotes: IndexQuote[] }) {
   return (
     <section className="level-sheet" aria-live="polite" aria-label="E大贴文">
-      {quotes.map(quote => (
-        <article className="utter" key={quote.postId}>
-          <time dateTime={quote.date}>{quote.date.replaceAll('-', '/')}</time>
-          <p className="words">
-            {quote.text}{' '}
-            <a href={quoteHref(quote)} target="_blank" rel="noreferrer">查看原文</a>
-          </p>
-        </article>
-      ))}
+      {quotes.map(quote => {
+        const href = quoteHref(quote);
+        return (
+          <article className="utter" key={quote.postId}>
+            <time dateTime={quote.date}>{quote.date.replaceAll('-', '/')}</time>
+            <p className="words">
+              {quote.text}{' '}
+              <a href={href} data-source={quoteSource(href)} target="_blank" rel="noreferrer">查看原文</a>
+            </p>
+          </article>
+        );
+      })}
     </section>
   );
 }
