@@ -29,6 +29,13 @@ git -C ../scheduled-tasks checkout -b feature/fx-rate-fallback origin/HEAD
 - 本仓继续遵守数据边界：DDL、第三方拉数、共享表批量写入只在 `scheduled-tasks` 的同名分支上做。
 - 用户明确说「只改本仓 / 不要动 scheduled-tasks」时，跳过同级建分支，并在回复里说明未建。
 
+## 回到 main 时两边一起切
+
+本仓把当次改动提交或合并进 `main`，并切回 `main` 时，同一轮把 `scheduled-tasks` 也切回 `main`。
+
+- 同级仓工作区干净，且当前分支没有超出 `main` 的提交：`git -C ../scheduled-tasks checkout main`。
+- 同级仓这条功能分支上还有未进 `main` 的提交，或工作区有未提交改动：不要切走，在回复里说明它还停在哪条分支。
+
 ## 不在此列
 
 - 只是切到已有分支、查看状态、提交、推送：不新建分支。
