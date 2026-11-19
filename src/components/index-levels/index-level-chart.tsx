@@ -28,7 +28,7 @@ import {
 } from "@/lib/index-levels/pe-series";
 
 const SPANS: Array<{ id: CloseSpan; label: string }> = [
-  { id: "all", label: "上市以来" },
+  { id: "all", label: "有记录以来" },
   { id: "10", label: "近 10 年" },
   { id: "5", label: "近 5 年" },
 ];
@@ -115,6 +115,10 @@ function ChartLoading() {
   );
 }
 
+function ChartError({ label }: { label: string }) {
+  return <div className="chart chart-error" role="status">{label}</div>;
+}
+
 /**
  * 收盘折线。走势线深绿配渐变面积，买卖点用 B/S 圆形徽章。
  * 滚轮缩放、拖拽平移、双击复位，与预览页一致。
@@ -124,6 +128,7 @@ export function IndexLevelChart({
   code,
   points,
   phase,
+  errorLabel = "收盘暂时读不出来",
   marks = [],
   priceDigits,
   wide = false,
@@ -142,6 +147,7 @@ export function IndexLevelChart({
   code: string;
   points: IndexClosePoint[];
   phase: "loading" | "ready" | "error";
+  errorLabel?: string;
   /** 画在收盘线上的买卖点。 */
   marks?: EtfTradeMark[];
   /** 悬停收盘的小数位。 */
@@ -156,7 +162,7 @@ export function IndexLevelChart({
   bare?: boolean;
   /** 页面统一的时间范围。传入后图内不再画分段按钮。 */
   span?: CloseSpan;
-  /** 上市以来且未缩放时，纵轴从 0 起。 */
+  /** 有记录以来且未缩放时，纵轴从 0 起。 */
   axisFromZero?: boolean;
   /** 纳入纵轴的判断点位。 */
   levels?: number[];
@@ -226,7 +232,7 @@ export function IndexLevelChart({
   useLayoutEffect(() => {
     const tip = tipRef.current;
     const host = hostRef.current;
-    if (!indexTip || !hover || !tip || !host) return;
+    if (!hover || !tip || !host) return;
     const width = tip.offsetWidth;
     const height = tip.offsetHeight;
     if (width === 0 || height === 0) return;
@@ -240,7 +246,7 @@ export function IndexLevelChart({
     if (left !== hover.left || top !== hover.top) {
       setHover({ ...hover, left, top });
     }
-  }, [hover, size, indexTip, seriesOn.pe, peHistory]);
+  }, [hover, size, seriesOn.pe, peHistory]);
 
   const digits = digitsOf(priceDigits);
   const fromZero =
@@ -388,6 +394,8 @@ export function IndexLevelChart({
       <div className="chart-host" ref={hostRef}>
         {phase === "loading" ? (
           <ChartLoading />
+        ) : phase === "error" ? (
+          <ChartError label={errorLabel} />
         ) : (
           <>
             <svg
@@ -436,8 +444,8 @@ export function IndexLevelChart({
                   rows={rows}
                   index={hover.index}
                   digits={digits}
-                  span={span}
                   indexTip={indexTip}
+                  rangePoints={full}
                   mark={geom.marks.find((item) => item.index === hover.index)}
                   pe={
                     seriesOn.pe
@@ -453,7 +461,7 @@ export function IndexLevelChart({
           </>
         )}
       </div>
-      {peHistory.length > 0 ? (
+      {phase === "ready" && peHistory.length > 0 ? (
         <SeriesLegend
           priceOn={seriesOn.price}
           peOn={seriesOn.pe}
@@ -467,7 +475,6 @@ export function IndexLevelChart({
           {last ? <span>更新至 {slashDate(last.tradeDate)}</span> : null}
         </div>
       )}
-      {phase === "error" ? <p className="sr">收盘暂时读不出来</p> : null}
     </>
   );
 
@@ -696,8 +703,8 @@ function TipBody({
   rows,
   index,
   digits,
-  span,
   indexTip,
+  rangePoints,
   mark,
   pe,
 }: {
@@ -706,21 +713,27 @@ function TipBody({
   rows: IndexClosePoint[];
   index: number;
   digits: number;
-  span: CloseSpan;
   indexTip: boolean;
+  rangePoints: IndexClosePoint[];
   mark?: { side: "buy" | "sell"; price: number; note: BuyPointNote | null };
   pe: PeHoverStats | null;
 }) {
   const point = rows[index];
   if (!point) return null;
   let peak = 0;
-  for (let i = 0; i <= index; i += 1) peak = Math.max(peak, rows[i].close);
-  const base = rows[0]?.close ?? point.close;
+  let peakDate = point.tradeDate;
+  for (const historical of rangePoints) {
+    if (historical.close > peak) {
+      peak = historical.close;
+      peakDate = historical.tradeDate;
+    }
+  }
+  // 缩放和平移只改变可见点，不改变所选时间范围的收益基准。
+  const base = rangePoints[0]?.close ?? point.close;
   const cumulative = base === 0 ? 0 : (point.close / base - 1) * 100;
   const fromPeak = peak > 0 ? (point.close / peak - 1) * 100 : 0;
-  const cumulativeLabel = indexTip
-    ? span === "all" ? "上市以来累计涨跌" : `${span}年累计涨跌`
-    : "历史累计涨跌";
+  const cumulativeStart = rangePoints[0]?.tradeDate ?? point.tradeDate;
+  const cumulativeLabel = `自${cumulativeStart}以来累计涨跌`;
   const summary = (
     <>
       <div>
@@ -732,7 +745,7 @@ function TipBody({
         <Pct value={cumulative} />
       </div>
       <div>
-        <em>距前高下跌{indexTip ? ":" : ""}</em>
+        <em>距离最高点（{peakDate}）{indexTip ? ":" : ""}</em>
         <Pct value={fromPeak} />
       </div>
     </>
@@ -1054,7 +1067,7 @@ function buildGeom(
   };
 }
 
-/** 纵轴。上市以来从 0 起；其余时间贴着可见价格。美元兑人民币仍从 6 起。 */
+/** 纵轴。有记录以来从 0 起；其余时间贴着可见价格。美元兑人民币仍从 6 起。 */
 function plotDomain(
   rows: IndexClosePoint[],
   code: string,

@@ -58,14 +58,24 @@ describe('指数悬停', () => {
     return tip!;
   }
 
-  it('点击时间胶囊后，累计文案和数值随所选范围更新', () => {
+  it('加载失败时显示错误说明，不绘制只有点位的折线', () => {
+    act(() => root.render(createElement(IndexLevelChart, {
+      name: '中证传媒', code: '399971.SZ', points: POINTS,
+      phase: 'error', errorLabel: '点位或市盈率暂时读不出来',
+    })));
+
+    expect(container.querySelector('.chart-error')?.textContent).toBe('点位或市盈率暂时读不出来');
+    expect(container.querySelector('svg.chart')).toBeNull();
+  });
+
+  it('点击时间胶囊后，累计涨跌显示实际基准日期和对应数值', () => {
     act(() => root.render(createElement(IndexLevelChart, {
       name: '中证传媒', code: '399971.SZ', points: POINTS, peHistory: POINTS, phase: 'ready',
     })));
     const cases = [
-      { tab: '近 5 年', label: '5年累计涨跌', change: '+50.00%' },
-      { tab: '近 10 年', label: '10年累计涨跌', change: '-40.00%' },
-      { tab: '上市以来', label: '上市以来累计涨跌', change: '+20.00%' },
+      { tab: '近 5 年', label: '自2021-01-05以来累计涨跌', change: '+50.00%' },
+      { tab: '近 10 年', label: '自2016-01-05以来累计涨跌', change: '-40.00%' },
+      { tab: '有记录以来', label: '自2010-01-05以来累计涨跌', change: '+20.00%' },
     ];
     for (const item of cases) {
       const button = Array.from(container.querySelectorAll('button')).find(node => node.textContent === item.tab);
@@ -86,9 +96,93 @@ describe('指数悬停', () => {
         points: filterCloseSpan(POINTS, span), peHistory: POINTS, phase: 'ready', span,
       })));
       const tip = hoverLatest();
-      expect(tip.textContent).toContain(span === 'all' ? '上市以来累计涨跌' : `${span}年累计涨跌`);
+      const baseDate = span === 'all' ? '2010-01-05' : span === '10' ? '2016-01-05' : '2021-01-05';
+      expect(tip.textContent).toContain(`自${baseDate}以来累计涨跌`);
     },
   );
+
+  it('近五年只用所选区间最高点，忽略窗口外更早的高点', () => {
+    act(() => root.render(createElement(IndexLevelChart, {
+      bare: true, presliced: true, name: '中证传媒', code: '399971.SZ',
+      points: filterCloseSpan(POINTS, '5'),
+      phase: 'ready', span: '5',
+    })));
+
+    const tip = hoverLatest();
+    expect(tip.textContent).toContain('距离最高点（2026-01-05）:0.00%');
+  });
+
+  it('悬停区间早期日期时，仍以整个所选区间的最高点为基准', () => {
+    act(() => root.render(createElement(IndexLevelChart, {
+      bare: true, presliced: true, name: '中证传媒', code: '399971.SZ',
+      points: filterCloseSpan(POINTS, '5'), phase: 'ready', span: '5',
+    })));
+    const svg = container.querySelector('svg')!;
+    act(() => svg.dispatchEvent(new MouseEvent('pointermove', {
+      bubbles: true, clientX: 53, clientY: 240,
+    })));
+
+    expect(container.querySelector('.tip.show')?.textContent)
+      .toContain('距离最高点（2026-01-05）:-33.33%');
+  });
+
+  it('悬停在区间中途时，明确显示区间起点而非完整五年收益', () => {
+    act(() => root.render(createElement(IndexLevelChart, {
+      name: '中证传媒', code: '399971.SZ', phase: 'ready',
+      points: [
+        { tradeDate: '2021-01-05', close: 80 },
+        { tradeDate: '2023-01-05', close: 100 },
+        { tradeDate: '2026-01-05', close: 120 },
+      ],
+    })));
+    const svg = container.querySelector('svg')!;
+    act(() => svg.dispatchEvent(new MouseEvent('pointermove', {
+      bubbles: true, clientX: 408, clientY: 240,
+    })));
+    const tip = container.querySelector<HTMLElement>('.tip.show')!;
+    expect(tip.textContent).toContain('2023-01-05');
+    expect(tip.textContent).toContain('自2021-01-05以来累计涨跌');
+    expect(tip.textContent).toContain('+25.00%');
+  });
+
+  it('缩放后累计涨跌仍以所选范围的首个交易日为基准', () => {
+    const points = Array.from({ length: 20 }, (_, index) => ({
+      tradeDate: `${2007 + index}-01-05`, close: 100 + index,
+    }));
+    act(() => root.render(createElement(IndexLevelChart, {
+      name: '中证传媒', code: '399971.SZ', points, phase: 'ready', span: 'all',
+    })));
+    const hoverLastPoint = () => {
+      act(() => container.querySelector('svg')!.dispatchEvent(new MouseEvent('pointermove', {
+        bubbles: true, clientX: 975, clientY: 240,
+      })));
+      return container.querySelector<HTMLElement>('.tip.show')!;
+    };
+    expect(hoverLastPoint().textContent).toContain('自2007-01-05以来累计涨跌:+19.00%');
+    act(() => container.querySelector('svg')!.dispatchEvent(new WheelEvent('wheel', {
+      bubbles: true, cancelable: true, clientX: 943, deltaY: -100,
+    })));
+    expect(hoverLastPoint().textContent).toContain('自2007-01-05以来累计涨跌:+19.00%');
+  });
+
+  it('缩放隐藏区间最高点后，距离最高点仍使用整个所选区间', () => {
+    const points = Array.from({ length: 20 }, (_, index) => ({
+      tradeDate: `${2007 + index}-01-05`, close: 200 - index * 5,
+    }));
+    act(() => root.render(createElement(IndexLevelChart, {
+      name: '中证传媒', code: '399971.SZ', points, phase: 'ready', span: 'all',
+    })));
+    const svg = container.querySelector('svg')!;
+    act(() => svg.dispatchEvent(new WheelEvent('wheel', {
+      bubbles: true, cancelable: true, clientX: 943, deltaY: -100,
+    })));
+    act(() => svg.dispatchEvent(new MouseEvent('pointermove', {
+      bubbles: true, clientX: 975, clientY: 240,
+    })));
+
+    expect(container.querySelector('.tip.show')?.textContent)
+      .toContain('距离最高点（2007-01-05）:-47.50%');
+  });
 
   it('隐藏市盈率后仍保留当前时间范围的收盘提示', () => {
     act(() => root.render(createElement(IndexLevelChart, {
@@ -97,7 +191,7 @@ describe('指数悬停', () => {
     const button = Array.from(container.querySelectorAll('button')).find(node => node.textContent?.trim() === '市盈率');
     act(() => button!.click());
     const tip = hoverLatest();
-    expect(tip.textContent).toContain('5年累计涨跌');
+    expect(tip.textContent).toContain('自2021-01-05以来累计涨跌');
     expect(tip.textContent).not.toContain('历史分位');
   });
 
@@ -130,7 +224,7 @@ describe('指数悬停', () => {
       marks: MEDIA_ETF_TRADES,
     })));
     const tip = hoverLatest();
-    expect(tip.textContent).toContain('历史累计涨跌');
+    expect(tip.textContent).toContain('自2020-12-15以来累计涨跌');
     expect(tip.textContent).toContain('0.945');
     expect(tip.textContent).toContain('买入 B');
     expect(tip.textContent).toContain('24.82 倍');

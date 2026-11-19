@@ -126,7 +126,8 @@ function readCsindexRow(row: unknown): PePoint | null {
   };
 }
 
-function asPePoints(value: unknown): PePoint[] {
+/** 把 PE API 回包收成有效的交易日估值，供客户端和开发环境回退共用。 */
+export function asPePoints(value: unknown): PePoint[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
     if (!item || typeof item !== "object") return [];

@@ -475,11 +475,16 @@
   overflow: visible;
   cursor: crosshair;
 }
-.index-levels .chart.chart-loading {
+.index-levels .chart.chart-loading,
+.index-levels .chart.chart-error {
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: default;
+}
+.index-levels .chart.chart-error {
+  color: var(--muted);
+  font-size: 13px;
 }
 .index-levels .chart-loading-holder {
   width: 88px;
@@ -703,6 +708,7 @@
   position: absolute;
   z-index: 2;
   display: none;
+  max-width: calc(100% - 16px);
   padding: 11px 14px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -711,7 +717,7 @@
   color: var(--body);
   font-size: 12px;
   line-height: 1.65;
-  white-space: nowrap;
+  white-space: normal;
   pointer-events: none;
 }
 .index-levels .tip.show {

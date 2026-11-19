@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { EssayRail } from "@/components/index-levels/index-essay-rail";
 import { IndexLevelChart } from "@/components/index-levels/index-level-chart";
-import { attachIndexPe, type PePoint } from "@/lib/index-levels/pe-series";
+import { attachIndexPe, csindexSymbol, isValidPeTtm, type PePoint } from "@/lib/index-levels/pe-series";
 import { HelpTooltip } from "@/components/shared/help-tooltip";
 import { IndexLevelPicker } from "@/components/index-levels/index-level-picker";
 import {
@@ -57,6 +57,15 @@ type Phase = "loading" | "ready" | "error";
 
 const INDEX_QUERY = "index";
 
+/** 至少两根相邻交易日有有效 PE，图上才会出现一段市盈率折线。 */
+function hasPeLine(points: IndexClosePoint[]): boolean {
+  return points.some((point, index) =>
+    index > 0 &&
+    isValidPeTtm(point.peTtm) &&
+    isValidPeTtm(points[index - 1]?.peTtm),
+  );
+}
+
 function useWatchedIndex(): [string, (next: string) => void] {
   const router = useRouter();
   const pathname = usePathname();
@@ -99,15 +108,18 @@ function useCloseSeries(
   points: IndexClosePoint[];
   etfPoints: IndexClosePoint[];
   phase: Phase;
+  etfPhase: Phase;
 } {
   const [points, setPoints] = useState<IndexClosePoint[]>([]);
   const [etfPoints, setEtfPoints] = useState<IndexClosePoint[]>([]);
   const [phase, setPhase] = useState<Phase>("loading");
+  const [etfPhase, setEtfPhase] = useState<Phase>(etfCode ? "loading" : "ready");
 
   useResetOnChange(code, () => {
     setPoints([]);
     setEtfPoints([]);
     setPhase("loading");
+    setEtfPhase(etfCode ? "loading" : "ready");
   });
 
   useEffect(() => {
@@ -116,29 +128,42 @@ function useCloseSeries(
     setPhase("loading");
     setPoints([]);
     setEtfPoints([]);
+    setEtfPhase(etfCode ? "loading" : "ready");
     const client = createBrowserSupabaseClient();
-    Promise.all([
-      fetchIndexCloseSeries(client, code),
-      etfCode ? fetchEtfCloseSeries(client, etfCode) : Promise.resolve(null),
-    ])
-      .then(async ([series, etfSeries]) => {
+    fetchIndexCloseSeries(client, code)
+      .then(async (series) => {
         if (cancelled) return;
+        if (series.length === 0) throw new Error("指数收盘数据为空");
+        // 页头可先展示收盘；图表继续等市盈率，不呈现只有点位的过渡帧。
         setPoints(series);
-        setEtfPoints(etfSeries ?? []);
-        setPhase("ready");
-        // 收盘先画出来。库里没有市盈率时再补中证官网，补上后折线才出现右轴。
         const withPe = await attachIndexPe(code, series);
-        if (!cancelled) setPoints(withPe);
+        if (cancelled) return;
+        if (csindexSymbol(code) && !hasPeLine(withPe)) {
+          throw new Error("指数市盈率折线数据不足");
+        }
+        setPoints(withPe);
+        setPhase("ready");
       })
       .catch(() => {
         if (!cancelled) setPhase("error");
       });
+    if (etfCode) {
+      fetchEtfCloseSeries(client, etfCode)
+        .then((series) => {
+          if (cancelled) return;
+          setEtfPoints(series);
+          setEtfPhase("ready");
+        })
+        .catch(() => {
+          if (!cancelled) setEtfPhase("error");
+        });
+    }
     return () => {
       cancelled = true;
     };
   }, [code, etfCode]);
 
-  return { points, etfPoints, phase };
+  return { points, etfPoints, phase, etfPhase };
 }
 
 /** 场外基金单位净值。已列入共享表的代码优先读落库序列，没有行时走 fund-nav 接口。 */
@@ -181,7 +206,7 @@ function useFundSeries(fundCode?: string): {
 }
 
 const SPANS: Array<{ id: CloseSpan; label: string }> = [
-  { id: "all", label: "上市以来" },
+  { id: "all", label: "有记录以来" },
   { id: "10", label: "近 10 年" },
   { id: "5", label: "近 5 年" },
 ];
@@ -195,7 +220,7 @@ export function IndexLevelTracker() {
   const [code, setCode] = useWatchedIndex();
   const current =
     INDEX_WATCHES.find((item) => item.code === code) ?? INDEX_WATCHES[0];
-  const { points, etfPoints, phase } = useCloseSeries(
+  const { points, etfPoints, phase, etfPhase } = useCloseSeries(
     code,
     current?.chartEtf?.code,
   );
@@ -221,8 +246,8 @@ export function IndexLevelTracker() {
   });
 
   const close = useMemo(
-    () => latestClose(code, points, phase),
-    [code, points, phase],
+    () => latestClose(code, points),
+    [code, points],
   );
   const windowed = useMemo(() => sliceSpan(points, span), [points, span]);
   const etfWindow = useMemo(
@@ -246,6 +271,10 @@ export function IndexLevelTracker() {
       ),
     [points],
   );
+  const indexChartPhase = phase === "ready" && csindexSymbol(code) &&
+    !hasPeLine(windowed)
+    ? "error"
+    : phase;
 
   if (!current) return null;
   const selected =
@@ -295,7 +324,8 @@ export function IndexLevelTracker() {
           name={current.name}
           code={current.code}
           points={windowed}
-          phase={phase}
+          phase={indexChartPhase}
+          errorLabel={csindexSymbol(code) ? "点位或市盈率暂时读不出来" : "收盘暂时读不出来"}
           span={span}
           levels={levelPoints}
           peHistory={peHistory}
@@ -334,7 +364,7 @@ export function IndexLevelTracker() {
         watch={current}
         etfPoints={etfWindow}
         fundPoints={fundWindow}
-        phase={phase}
+        phase={etfPhase}
         fundPhase={fundPhase}
         span={span}
         etfMarks={resolveEtfChartMarks(
@@ -737,9 +767,7 @@ function sliceSpan(
 function latestClose(
   code: string,
   points: IndexClosePoint[],
-  phase: Phase,
 ): IndexLatestClose | null {
-  if (phase !== "ready") return null;
   const latest = points[points.length - 1];
   if (!latest) return null;
   return {
