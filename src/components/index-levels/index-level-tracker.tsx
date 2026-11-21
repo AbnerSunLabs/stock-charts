@@ -291,6 +291,13 @@ export function IndexLevelTracker() {
   const main = (
     <>
       <section className="panel">
+        <TrackerHead
+          current={current}
+          date={close?.tradeDate}
+          essayCount={essays.length}
+          onOpenEssays={() => setEssayOpen(true)}
+          onSelect={setCode}
+        />
         <div className="group-head">
           <div className="readout">
             <div className="quote">
@@ -378,18 +385,6 @@ export function IndexLevelTracker() {
 
   return (
     <>
-      <p className="crumb">
-        <a href="/">工具集</a>
-        {" / "}
-        点位跟踪
-      </p>
-      <TrackerHead
-        current={current}
-        date={close?.tradeDate}
-        essayCount={essays.length}
-        onOpenEssays={() => setEssayOpen(true)}
-        onSelect={setCode}
-      />
       {main}
       {essayOpen ? (
         <EssayRail essays={essays} open onClose={closeEssays} />

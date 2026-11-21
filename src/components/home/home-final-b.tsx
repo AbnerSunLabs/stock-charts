@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { LoginModal } from '@/components/auth/login-modal';
+import { ChangliuMark } from '@/components/brand/changliu-mark';
+import { RESEARCH_ENTRY_HREF } from '@/components/research/research-catalog';
 import { checkFamilyAccess, signOut } from '@/lib/supabase/auth';
 
 const moneyFills = [
@@ -12,12 +14,6 @@ const moneyFills = [
   ...Array(36).fill('#f6c798'),
   ...Array(12).fill('#f9dcbd'),
 ];
-
-const tools = [
-  { href: '/view/sunburst', chart: 'sunburst', alt: 'A 股、海外成熟和海外新兴的资产占比旭日图', category: '看配置', title: '资产旭日图', description: '各类持仓填上金额，钱放在哪儿，一张图看占比。', detail: 'A 股 · 海外成熟 · 海外新兴' },
-  { href: '/view/grid', chart: 'grid', alt: '网格交易档位与买卖交点', category: '定规矩', title: '网格交易策略', description: '价位和金额先写好。跌了照表买，涨了照表卖。', detail: '小网 · 中网 · 大网' },
-  { href: '/view/index-levels', chart: 'levels', alt: '指数走势与买入、卖出点位', category: '等时机', title: '点位跟踪', description: '记下想要的点位，每天拿收盘价对一遍，到了再动手。', detail: '收盘对照 · 市盈率分位' },
-] as const;
 
 function Arrow() {
   return <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8h10M8.5 4l4 4-4 4" /></svg>;
@@ -50,24 +46,20 @@ function MiniCharts() {
   );
 }
 
+/** 旧书签 `#tools` 改去第一件投研工具。 */
+function useLegacyToolsRedirect(): void {
+  const router = useRouter();
+  useEffect(() => {
+    if (window.location.hash === '#tools') {
+      router.replace(RESEARCH_ENTRY_HREF);
+    }
+  }, [router]);
+}
+
 export function HomeFinalB() {
   const router = useRouter();
-  const [showTools, setShowTools] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
-
-  useEffect(() => {
-    const syncScreen = () => {
-      setShowTools(window.location.hash === '#tools');
-      window.scrollTo(0, 0);
-    };
-    syncScreen();
-    window.addEventListener('hashchange', syncScreen);
-    window.addEventListener('popstate', syncScreen);
-    return () => {
-      window.removeEventListener('hashchange', syncScreen);
-      window.removeEventListener('popstate', syncScreen);
-    };
-  }, []);
+  useLegacyToolsRedirect();
 
   const enterFamily = async () => {
     try {
@@ -83,26 +75,19 @@ export function HomeFinalB() {
     }
   };
 
-  const returnHome = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    window.history.pushState(null, '', window.location.pathname + window.location.search);
-    setShowTools(false);
-    window.scrollTo(0, 0);
-  };
-
   return (
     <div className="home-final-b">
       <div className="backdrop" aria-hidden="true"><div className="backdrop-glow backdrop-warm" /><div className="backdrop-glow backdrop-cool" /><div className="backdrop-glow backdrop-lilac" /></div>
       <header className="site-header">
         <div className="container header-inner">
           <a className="brand" href="/" aria-label="长流首页">
-            <svg viewBox="0 0 48 48" width="26" height="26" aria-hidden="true"><path d="M5 31 C 9 25, 13 25, 17 31 S 25 37, 29 31 S 35 19, 40.5 15.5" fill="none" stroke="#4f46e5" strokeWidth="3.5" strokeLinecap="round" /><circle cx="41" cy="15" r="4.5" fill="#ee9f5c" /></svg>
+            <ChangliuMark />
             <span className="brand-name">长流</span><span className="brand-note">细水，才能长流</span>
           </a>
         </div>
       </header>
       <main>
-        <section id="home-screen" className="container" aria-label="首页导航" hidden={showTools}>
+        <section id="home-screen" className="container" aria-label="首页导航">
           <div className="intro home-intro"><h1><span className="h-line"><span className="h-strong">家里的账</span><span className="h-soft">要清，</span></span><span className="h-line"><span className="h-strong">手里的仓</span><span className="h-soft">要稳。</span></span></h1><p>不猜涨跌。钱记清楚，买卖的规矩提前写好，剩下的交给时间。</p></div>
           <div className="diptych">
             <button type="button" className="feature-panel feature-family" onClick={() => void enterFamily()}>
@@ -110,22 +95,12 @@ export function HomeFinalB() {
               <div className="paper-space"><FamilyPaper /></div>
               <div className="panel-footer"><div className="panel-copy"><h2>家庭财务</h2><p>资产负债 · 四笔钱 · 保单 · 流水</p></div><span className="panel-button">打开家账<Arrow /></span></div>
             </button>
-            <a className="feature-panel feature-tools" href="#tools">
+            <a className="feature-panel feature-tools" href={RESEARCH_ENTRY_HREF}>
               <div className="panel-kicker"><strong>手里的仓</strong></div>
               <div className="paper-space"><MiniCharts /></div>
               <div className="panel-footer"><div className="panel-copy"><h2>投研工具</h2><p>资产旭日图 · 网格交易策略 · 点位跟踪</p></div><span className="panel-button">挑一件工具<Arrow /></span></div>
             </a>
           </div>
-        </section>
-        <section id="tools-screen" className="container" aria-label="投研工具" hidden={!showTools}>
-          <a className="back-link" href="#" onClick={returnHome}>← 回到首页</a>
-          <div className="intro tools-intro"><h1><span className="h-strong">每件工具，</span><span className="h-soft">只管一件事。</span></h1><p>看配置，定规矩，等时机。工具会慢慢添。</p></div>
-          <div className="tool-grid">{tools.map(tool => (
-            <a className="tool-card" href={tool.href} key={tool.href}>
-              <div className="tool-visual"><Image src={`/home-final-b/${tool.chart}-large.svg`} data-chart={tool.chart} alt={tool.alt} width={tool.chart === 'grid' ? 360 : 320} height={tool.chart === 'grid' ? 250 : 230} unoptimized /></div>
-              <div className="tool-content"><div className="tool-category">{tool.category}</div><h2>{tool.title}</h2><p className="tool-description">{tool.description}</p><div className="tool-bottom"><span>{tool.detail}</span><span className="tool-arrow" aria-hidden="true">→</span></div></div>
-            </a>
-          ))}</div>
         </section>
       </main>
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} redirectTo="/view/family" />

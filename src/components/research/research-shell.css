@@ -1,0 +1,219 @@
+.research-shell {
+  --research-gutter: 24px;
+  --research-bar: 56px;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-main);
+}
+
+.research-rail {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: stretch;
+  width: 216px;
+  height: 100vh;
+  padding: 0 10px 12px;
+  overflow: hidden;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-subtle);
+  transition: width 160ms ease;
+}
+
+.research-rail.is-collapsed {
+  align-items: center;
+  width: 56px;
+  padding: 0 0 8px;
+}
+
+.research-rail nav {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+}
+
+.research-rail.is-collapsed nav {
+  align-items: center;
+}
+
+.research-rail-home,
+.research-rail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.research-rail.is-collapsed .research-rail-home,
+.research-rail.is-collapsed .research-rail-item {
+  justify-content: center;
+  width: 40px;
+  padding: 0;
+  gap: 0;
+}
+
+.research-rail-home {
+  height: var(--research-bar);
+  gap: 9px;
+  margin-bottom: 8px;
+  color: #1f2140;
+  font-weight: 600;
+}
+
+.research-rail-home svg {
+  display: block;
+  flex: none;
+  width: 26px;
+  height: 26px;
+}
+
+.research-brand-name {
+  color: #1f2140;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.research-rail-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  font-size: 16px;
+}
+
+.research-rail-label {
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.research-rail.is-collapsed .research-rail-label,
+.research-rail.is-collapsed .research-brand-name {
+  display: none;
+}
+
+.research-rail-home:hover,
+.research-rail-item:hover {
+  background: var(--bg-sidebar-hover);
+  color: var(--text-primary);
+}
+
+.research-rail-home:hover {
+  background: transparent;
+  color: #1f2140;
+}
+
+.research-rail-item.is-active {
+  background: var(--bg-sidebar-active);
+  color: var(--accent);
+}
+
+.research-rail-home:focus-visible,
+.research-rail-item:focus-visible,
+.research-rail-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.research-stage {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  background: var(--bg-main);
+}
+
+.research-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: var(--research-bar);
+  padding: 0 var(--research-gutter);
+  background: var(--bg-sidebar);
+}
+
+.research-rail-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.research-rail-toggle:hover {
+  background: var(--bg-sidebar-hover);
+  color: var(--text-primary);
+}
+
+.research-content {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 0 var(--research-gutter) 24px;
+  background: transparent;
+}
+
+.research-content:has(.index-levels),
+.research-content:has(.sunburst-page) {
+  padding-top: 16px;
+}
+
+.research-stage:has(.grid-shell) {
+  background: #f3f5f8;
+}
+
+.research-content:has(.grid-shell) {
+  padding: 16px;
+  background: transparent;
+}
+
+.research-content .grid-shell {
+  min-height: 100%;
+  border: 1px solid #e1e5ee;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.research-content .grid-shell .site-container.site-container--grid {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  padding: 24px;
+}
+
+@media (max-width: 720px) {
+  .research-shell {
+    --research-gutter: 14px;
+  }
+
+  .research-content {
+    padding-bottom: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .research-rail,
+  .research-rail-home,
+  .research-rail-item,
+  .research-rail-toggle {
+    transition: none;
+  }
+}

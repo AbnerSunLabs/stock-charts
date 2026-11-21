@@ -3,17 +3,9 @@
  * 涨红跌绿，买卖点落在收盘上。
  */
 
-#view-layout-root:has(.index-levels),
-#view-layout-root main:has(.index-levels) {
+.research-shell:has(.index-levels),
+.research-stage:has(.index-levels) {
   background: #f1f5f9;
-}
-
-#view-layout-root main:has(.index-levels) {
-  padding: 24px 32px 32px;
-}
-
-#view-layout-root main:has(.index-levels) > nav[aria-label="面包屑"] {
-  display: none;
 }
 
 .index-levels {
@@ -30,8 +22,7 @@
   --ds-shadow-lg: 0 8px 20px rgba(10, 11, 13, 0.06);
   --z-tooltip: 99999;
   box-sizing: border-box;
-  max-width: 1440px;
-  margin: 0 auto;
+  width: 100%;
   color: var(--text);
   font:
     14px/1.6 -apple-system,
@@ -71,26 +62,18 @@
   border: 0;
 }
 
-.index-levels .crumb {
-  margin: 0 0 24px;
-  color: var(--muted);
-  font-size: 12px;
-}
-.index-levels .crumb a {
-  color: var(--muted);
-  text-decoration: none;
-}
-.index-levels .crumb a:hover {
-  color: #4338ca;
-}
-
 .index-levels .head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
   min-height: 40px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
+  padding-top: 20px;
+}
+
+.index-levels .panel > .head + .group-head {
+  padding-top: 0;
 }
 
 .index-levels .title-block {
@@ -1003,9 +986,6 @@
 }
 
 @media (max-width: 720px) {
-  #view-layout-root main:has(.index-levels) {
-    padding: 20px 14px 28px;
-  }
   .index-levels .head {
     align-items: stretch;
     gap: 20px;

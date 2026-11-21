@@ -11,7 +11,7 @@ import type { TrackingEtf } from '@/lib/supabase/etf-pool-repository';
 import { GridStrategyRepository } from '@/lib/supabase/grid-strategy-repository';
 import { GridStrategyTradeRepository } from '@/lib/supabase/grid-strategy-trade-repository';
 
-import '@/app/view/grid/grid.css';
+import '@/app/(research)/view/grid/grid.css';
 
 /**
  * 把组合里跟踪当前指数的策略卡原样放在点位页。未登录时不显示。
