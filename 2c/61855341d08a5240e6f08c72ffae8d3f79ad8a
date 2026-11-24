@@ -1,0 +1,27 @@
+__tests__/grid/use-grid-strategy-persistence.test.ts
+  s_e87d28495b4fbe::t_2c4cc295fba80b 248-315
+src/app/view/grid/page.tsx
+  s_e87d28495b4fbe::t_6b4c49c7df8885 85-93,207,411,534,536-547,736,763,765-769,773
+src/components/grid/grid-portfolio-board.tsx
+  s_e87d28495b4fbe::t_972020f0b8a94d 17-18,33,204
+src/components/grid/grid-portfolio-card.tsx
+  s_e87d28495b4fbe::t_dcb2deac8abccd 76,82-83,151-156
+src/hooks/use-grid-strategy-persistence.ts
+  s_e87d28495b4fbe::t_4e45222a71525e 44-45,205-206,214,216-217,219
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2c61855341d08a5240e6f08c72ffae8d3f79ad8a",
+  "prompts": {},
+  "sessions": {
+    "s_e87d28495b4fbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a8e420a3e64f9d94d",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
