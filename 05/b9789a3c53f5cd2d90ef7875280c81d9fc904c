@@ -1,0 +1,19 @@
+output/home-redesign-demo.html
+  s_e87d28495b4fbe::t_17b540ee3926a3 1-463
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "05b9789a3c53f5cd2d90ef7875280c81d9fc904c",
+  "prompts": {},
+  "sessions": {
+    "s_e87d28495b4fbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a8e420a3e64f9d94d",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
