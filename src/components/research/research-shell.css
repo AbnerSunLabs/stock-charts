@@ -18,7 +18,8 @@
   overflow: hidden;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-subtle);
-  transition: width 160ms ease;
+  /* 折叠是整条轨宽的一次切换；范围仅此一条侧栏，允许布局属性过渡 */
+  transition: width var(--duration-normal) var(--ease-in-out-smooth);
 }
 
 .research-rail.is-collapsed {
@@ -51,6 +52,9 @@
   color: var(--text-secondary);
   text-decoration: none;
   white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-snappy),
+    color var(--duration-fast) var(--ease-snappy);
 }
 
 .research-rail.is-collapsed .research-rail-home,
@@ -76,13 +80,6 @@
   height: 26px;
 }
 
-.research-brand-name {
-  color: #1f2140;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1;
-}
-
 .research-rail-icon {
   display: grid;
   flex: none;
@@ -95,11 +92,29 @@
   overflow: hidden;
   font-size: 14px;
   line-height: 1;
+  max-width: 150px;
+  transition:
+    max-width var(--duration-normal) var(--ease-in-out-smooth),
+    opacity var(--duration-fast) var(--ease-in-out-smooth);
 }
 
+.research-brand-name {
+  color: #1f2140;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+  overflow: hidden;
+  max-width: 150px;
+  transition:
+    max-width var(--duration-normal) var(--ease-in-out-smooth),
+    opacity var(--duration-fast) var(--ease-in-out-smooth);
+}
+
+/* 折叠时文字随轨宽一起收拢淡出，而不是瞬间消失 */
 .research-rail.is-collapsed .research-rail-label,
 .research-rail.is-collapsed .research-brand-name {
-  display: none;
+  max-width: 0;
+  opacity: 0;
 }
 
 .research-rail-home:hover,
@@ -155,6 +170,26 @@
   color: var(--text-secondary);
   font-size: 16px;
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-snappy),
+    color var(--duration-fast) var(--ease-snappy);
+}
+
+/* 折叠/展开图标换向：换节点时做一次轻淡入，交代方向变了 */
+.research-rail-toggle__icon {
+  display: inline-flex;
+  animation: research-icon-swap var(--duration-normal) var(--ease-out-expo) both;
+}
+
+@keyframes research-icon-swap {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .research-rail-toggle:hover {
@@ -213,7 +248,13 @@
   .research-rail,
   .research-rail-home,
   .research-rail-item,
-  .research-rail-toggle {
+  .research-rail-toggle,
+  .research-rail-label,
+  .research-brand-name {
     transition: none;
+  }
+
+  .research-rail-toggle__icon {
+    animation: none;
   }
 }

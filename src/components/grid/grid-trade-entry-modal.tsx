@@ -4,7 +4,7 @@ import { formatTradeAmount } from '@/lib/grid/format-trade-amount';
 import type { GridStrategyTradeSide } from '@/types/grid-strategy-trade';
 import { Button, DatePicker, Form, InputNumber, Modal, type FormInstance } from 'antd';
 import dayjs, { type Dayjs } from '@/lib/antd-dayjs';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface GridTradeEntryDefaults {
   side: GridStrategyTradeSide;
@@ -112,9 +112,11 @@ function TradeEntryFields({
         </span>
       </div>
       <div className="grid-trade-entry-modal__footer">
-        <Button onClick={onCancel}>取消</Button>
+        <Button disabled={loading} onClick={onCancel}>
+          取消
+        </Button>
         <Button type="primary" htmlType="submit" loading={loading}>
-          确认
+          {loading ? '正在记账…' : '确认'}
         </Button>
       </div>
     </Form>
@@ -134,6 +136,13 @@ export function GridTradeEntryModal({
   const [form] = Form.useForm<FormValues>();
   const price = Form.useWatch('price', form);
   const qty = Form.useWatch('qty', form);
+  // 记住最近一次 defaults：提交成功后父层会清空 defaults 并关闭，
+  // 若直接 return null 会连 Modal 退场动画一起吞掉；保留到退场结束再隐去
+  const [lastDefaults, setLastDefaults] = useState(defaults);
+
+  useEffect(() => {
+    if (defaults) setLastDefaults(defaults);
+  }, [defaults]);
 
   useEffect(() => {
     if (!open || !defaults) return;
@@ -144,22 +153,25 @@ export function GridTradeEntryModal({
     });
   }, [open, defaults, form]);
 
-  if (!defaults) return null;
+  if (!lastDefaults) return null;
 
   return (
     <Modal
       open={open}
-      title={defaults.side === 'buy' ? '记录买入' : '记录卖出'}
-      onCancel={onCancel}
+      title={lastDefaults.side === 'buy' ? '记录买入' : '记录卖出'}
+      onCancel={loading ? undefined : onCancel}
       footer={null}
       destroyOnHidden
       width={400}
       centered
+      closable={!loading}
+      maskClosable={!loading}
+      keyboard={!loading}
       wrapClassName="grid-trade-entry-modal"
     >
       <TradeEntryFields
         form={form}
-        defaults={defaults}
+        defaults={lastDefaults}
         loading={loading}
         price={price}
         qty={qty}

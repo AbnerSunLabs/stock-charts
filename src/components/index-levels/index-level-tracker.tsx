@@ -386,9 +386,7 @@ export function IndexLevelTracker() {
   return (
     <>
       {main}
-      {essayOpen ? (
-        <EssayRail essays={essays} open onClose={closeEssays} />
-      ) : null}
+      <EssayRail essays={essays} open={essayOpen} onClose={closeEssays} />
     </>
   );
 }

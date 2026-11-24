@@ -114,7 +114,9 @@ export function FamilyOverviewPage() {
             aria-pressed={amountsVisible}
             onClick={() => setAmountsVisible(v => !v)}
           >
-            {amountsVisible ? <EyeFilled /> : <EyeInvisibleFilled />}
+            <span key={amountsVisible ? 'visible' : 'masked'} className="family-amount-visibility-toggle__icon">
+              {amountsVisible ? <EyeFilled /> : <EyeInvisibleFilled />}
+            </span>
           </button>
         </div>
         <p>把家庭当作一家小公司，在同一张财务视图里看清资产、负债与保障。</p>

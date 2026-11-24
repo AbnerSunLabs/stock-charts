@@ -32,10 +32,16 @@
   --gold-soft: rgba(245, 158, 11, 0.12);
   --font-display: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* 动效语言（全站唯一一套，详见 docs/design/motion-language.md）：
+     同一类变化用同一时长与曲线；只动 transform/opacity，局部小范围才允许布局属性。 */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
-  --duration-fast: 0.2s;
-  --duration-normal: 0.35s;
+  --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-quick: cubic-bezier(0.4, 0, 1, 1);
+  --duration-micro: 0.1s;
+  --duration-fast: 0.16s;
+  --duration-normal: 0.24s;
+  --duration-exit: 0.14s;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08);
   /* 自适应页面宽度体系：
@@ -76,6 +82,21 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* 系统"减少动态效果"：全站动效归零但保留最终状态。
+   用极短时长而非 none，保证依赖 transitionend/animationend 的组件仍能走完生命周期。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -146,7 +167,10 @@ body::after {
   border-radius: 12px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  transition: all 0.25s var(--ease-out-expo);
+  transition:
+    border-color var(--duration-fast) var(--ease-snappy),
+    transform var(--duration-fast) var(--ease-snappy),
+    box-shadow var(--duration-fast) var(--ease-snappy);
   overflow: hidden;
 }
 
@@ -171,7 +195,10 @@ body::after {
   background: var(--bg-elevated);
   border-color: var(--border-subtle);
   color: var(--text-secondary);
-  transition: all 0.2s ease;
+  transition:
+    background-color var(--duration-fast) var(--ease-snappy),
+    border-color var(--duration-fast) var(--ease-snappy),
+    color var(--duration-fast) var(--ease-snappy);
 }
 
 .home-tool-card-btn:hover {
@@ -551,6 +578,8 @@ body::after {
   margin-inline: auto;
   padding: 40px 24px 64px;
   color: var(--family-ink);
+  /* 进场一次性轻淡入：解释"页面到了"，不与内部动效串联 */
+  animation: viewFadeIn var(--duration-normal) var(--ease-out-expo) both;
 }
 
 .family-finance-page .family-finance-page__header,
@@ -810,6 +839,9 @@ body::after {
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-snappy),
+    background-color var(--duration-fast) var(--ease-snappy);
 }
 
 .family-finance-page .family-amount-visibility-toggle:hover {
@@ -820,6 +852,23 @@ body::after {
 .family-finance-page .family-amount-visibility-toggle:focus-visible {
   outline: 2px solid var(--accent, #0052ff);
   outline-offset: 2px;
+}
+
+/* 显隐换挡：图标换节点时做一次轻淡入交代状态翻转；金额本身立即生效 */
+.family-finance-page .family-amount-visibility-toggle__icon {
+  display: inline-flex;
+  animation: family-icon-swap var(--duration-normal) var(--ease-out-expo) both;
+}
+
+@keyframes family-icon-swap {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .family-finance-page.family-overview-page .family-finance-header p {

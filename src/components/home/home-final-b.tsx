@@ -59,9 +59,12 @@ function useLegacyToolsRedirect(): void {
 export function HomeFinalB() {
   const router = useRouter();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [checking, setChecking] = useState(false);
   useLegacyToolsRedirect();
 
   const enterFamily = async () => {
+    if (checking) return;
+    setChecking(true);
     try {
       const result = await checkFamilyAccess();
       if (result.allowed) {
@@ -72,6 +75,8 @@ export function HomeFinalB() {
       setLoginOpen(true);
     } catch {
       setLoginOpen(true);
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -90,10 +95,15 @@ export function HomeFinalB() {
         <section id="home-screen" className="container" aria-label="首页导航">
           <div className="intro home-intro"><h1><span className="h-line"><span className="h-strong">家里的账</span><span className="h-soft">要清，</span></span><span className="h-line"><span className="h-strong">手里的仓</span><span className="h-soft">要稳。</span></span></h1><p>不猜涨跌。钱记清楚，买卖的规矩提前写好，剩下的交给时间。</p></div>
           <div className="diptych">
-            <button type="button" className="feature-panel feature-family" onClick={() => void enterFamily()}>
+            <button
+              type="button"
+              className="feature-panel feature-family"
+              aria-busy={checking}
+              onClick={() => void enterFamily()}
+            >
               <div className="panel-kicker"><strong>家里的账</strong></div>
               <div className="paper-space"><FamilyPaper /></div>
-              <div className="panel-footer"><div className="panel-copy"><h2>家庭财务</h2><p>资产负债 · 四笔钱 · 保单 · 流水</p></div><span className="panel-button">打开家账<Arrow /></span></div>
+              <div className="panel-footer"><div className="panel-copy"><h2>家庭财务</h2><p>资产负债 · 四笔钱 · 保单 · 流水</p></div><span className="panel-button">{checking ? '正在验证…' : '打开家账'}{checking ? null : <Arrow />}</span></div>
             </button>
             <a className="feature-panel feature-tools" href={RESEARCH_ENTRY_HREF}>
               <div className="panel-kicker"><strong>手里的仓</strong></div>

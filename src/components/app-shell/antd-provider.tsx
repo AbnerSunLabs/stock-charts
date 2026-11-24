@@ -23,6 +23,13 @@ export function AntdProvider({ children }: { children: React.ReactNode }) {
           colorTextTertiary: 'rgba(15, 23, 42, 0.52)',
           borderRadius: 8,
           fontFamily: "'DM Sans', system-ui, sans-serif",
+          /* 动效语言与 globals.css 的 token 对齐（曲线、时长同一套），
+             Modal/Drawer/Message/Dropdown 等弹层反馈随之统一 */
+          motionDurationFast: '0.1s',
+          motionDurationMid: '0.16s',
+          motionDurationSlow: '0.24s',
+          motionEaseOut: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          motionEaseInOut: 'cubic-bezier(0.65, 0, 0.35, 1)',
         },
         components: {
           Card: {

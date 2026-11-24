@@ -198,7 +198,10 @@
     .home-final-b .panel-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; }
     .home-final-b .panel-copy h2 { margin: 0; font-size: 28px; font-weight: 600; line-height: 1.3; }
     .home-final-b .panel-copy p { max-width: 340px; margin: 8px 0 0; color: var(--body); font-size: 14px; line-height: 1.7; }
-    .home-final-b .panel-button { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border: 1px solid; border-radius: 999px; background: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background-color 240ms var(--ease), color 240ms var(--ease), border-color 240ms var(--ease); }
+    .home-final-b .panel-button { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border: 1px solid; border-radius: 999px; background: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background-color 240ms var(--ease), color 240ms var(--ease), border-color 240ms var(--ease), transform 160ms var(--ease); }
+    /* 按压：按钮轻缩、纸片从悬停位回落，交代"按下去了" */
+    .home-final-b .feature-panel:active .panel-button { transform: scale(0.97); }
+    .home-final-b .feature-panel:active .chart-paper { transform: translateY(-2px); }
     .home-final-b .feature-family .panel-button { border-color: rgba(168,90,28,.22); }
     .home-final-b .feature-tools .panel-button { border-color: rgba(67,56,202,.20); }
     .home-final-b .panel-button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: transform 240ms var(--ease); }
@@ -235,3 +238,11 @@
 .home-final-b .feature-family { cursor: pointer; font: inherit; color: inherit; text-align: left; }
 .home-final-b .mini-chart img { display: block; width: 100%; height: 150px; margin: auto; }
 @media (max-width: 560px) { .home-final-b .mini-chart img { height: 88px; } }
+
+/* 首屏入场：标题先到、双联画随后一次轻淡入（只播一次，不与内部动效串联） */
+@keyframes home-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.home-final-b .intro { animation: home-enter 320ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.home-final-b .diptych { animation: home-enter 320ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both; }

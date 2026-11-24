@@ -143,16 +143,33 @@
   background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(8px);
   box-shadow: var(--ds-shadow-sm);
+  transition: border-color var(--duration-normal) var(--ease-in-out-smooth);
+}
+
+/* 未保存提示的暖色渐变放在伪元素上用 opacity 过渡：
+   background-image 本身无法插值，直接换会闪跳 */
+.grid-shell .grid-summary-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-warm) 8%, var(--card)),
+    color-mix(in srgb, var(--card) 94%, transparent)
+  );
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-in-out-smooth);
+  pointer-events: none;
 }
 
 .grid-shell .grid-summary-bar--dirty {
   border-color: color-mix(in srgb, var(--accent-warm) 45%, var(--border));
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--accent-warm) 8%, var(--card)),
-      color-mix(in srgb, var(--card) 94%, transparent)
-    );
+}
+
+.grid-shell .grid-summary-bar--dirty::before {
+  opacity: 1;
 }
 
 .grid-shell .grid-summary-bar__identity {
@@ -239,6 +256,20 @@
   color: color-mix(in srgb, var(--accent-warm) 75%, var(--foreground));
   font-size: 0.6875rem;
   font-weight: 700;
+  animation: grid-fade-in var(--duration-fast) var(--ease-out-expo) both;
+}
+
+.grid-shell .grid-summary-bar__dirty-hint {
+  animation: grid-fade-in var(--duration-fast) var(--ease-out-expo) both;
+}
+
+@keyframes grid-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .grid-shell .grid-summary-bar__regen.ant-btn-primary {
@@ -503,6 +534,10 @@
   display: inline-flex;
   font-size: 0.875rem;
   line-height: 1;
+}
+
+.grid-shell .grid-save-island__label {
+  animation: grid-fade-in 0.12s var(--ease-out-expo) both;
 }
 
 .grid-shell .grid-strategy-library-drawer.ant-drawer .ant-drawer-header {

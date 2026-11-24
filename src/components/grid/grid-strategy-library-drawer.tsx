@@ -10,7 +10,7 @@ import type { MenuProps } from 'antd';
 import type { GridStrategyMetadata } from '@/types/grid-strategy-storage';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 gsap.registerPlugin(useGSAP);
 
@@ -106,22 +106,31 @@ export function GridStrategyLibraryDrawer({
   onDeleteStrategy,
 }: GridStrategyLibraryDrawerProps) {
   const listRef = useRef<HTMLUListElement>(null);
+  // 列表入场只播一次：抽屉每次打开后的首个列表渲染；
+  // 之后改名/删除等列表变化不再整列重播（那是内容更新，不是入场）
+  const introPlayedRef = useRef(false);
+
+  useEffect(() => {
+    if (!open) introPlayedRef.current = false;
+  }, [open]);
 
   useGSAP(
     () => {
       if (!open || loading || error || strategies.length === 0) return;
+      if (introPlayedRef.current) return;
       if (!listRef.current || prefersReducedMotion()) return;
+      introPlayedRef.current = true;
       const items = listRef.current.querySelectorAll(
         '.grid-strategy-library__item'
       );
       gsap.fromTo(
         items,
-        { autoAlpha: 0, y: 12 },
+        { autoAlpha: 0, y: 10 },
         {
           autoAlpha: 1,
           y: 0,
-          duration: 0.3,
-          stagger: 0.055,
+          duration: 0.24,
+          stagger: 0.035,
           ease: 'power2.out',
           overwrite: true,
         }

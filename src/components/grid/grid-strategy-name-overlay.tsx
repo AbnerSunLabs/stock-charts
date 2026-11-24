@@ -157,20 +157,21 @@ export function GridStrategyNameOverlay({
       if (reduce) {
         gsap.set(form, { autoAlpha: 0 });
         gsap.set(success, { autoAlpha: 1 });
-        const timer = window.setTimeout(() => animateOut(contextSafe), 400);
+        const timer = window.setTimeout(() => animateOut(contextSafe), 300);
         return () => window.clearTimeout(timer);
       }
       const tl = gsap.timeline({
         onComplete: contextSafe(() => animateOut(contextSafe)),
       });
-      tl.to(form, { autoAlpha: 0, y: -8, duration: 0.18, ease: 'power2.in' }, 0);
+      tl.to(form, { autoAlpha: 0, y: -6, duration: 0.16, ease: 'power2.in' }, 0);
       tl.fromTo(
         success,
         { autoAlpha: 0, scale: 0.92 },
-        { autoAlpha: 1, scale: 1, duration: 0.28, ease: 'power2.out' },
-        0.08
+        { autoAlpha: 1, scale: 1, duration: 0.24, ease: 'power2.out' },
+        0.06
       );
-      tl.to({}, { duration: 0.45 });
+      // 成功态停留交给页面上的保存岛接续，浮层只做一拍确认即退
+      tl.to({}, { duration: 0.28 });
     },
     { scope: rootRef, dependencies: [phase] }
   );

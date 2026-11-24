@@ -36,6 +36,8 @@
     sans-serif;
   letter-spacing: 0;
   font-variant-numeric: lining-nums tabular-nums;
+  /* 进场一次性轻淡入：解释"视图到了"（切工具/切指数只在此处播一次） */
+  animation: viewFadeIn var(--duration-normal) var(--ease-out-expo) both;
 }
 
 .index-levels *,
@@ -136,6 +138,9 @@
   font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-snappy),
+    border-color var(--duration-fast) var(--ease-snappy);
 }
 .index-levels .essay-open b {
   color: var(--muted);
@@ -150,14 +155,28 @@
   position: fixed;
   inset: 0;
   z-index: 80;
+  /* 退场播放期间不可再点，动画结束由 usePresence 卸载 */
+  pointer-events: none;
 }
+
+.index-levels .essay-rail[data-open='true'] {
+  pointer-events: auto;
+}
+
 .index-levels .essay-backdrop {
   position: absolute;
   inset: 0;
   padding: 0;
   border: 0;
   background: rgba(241, 245, 249, 0.72);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-in-out-smooth);
 }
+
+.index-levels .essay-rail[data-open='true'] .essay-backdrop {
+  opacity: 1;
+}
+
 .index-levels .essay-panel {
   position: absolute;
   top: 0;
@@ -169,7 +188,15 @@
   overflow: auto;
   background: #fff;
   border-left: 1px solid #e2e8f0;
+  /* 面板从右侧盖上来：transform 合成层，长列表滚动不受影响 */
+  transform: translateX(100%);
+  transition: transform var(--duration-normal) var(--ease-out-expo);
 }
+
+.index-levels .essay-rail[data-open='true'] .essay-panel {
+  transform: translateX(0);
+}
+
 .index-levels .essay-close {
   display: inline-flex;
   flex: none;
@@ -181,6 +208,9 @@
   background: #fff;
   color: var(--muted);
   font-size: 12px;
+  transition:
+    color var(--duration-fast) var(--ease-snappy),
+    border-color var(--duration-fast) var(--ease-snappy);
 }
 .index-levels .essay-close:hover {
   color: var(--text);
@@ -272,6 +302,20 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   box-shadow: var(--ds-shadow-lg);
+  /* 展开方向：从触发按钮处轻微放大出现；退场同曲线反向 */
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: top right;
+  pointer-events: none;
+  transition:
+    opacity var(--duration-fast) var(--ease-out-expo),
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.index-levels .index-menu[data-open='true'] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 .index-levels .index-menu button {
   display: flex;
@@ -305,6 +349,13 @@
 }
 .index-levels .index-menu button[aria-selected="true"] .index-menu-code {
   color: #4338ca;
+}
+
+.index-levels .index-select {
+  transition:
+    background-color var(--duration-fast) var(--ease-snappy),
+    border-color var(--duration-fast) var(--ease-snappy),
+    box-shadow var(--duration-fast) var(--ease-snappy);
 }
 
 .index-levels .index-select:focus {
@@ -432,6 +483,11 @@
   line-height: 20px;
   box-shadow: none;
   cursor: pointer;
+  /* 选中胶囊与悬停色平滑交接，交代"选中换了哪格" */
+  transition:
+    background-color var(--duration-fast) var(--ease-snappy),
+    color var(--duration-fast) var(--ease-snappy),
+    box-shadow var(--duration-fast) var(--ease-snappy);
 }
 .index-levels .tab.active,
 .index-levels .tab[aria-pressed="true"] {
@@ -449,6 +505,25 @@
 .index-levels .chart-host {
   position: relative;
   margin-top: 16px;
+}
+
+/* 加载/错误 → 就绪：整幅图轻淡入交代"数据到了"；同相位内换数据不重播 */
+.index-levels .chart-host .chart {
+  animation: viewFadeIn var(--duration-normal) var(--ease-out-expo) both;
+}
+
+/* 悬停卡只做出现淡入；移动完全跟手（不加位移过渡） */
+.index-levels .tip.show {
+  animation: index-tip-in var(--duration-fast) var(--ease-out-expo) both;
+}
+
+@keyframes index-tip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .index-levels .panel .chart {
   display: block;
@@ -540,6 +615,11 @@
   font-weight: 400;
   line-height: 20px;
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-snappy),
+    border-color var(--duration-fast) var(--ease-snappy),
+    color var(--duration-fast) var(--ease-snappy),
+    box-shadow var(--duration-fast) var(--ease-snappy);
 }
 .index-levels .level-picker button b {
   color: var(--body);
@@ -805,12 +885,14 @@
   font: inherit;
   font-size: 13px;
   cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-snappy);
 }
 .index-levels .series-legend .swatch {
   display: inline-block;
   width: 18px;
   height: 3px;
   border-radius: 2px;
+  transition: background-color var(--duration-fast) var(--ease-snappy);
 }
 .index-levels .series-legend .swatch.price {
   background: #8183d8;

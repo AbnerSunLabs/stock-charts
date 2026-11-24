@@ -114,7 +114,9 @@ export default function SunburstPage() {
   useEffect(() => {
     if (!chartData?.length) return;
     const timer = window.setTimeout(() => {
-      chartSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // 系统"减少动态效果"时直接跳转，不做平滑滚动
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      chartSectionRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
     }, 300);
     return () => window.clearTimeout(timer);
   }, [chartData]);

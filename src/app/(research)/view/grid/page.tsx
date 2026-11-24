@@ -48,12 +48,23 @@ import type {
 import { App, Button, Card, Drawer, Empty, Grid, Tabs, message } from 'antd';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+/** 平滑滚动；系统开启"减少动态效果"时改为直接跳转 */
+function scrollIntoViewMotionAware(
+  element: HTMLElement | null,
+  block: ScrollLogicalPosition = 'start'
+): void {
+  const reduce =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  element?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block });
+}
+
 /**
  * 网格交易策略页（Coinbase 双态布局 + 云端保存）。
  */
 export default function GridStrategyPage() {
   return (
-    <div className="relative overflow-x-hidden text-[var(--foreground)]">
+    <div className="relative overflow-x-hidden text-[var(--foreground)] animate-[viewFadeIn_0.24s_var(--ease-out-expo)_both]">
       <GridAntdProvider>
         <GridStrategyPageInner />
       </GridAntdProvider>
@@ -446,9 +457,7 @@ function GridStrategyPageInner() {
     const ok = applyCalculationResult();
     if (ok) {
       requestAnimationFrame(() => {
-        document
-          .getElementById('grid-primary-kpis')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollIntoViewMotionAware(document.getElementById('grid-primary-kpis'));
       });
     }
   };
@@ -458,9 +467,7 @@ function GridStrategyPageInner() {
     if (ok) {
       setParamsDrawerOpen(false);
       requestAnimationFrame(() => {
-        document
-          .getElementById('grid-primary-kpis')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollIntoViewMotionAware(document.getElementById('grid-primary-kpis'));
       });
     }
   };
@@ -742,6 +749,11 @@ function GridStrategyPageInner() {
           ]}
         />
 
+        {/* key 随页签切换重挂载：新内容做一次轻淡入，交代"切到哪一页" */}
+        <div
+          key={mainTab}
+          className="animate-[viewFadeIn_0.24s_var(--ease-out-expo)_both]"
+        >
         {mainTab === 'board' ? (
           !persistence.user ? (
             <Card>
@@ -955,6 +967,7 @@ function GridStrategyPageInner() {
             </Drawer>
           </>
         ) : null}
+        </div>
       </div>
 
       <LoginModal

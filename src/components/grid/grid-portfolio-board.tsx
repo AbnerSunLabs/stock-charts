@@ -7,7 +7,7 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { fetchLatestEtfCloses, type EtfLatestClose } from '@/lib/supabase/etf-daily-repository';
 import type { GridStrategyTrade } from '@/types/grid-strategy-trade';
 import type { SavedGridStrategyV1 } from '@/types/grid-strategy-storage';
-import { Card, Empty, Input, Select } from 'antd';
+import { Button, Card, Empty, Input, Select, Skeleton } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 
 export interface GridPortfolioBoardProps {
@@ -113,9 +113,23 @@ export function GridPortfolioBoard({
   }
 
   if (loading && !strategies.length) {
+    // 加载是过程不是结果：用骨架占住版面，避免"加载中"被误读成空数据
     return (
-      <Card>
-        <Empty description="加载中…" />
+      <Card aria-busy="true">
+        <div className="grid-portfolio-board__summary">
+          {[0, 1, 2, 3, 4].map(index => (
+            <Card key={index} className="grid-portfolio-board__summary-item">
+              <Skeleton active title={false} paragraph={{ rows: 1 }} />
+            </Card>
+          ))}
+        </div>
+        <div className="grid-portfolio-board__cards">
+          {[0, 1].map(index => (
+            <Card key={index}>
+              <Skeleton active title paragraph={{ rows: 4 }} />
+            </Card>
+          ))}
+        </div>
       </Card>
     );
   }
@@ -196,18 +210,29 @@ export function GridPortfolioBoard({
         </div>
       </div>
 
-      <div className="grid-portfolio-board__cards">
-        {visible.map(view => (
-          <GridPortfolioCard
-            key={view.s.id}
-            view={view}
-            opening={openingStrategyId === view.s.id}
-            onOpenCalculator={onOpenCalculator}
-            onOpenJournal={onOpenJournal}
-            onEdit={onEdit}
-          />
-        ))}
-      </div>
+      {visible.length === 0 ? (
+        /* 搜索无匹配：留白会像"丢了"，给一句交代和清除出口 */
+        <Card>
+          <Empty description="未找到匹配的策略">
+            <Button shape="round" onClick={() => setSearch('')}>
+              清除筛选
+            </Button>
+          </Empty>
+        </Card>
+      ) : (
+        <div className="grid-portfolio-board__cards">
+          {visible.map(view => (
+            <GridPortfolioCard
+              key={view.s.id}
+              view={view}
+              opening={openingStrategyId === view.s.id}
+              onOpenCalculator={onOpenCalculator}
+              onOpenJournal={onOpenJournal}
+              onEdit={onEdit}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

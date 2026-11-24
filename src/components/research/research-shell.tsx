@@ -94,7 +94,10 @@ export function ResearchShell({ children }: { children: ReactNode }) {
             aria-expanded={!collapsed}
             onClick={() => setCollapsed((open) => !open)}
           >
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            {/* key 随折叠态切换重挂载，触发一次换向淡入 */}
+            <span key={collapsed ? 'unfold' : 'fold'} className="research-rail-toggle__icon">
+              {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            </span>
           </button>
         </div>
         <div className="research-content">{children}</div>

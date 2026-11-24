@@ -73,7 +73,7 @@ export function LoginModal({
         loading={loading}
         onClick={() => void handleLogin()}
       >
-        使用 GitHub 登录
+        {loading ? '正在前往 GitHub…' : '使用 GitHub 登录'}
       </Button>
     </Modal>
   );

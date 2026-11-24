@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 
+import { usePresence } from '@/hooks/use-presence';
 import { INDEX_WATCHES } from '@/lib/index-levels/catalog';
 
 const MENU_KEYS: Record<string, number | 'start' | 'end'> = {
@@ -10,6 +11,9 @@ const MENU_KEYS: Record<string, number | 'start' | 'end'> = {
   Home: 'start',
   End: 'end',
 };
+
+/** 菜单退场过渡时长 + 余量，与 index-levels.css 中 index-menu 的过渡保持一致 */
+const MENU_EXIT_MS = 200;
 
 /**
  * 自绘列表。macOS 原生 select 会按控件高度放大弹出层，和页头对不齐。
@@ -24,6 +28,7 @@ export function IndexLevelPicker({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
+  const { mounted, visible } = usePresence(open, MENU_EXIT_MS);
   const current = INDEX_WATCHES.find(item => item.code === value) ?? INDEX_WATCHES[0];
 
   useEffect(() => {
@@ -43,6 +48,16 @@ export function IndexLevelPicker({
     };
   }, [open]);
 
+  // 菜单卸载后焦点若掉到 body，还给触发按钮
+  useEffect(() => {
+    if (mounted) return;
+    if (document.activeElement === document.body) {
+      rootRef.current
+        ?.querySelector<HTMLButtonElement>('.index-select')
+        ?.focus();
+    }
+  }, [mounted]);
+
   return (
     <div className="index-select-wrap" ref={rootRef}>
       <button
@@ -56,9 +71,10 @@ export function IndexLevelPicker({
       >
         {`${current.name}\u3000${current.code}`}
       </button>
-      {open ? (
+      {mounted ? (
         <IndexMenu
           id={listId}
+          open={visible}
           value={value}
           onPick={code => {
             onChange(code);
@@ -72,10 +88,13 @@ export function IndexLevelPicker({
 
 function IndexMenu({
   id,
+  open,
   value,
   onPick,
 }: {
   id: string;
+  /** 是否处于可见态（退场期间为 false，驱动 data-open 播放收起过渡） */
+  open: boolean;
   value: string;
   onPick: (code: string) => void;
 }) {
@@ -90,7 +109,15 @@ function IndexMenu({
   };
 
   return (
-    <ul className="index-menu" id={id} role="listbox" aria-label="选择指数" onKeyDown={move}>
+    <ul
+      className="index-menu"
+      id={id}
+      role="listbox"
+      aria-label="选择指数"
+      aria-hidden={!open}
+      data-open={open ? 'true' : 'false'}
+      onKeyDown={move}
+    >
       {INDEX_WATCHES.map(item => (
         <li key={item.code} role="presentation">
           <button type="button" role="option" aria-selected={item.code === value} onClick={() => onPick(item.code)}>

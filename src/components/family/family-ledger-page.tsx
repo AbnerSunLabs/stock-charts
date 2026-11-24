@@ -383,7 +383,9 @@ export function FamilyLedgerPage() {
               aria-pressed={amountsVisible}
               onClick={() => setAmountsVisible(v => !v)}
             >
-              {amountsVisible ? <EyeFilled /> : <EyeInvisibleFilled />}
+              <span key={amountsVisible ? 'visible' : 'masked'} className="family-amount-visibility-toggle__icon">
+                {amountsVisible ? <EyeFilled /> : <EyeInvisibleFilled />}
+              </span>
             </button>
           </div>
           <p>维护成员资产和家庭负债，保存后会同步更新家庭财务总览。</p>

@@ -61,6 +61,12 @@ export function GridSaveStatusIsland({
   const isSaved = label === '已保存';
   const interactive = !disabled && !loading && !isSaved;
   const showCheck = isSaved || flashSaved;
+  // 写入中在按钮原位交代进度，而不是只靠脉冲与禁用态
+  const displayLabel = loading
+    ? label === '更新策略'
+      ? '正在更新…'
+      : '正在保存…'
+    : label;
 
   const button = (
     <button
@@ -75,7 +81,7 @@ export function GridSaveStatusIsland({
         .join(' ')}
       disabled={!interactive}
       aria-busy={loading}
-      aria-label={label}
+      aria-label={displayLabel}
       onClick={() => {
         if (!interactive) return;
         onSave();
@@ -87,7 +93,10 @@ export function GridSaveStatusIsland({
           <CheckOutlined />
         </span>
       ) : null}
-      <span className="grid-save-island__label">{label}</span>
+      {/* key 随文案切换重挂载：状态换挡有一次轻淡入 */}
+      <span key={displayLabel} className="grid-save-island__label">
+        {displayLabel}
+      </span>
     </button>
   );
 

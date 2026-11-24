@@ -219,7 +219,7 @@ export function SunburstChart({
 
   return (
     <div
-      className="sunburst-chart-wrap relative mx-auto aspect-square w-full max-w-[920px] xl:max-w-[1024px] 2xl:max-w-[1160px] min-[1920px]:max-w-[1280px] bg-[var(--bg-card)] rounded-2xl p-2 border border-[var(--border-subtle)] shadow-[var(--shadow-elevated)] animate-[viewFadeIn_0.6s_var(--ease-out-expo)_0.08s_both] flex items-center justify-center overflow-hidden"
+      className="sunburst-chart-wrap relative mx-auto aspect-square w-full max-w-[920px] xl:max-w-[1024px] 2xl:max-w-[1160px] min-[1920px]:max-w-[1280px] bg-[var(--bg-card)] rounded-2xl p-2 border border-[var(--border-subtle)] shadow-[var(--shadow-elevated)] animate-[viewFadeIn_0.24s_var(--ease-out-expo)_both] flex items-center justify-center overflow-hidden"
       ref={chartWrapRef}
     >
       <Sunburst {...config} />
