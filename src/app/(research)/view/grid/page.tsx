@@ -82,6 +82,15 @@ function GridStrategyPageInner() {
   );
   const [nameModalError, setNameModalError] = useState<string | null>(null);
   const [mainTab, setMainTab] = useState<'calc' | 'board' | 'journal'>('calc');
+  // 跟踪最新 tab：异步打开完成后若用户已手动切走，则不再强行切回
+  const mainTabRef = useRef<'calc' | 'board' | 'journal'>('calc');
+  const switchMainTab = (tab: 'calc' | 'board' | 'journal') => {
+    mainTabRef.current = tab;
+    setMainTab(tab);
+  };
+  const [openingStrategyId, setOpeningStrategyId] = useState<string | null>(
+    null
+  );
   const [boardStrategies, setBoardStrategies] = useState<SavedGridStrategyV1[]>(
     []
   );
@@ -195,7 +204,7 @@ function GridStrategyPageInner() {
   useLayoutEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab === 'board' || tab === 'journal' || tab === 'calc') setMainTab(tab);
+    if (tab === 'board' || tab === 'journal' || tab === 'calc') switchMainTab(tab);
     const strategyId = params.get('strategy');
     if (tab === 'journal' && strategyId) setJournalStrategyFilter(strategyId);
   }, []);
@@ -399,7 +408,7 @@ function GridStrategyPageInner() {
     confirmDiscardIfNeeded(() => {
       persistence.clearCurrentStrategy();
       resetCalculatorDraft();
-      setMainTab('calc');
+      switchMainTab('calc');
     }, 'create');
   };
 
@@ -522,11 +531,20 @@ function GridStrategyPageInner() {
     }
   };
 
-  const handleOpenStrategy = (id: string) => {
+  const handleOpenStrategy = (id: string, onOpened?: () => void) => {
     confirmDiscardIfNeeded(() => {
-      void persistence.openStrategy(id).catch(error => {
-        message.error(error instanceof Error ? error.message : '打开失败');
-      });
+      setOpeningStrategyId(id);
+      void persistence.openStrategy(id)
+        .then(opened => {
+          // 仅在真正打开成功时回调（防重入跳过 / 登录失效会 resolve false）
+          if (opened) onOpened?.();
+        })
+        .catch(error => {
+          message.error(error instanceof Error ? error.message : '打开失败');
+        })
+        .finally(() => {
+          setOpeningStrategyId(null);
+        });
     });
   };
 
@@ -715,7 +733,7 @@ function GridStrategyPageInner() {
 
         <Tabs
           activeKey={mainTab}
-          onChange={key => setMainTab(key as 'calc' | 'board' | 'journal')}
+          onChange={key => switchMainTab(key as 'calc' | 'board' | 'journal')}
           className="mb-4"
           items={[
             { key: 'board', label: '组合看板' },
@@ -742,13 +760,17 @@ function GridStrategyPageInner() {
               strategies={boardStrategies}
               trades={tradesApi.trades}
               loading={boardLoading || tradesApi.loading}
+              openingStrategyId={openingStrategyId}
               onOpenCalculator={id => {
-                setMainTab('calc');
-                handleOpenStrategy(id);
+                // 等策略结果写入后再切 tab，避免先闪计算器初始页再跳结果页；
+                // 若等待期间用户已手动切走 tab，则尊重用户选择不强切
+                handleOpenStrategy(id, () => {
+                  if (mainTabRef.current === 'board') switchMainTab('calc');
+                });
               }}
               onOpenJournal={id => {
                 setJournalStrategyFilter(id);
-                setMainTab('journal');
+                switchMainTab('journal');
               }}
               onEdit={strategy => {
                 setNameModalMode('rename');

@@ -14,6 +14,8 @@ export interface GridPortfolioBoardProps {
   strategies: SavedGridStrategyV1[];
   trades: GridStrategyTrade[];
   loading?: boolean;
+  /** 正在打开进计算器的策略 id，对应卡片按钮转 loading */
+  openingStrategyId?: string | null;
   onOpenCalculator: (strategyId: string) => void;
   onOpenJournal: (strategyId: string) => void;
   onEdit?: (strategy: SavedGridStrategyV1) => void;
@@ -28,6 +30,7 @@ export function GridPortfolioBoard({
   strategies,
   trades,
   loading,
+  openingStrategyId,
   onOpenCalculator,
   onOpenJournal,
   onEdit,
@@ -198,6 +201,7 @@ export function GridPortfolioBoard({
           <GridPortfolioCard
             key={view.s.id}
             view={view}
+            opening={openingStrategyId === view.s.id}
             onOpenCalculator={onOpenCalculator}
             onOpenJournal={onOpenJournal}
             onEdit={onEdit}
