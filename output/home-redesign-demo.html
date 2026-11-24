@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首页重构 V5 · 对齐点位跟踪</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* ============================================================
+     V5 · 用点位跟踪页（index-levels）的骨架与样式做首页
+     骨架（照抄 index-levels）：#f1f5f9 底、横排页头（h1 20px/600 +
+       右侧 mono 日期）、白 panel 12px 圆角纵向堆叠、panel 内
+       group-head、44px 行情大数字、胶囊分段、底部左日期右正文时间线
+     版面手法（保留自编辑风）：双栏中缝分隔、序号目录、统计格
+     样式 token 全部取自 index-levels.css，无衬线、无报头黑线
+     ============================================================ */
+  :root {
+    color-scheme: light;
+    --chrome-bg: #ffffff; --chrome-border: #e2e8f0;
+    --chrome-ink: #30334b; --chrome-ink-2: #69718a;
+    --stage: #e2e6ec;
+
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --surface-2: #eef2f7;
+    --fund: #f8fafc;
+    --text: #30334b;
+    --body: #4b526c;
+    --muted: #69718a;
+    --faint: #8a918c;
+    --line: #e2e8f0;
+    --red: #cf202f;
+    --green: #048a52;
+    --indigo: #4338ca;
+    --indigo-soft: #eef2ff;
+    --indigo-line: #a5b4fc;
+    --price-line: #8183d8;
+    --shadow-lg: 0 8px 20px rgba(10, 11, 13, 0.06);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0; min-height: 100vh;
+    font: 14px/1.6 var(--font);
+    color: var(--text);
+    background: var(--stage);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 16px 32px;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; margin: 0; padding: 0; cursor: pointer; text-align: left; }
+  button:focus-visible { outline: 2px solid var(--indigo-line); outline-offset: 2px; border-radius: 8px; }
+  h1, h2, p { margin: 0; }
+  svg { display: block; flex: none; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ---------- demo 控制条 ---------- */
+  .ctl { max-width: 1080px; margin: 0 auto 16px; background: var(--chrome-bg); border: 1px solid var(--chrome-border); border-radius: 12px; padding: 12px 16px; }
+  .ctl-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ctl-brand { font-size: 13px; font-weight: 600; color: var(--chrome-ink-2); margin-right: 4px; }
+  .seg { display: flex; gap: 0; background: #eef1ef; border-radius: 9999px; padding: 4px; }
+  .seg button { font-size: 13px; font-weight: 500; color: #8a918c; min-height: 32px; padding: 6px 14px; border-radius: 9999px; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { background: #fff; color: #30334b; font-weight: 600; box-shadow: 0 1px 2px rgba(16,24,40,0.06), 0 1px 3px rgba(16,24,40,0.08); }
+  .ctl-note { font-size: 12.5px; color: var(--chrome-ink-2); margin-top: 8px; }
+
+  .view { background: var(--bg); border-radius: 16px; overflow: hidden; padding: 24px 32px 32px; }
+  @media (max-width: 640px) { .view { padding: 16px 16px 24px; } }
+
+  /* ---------- 页面容器与页头（照 index-levels .head） ---------- */
+  .page { max-width: 1080px; margin: 0 auto; }
+
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 40px; margin-bottom: 20px; flex-wrap: wrap; }
+  .title-block { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+  .head h1 { color: var(--text); font-size: 20px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.4; }
+  .head h1 .code { margin-left: 12px; color: var(--muted); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+  .head .page-date { color: var(--faint); font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; line-height: 1.4; }
+
+  /* ---------- panel（照 index-levels .panel） ---------- */
+  .panel { background: var(--surface); border-radius: 12px; padding: 0 24px; }
+  .panel + .panel { margin-top: 20px; }
+  .group-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 0 0; min-height: 0; }
+  .group-head h2 { color: var(--text); font-size: 20px; font-weight: 600; line-height: 1.4; letter-spacing: -0.025em; }
+  .group-head .side { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+  /* ---------- 今日速览：三格行情（照 .px/.chg 排版） ---------- */
+  .quotes { display: grid; grid-template-columns: repeat(3, 1fr); padding: 20px 0 8px; }
+  @media (max-width: 720px) { .quotes { grid-template-columns: 1fr; gap: 4px; } }
+  .quote { padding: 8px 24px 16px; border-left: 1px solid var(--line); }
+  .quote:first-child { border-left: none; padding-left: 0; }
+  @media (max-width: 720px) {
+    .quote { border-left: none; padding: 12px 0; border-top: 1px solid var(--line); }
+    .quote:first-child { border-top: none; }
+  }
+  .quote .name { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+  .px-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .px { color: var(--text); font-size: 44px; font-weight: 600; line-height: 1; letter-spacing: -0.045em; font-variant-numeric: lining-nums proportional-nums; }
+  .chg { font-size: 15px; font-weight: 600; }
+  .chg.up { color: var(--red); }
+  .chg.down { color: var(--green); }
+  .quote .spark { margin-top: 14px; }
+  .quote .spark path { stroke: var(--price-line); }
+
+  /* ---------- 工作区：双栏 + 序号目录（编辑风手法 × 工具页样式） ---------- */
+  .workspaces { display: grid; grid-template-columns: 1fr 1fr; padding: 20px 0 24px; gap: 0; }
+  @media (max-width: 820px) { .workspaces { grid-template-columns: 1fr; } }
+  .ws { padding: 0 28px 0 0; }
+  .ws + .ws { border-left: 1px solid var(--line); padding: 0 0 0 28px; }
+  @media (max-width: 820px) {
+    .ws { padding: 20px 0 0; }
+    .ws + .ws { border-left: none; border-top: 1px solid var(--line); margin-top: 20px; padding-left: 0; }
+  }
+  .ws-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .ws-ico { width: 36px; height: 36px; border-radius: 8px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--indigo); }
+  .ws-head h3 { color: var(--text); font-size: 15px; font-weight: 700; line-height: 1.4; }
+  .ws-head .tag { color: var(--muted); font-size: 11px; border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; background: var(--fund); white-space: nowrap; }
+  .ws-desc { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 8px 0 4px; }
+
+  /* 序号目录 */
+  .idx-list { margin-top: 12px; border-top: 1px solid var(--line); }
+  .idx-item {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 10px 8px; border-bottom: 1px solid var(--line);
+    border-radius: 6px; transition: background 0.12s ease;
+  }
+  .idx-item:hover { background: var(--indigo-soft); }
+  .idx-item .no { color: var(--faint); font-family: var(--mono); font-size: 12px; flex: none; }
+  .idx-item .nm { color: var(--text); font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .idx-item:hover .nm { color: var(--indigo); }
+  .idx-item .ds { color: var(--muted); font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .idx-item .st { margin-left: auto; color: var(--faint); font-size: 11px; white-space: nowrap; flex: none; }
+  .idx-item .st.up { color: var(--red); font-weight: 600; font-family: var(--mono); }
+  .idx-item .st.down { color: var(--green); font-weight: 600; font-family: var(--mono); }
+  .idx-item.mut { opacity: 0.55; }
+
+  /* 行动按钮（照 .essay-open） */
+  .ws-actions { display: flex; gap: 12px; margin-top: 16px; }
+  .act {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 40px; padding: 8px 13px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface-2); color: var(--body);
+    font-size: 12px; white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .act:hover { background: #fff; border-color: var(--indigo-line); }
+  .act.primary { background: var(--surface); border-color: var(--indigo-line); color: var(--indigo); font-weight: 600; }
+  .act.primary:hover { background: var(--indigo-soft); }
+  .act svg { transition: transform 0.15s ease; }
+  .act:hover svg { transform: translateX(2px); }
+
+  /* ---------- 使用笔记：左日期右正文时间线（照页面底部笔记区） ---------- */
+  .notes { padding: 4px 0 24px; }
+  .note { display: flex; gap: 24px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .note:last-child { border-bottom: none; }
+  .note .date { flex: none; width: 88px; color: var(--faint); font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .note .words { min-width: 0; color: var(--body); font-size: 14px; line-height: 1.8; }
+  .note .words b { color: var(--text); font-weight: 600; }
+  .note .link { color: var(--indigo); font-size: 13px; text-decoration: none; border-bottom: 0; }
+  .note .link:hover { text-decoration: underline; }
+  @media (max-width: 640px) { .note { flex-direction: column; gap: 6px; } }
+
+  /* ---------- 页脚 ---------- */
+  .foot { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 16px 0 0; border-top: 1px solid var(--line);
+    color: var(--faint); font-size: 12px; flex-wrap: wrap; }
+  .foot .end { margin-left: auto; }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: #fff; border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: var(--shadow-lg); padding: 10px 16px; font-size: 13px; color: var(--body);
+    max-width: calc(100vw - 32px); z-index: 20;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<!-- 线性图标集（同一套：24 viewBox / stroke 1.5 / round） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="M3.75 10.25 12 4l8.25 6.25M5.5 9.25V20h13V9.25M9 20v-5.5h6V20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24">
+      <path d="M4 17l5-7 4 4 7-9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 20h16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+    </symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24">
+      <path d="M4 12h14M14 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-back" viewBox="0 0 24 24">
+      <path d="M20 12H6M10 8l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="ctl">
+  <div class="ctl-row">
+    <span class="ctl-brand">首页重构 V5 · 点位跟踪骨架 × 编辑风版面</span>
+    <span style="flex:1"></span>
+    <div class="seg" id="segPage" role="group" aria-label="页面切换">
+      <button type="button" data-page="home" aria-pressed="true">首页</button>
+      <button type="button" data-page="hall" aria-pressed="false">工具大厅</button>
+    </div>
+  </div>
+  <p class="ctl-note">页头 / 白 panel / 大数字 / 按钮 / 时间线均照 index-levels 现页实现；编辑风只保留双栏、序号、时间线等版面手法；页面内数据均为示例</p>
+</header>
+
+<main>
+  <!-- ================= 首页 ================= -->
+  <section class="view" data-page="home">
+    <div class="page">
+      <div class="head">
+        <div class="title-block">
+          <h1>仓位视图<span class="code">投资研究 · 家庭财务</span></h1>
+        </div>
+        <p class="page-date">2026-11-18 · 收盘后更新</p>
+      </div>
+
+      <!-- 今日速览 -->
+      <div class="panel">
+        <div class="group-head">
+          <h2>今日速览</h2>
+          <span class="side">跟踪指数 · 官方收盘</span>
+        </div>
+        <div class="quotes">
+          <div class="quote">
+            <p class="name">沪深300 <span class="num">000300.SH</span></p>
+            <div class="px-row">
+              <span class="px num">3,842.10</span>
+              <span class="chg down num">-0.82%</span>
+            </div>
+            <svg class="spark" viewBox="0 0 240 40" width="240" height="40" aria-hidden="true">
+              <path d="M0 28 L30 24 L60 26 L90 18 L120 21 L150 12 L180 15 L210 8 L240 11" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="quote">
+            <p class="name">创业板指 <span class="num">399006.SZ</span></p>
+            <div class="px-row">
+              <span class="px num">2,105.33</span>
+              <span class="chg up num">+1.24%</span>
+            </div>
+            <svg class="spark" viewBox="0 0 240 40" width="240" height="40" aria-hidden="true">
+              <path d="M0 32 L30 34 L60 28 L90 30 L120 22 L150 25 L180 16 L210 12 L240 6" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="quote">
+            <p class="name">中证医疗 <span class="num">399989.SZ</span></p>
+            <div class="px-row">
+              <span class="px num">8,932.05</span>
+              <span class="chg down num">-1.61%</span>
+            </div>
+            <svg class="spark" viewBox="0 0 240 40" width="240" height="40" aria-hidden="true">
+              <path d="M0 10 L30 14 L60 12 L90 20 L120 17 L150 26 L180 23 L210 31 L240 34" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 两个工作区 -->
+      <div class="panel">
+        <div class="group-head">
+          <h2>工作区</h2>
+        </div>
+        <div class="workspaces">
+          <!-- 家庭财务 -->
+          <div class="ws">
+            <div class="ws-head">
+              <span class="ws-ico"><svg width="19" height="19"><use href="#i-home"/></svg></span>
+              <h3>家庭财务</h3>
+              <span class="tag">需登录</span>
+            </div>
+            <p class="ws-desc">成员资产、家庭负债与保单保障统一归集，净资产走势按月记录。</p>
+            <div class="idx-list">
+              <button type="button" class="idx-item" data-toast>
+                <span class="no">01</span><span class="nm">资产负债</span>
+                <span class="ds">成员资产统一归集</span>
+              </button>
+              <button type="button" class="idx-item" data-toast>
+                <span class="no">02</span><span class="nm">四笔钱</span>
+                <span class="ds">活钱 / 保险 / 稳健 / 长期</span>
+              </button>
+              <button type="button" class="idx-item" data-toast>
+                <span class="no">03</span><span class="nm">保单保障</span>
+                <span class="ds">保障缺口一屏审视</span>
+              </button>
+            </div>
+            <div class="ws-actions">
+              <button type="button" class="act" data-toast>翻开账本<svg width="14" height="14"><use href="#i-arrow"/></svg></button>
+            </div>
+          </div>
+          <!-- 投研工具 -->
+          <div class="ws">
+            <div class="ws-head">
+              <span class="ws-ico"><svg width="19" height="19"><use href="#i-chart"/></svg></span>
+              <h3>投研工具</h3>
+              <span class="tag">3 个可用</span>
+            </div>
+            <p class="ws-desc">点位跟踪对照官方收盘，网格策略推演档位，旭日图看清仓位结构。</p>
+            <div class="idx-list">
+              <button type="button" class="idx-item" data-nav="hall">
+                <span class="no">01</span><span class="nm">点位跟踪</span>
+                <span class="ds">官方收盘对照判断点位</span><span class="st">可用</span>
+              </button>
+              <button type="button" class="idx-item" data-nav="hall">
+                <span class="no">02</span><span class="nm">网格交易策略</span>
+                <span class="ds">小/中/大网档位推演</span><span class="st">可用</span>
+              </button>
+              <button type="button" class="idx-item" data-nav="hall">
+                <span class="no">03</span><span class="nm">资产旭日图</span>
+                <span class="ds">持仓占比一图看清</span><span class="st">可用</span>
+              </button>
+              <button type="button" class="idx-item mut" data-nav="hall">
+                <span class="no">04</span><span class="nm">持仓分析</span>
+                <span class="ds">行业分布 / 市值风格</span><span class="st">即将推出</span>
+              </button>
+            </div>
+            <div class="ws-actions">
+              <button type="button" class="act primary" data-nav="hall">进入工具大厅<svg width="14" height="14"><use href="#i-arrow"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 使用笔记（时间线） -->
+      <div class="panel">
+        <div class="group-head">
+          <h2>使用笔记</h2>
+          <span class="side">节选自各工具</span>
+        </div>
+        <div class="notes">
+          <div class="note">
+            <span class="date">2026/01/12</span>
+            <p class="words">网格的意义不在于预测，而在于<b>跌有筹码、涨有仓位</b>。档位落在收盘价上，情绪便无处安放。<a class="link" href="javascript:void(0)">查看原文</a></p>
+          </div>
+          <div class="note">
+            <span class="date">2026/01/05</span>
+            <p class="words">中证医疗收在 8,932，位于「钻石坑」档位上方 3.2%，距离外太空仍有空间，<b>按档位不按心情</b>。<a class="link" href="javascript:void(0)">查看原文</a></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span>仓位视图</span><span>·</span><span>私有投资图表与仓位分布</span>
+        <span class="end">页面内数据均为示例</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 工具大厅 ================= -->
+  <section class="view" data-page="hall" hidden>
+    <div class="page">
+      <div class="head">
+        <div class="title-block">
+          <h1>投研工具<span class="code">收盘后数据自动更新</span></h1>
+        </div>
+        <button type="button" class="act" data-nav="home"><svg width="13" height="13"><use href="#i-back"/></svg>返回首页</button>
+      </div>
+
+      <div class="panel">
+        <div class="group-head">
+          <h2>可用工具</h2>
+          <span class="side">3 个</span>
+        </div>
+        <div class="notes" style="padding-top:0">
+          <div class="idx-list" style="margin-top:16px;border-top:none">
+            <button type="button" class="idx-item">
+              <span class="no">01</span><span class="nm">资产旭日图</span>
+              <span class="ds">按分类填写持仓金额，自动生成占比旭日图并支持下载 PNG</span>
+              <span class="st">可用</span>
+            </button>
+            <button type="button" class="idx-item">
+              <span class="no">02</span><span class="nm">网格交易策略</span>
+              <span class="ds">配置小/中/大网步长与资金系数，生成网格档位并推演抗跌优势</span>
+              <span class="st">可用</span>
+            </button>
+            <button type="button" class="idx-item">
+              <span class="no">03</span><span class="nm">点位跟踪</span>
+              <span class="ds">用官方收盘对照跟踪指数的判断点位</span>
+              <span class="st">可用</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="group-head">
+          <h2>即将推出</h2>
+          <span class="side">2 个</span>
+        </div>
+        <div class="notes" style="padding-top:0">
+          <div class="idx-list" style="margin-top:16px;border-top:none">
+            <button type="button" class="idx-item mut">
+              <span class="no">04</span><span class="nm">持仓分析</span>
+              <span class="ds">多维度分析股票持仓结构，行业分布、市值风格一键洞察</span>
+              <span class="st">即将推出</span>
+            </button>
+            <button type="button" class="idx-item mut">
+              <span class="no">05</span><span class="nm">风险仪表盘</span>
+              <span class="ds">一屏展示波动率、最大回撤、夏普比率等核心风险指标</span>
+              <span class="st">即将推出</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span>仓位视图</span><span>·</span><span>投研工具</span>
+        <span class="end">页面内数据均为示例</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden>实际站点交互：先校验访问权限，未登录时弹出登录框</div>
+
+<script>
+  (function () {
+    var state = { page: 'home' };
+    var views = Array.prototype.slice.call(document.querySelectorAll('.view'));
+    var segPage = document.getElementById('segPage');
+    var toast = document.getElementById('toast');
+    var toastTimer = null;
+
+    function apply() {
+      views.forEach(function (v) { v.hidden = v.dataset.page !== state.page; });
+      segPage.querySelectorAll('button').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b.dataset.page === state.page));
+      });
+    }
+
+    function setPage(p) {
+      state.page = p;
+      apply();
+      window.scrollTo(0, 0);
+    }
+
+    function showToast() {
+      toast.hidden = false;
+      if (toastTimer) { clearTimeout(toastTimer); }
+      toastTimer = setTimeout(function () { toast.hidden = true; }, 2600);
+    }
+
+    segPage.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-page]');
+      if (b) { setPage(b.dataset.page); }
+    });
+    document.addEventListener('click', function (e) {
+      var nav = e.target.closest('[data-nav]');
+      if (nav) { e.preventDefault(); setPage(nav.dataset.nav); return; }
+      if (e.target.closest('[data-toast]')) { showToast(); }
+    });
+    apply();
+  })();
+</script>
+</body>
+</html>
