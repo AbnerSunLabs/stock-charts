@@ -12,6 +12,8 @@ import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { useEffect, useRef, type ReactNode } from 'react';
 
+import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
+
 gsap.registerPlugin(useGSAP);
 
 export interface GridStrategyLibraryDrawerProps {
@@ -27,11 +29,6 @@ export interface GridStrategyLibraryDrawerProps {
   onOpenStrategy: (id: string) => void;
   onRenameStrategy: (strategy: GridStrategyMetadata) => void;
   onDeleteStrategy: (strategy: GridStrategyMetadata) => void;
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /** 取策略名首字作为视觉锚点 */
@@ -120,9 +117,12 @@ export function GridStrategyLibraryDrawer({
       if (introPlayedRef.current) return;
       if (!listRef.current || prefersReducedMotion()) return;
       introPlayedRef.current = true;
-      const items = listRef.current.querySelectorAll(
-        '.grid-strategy-library__item'
-      );
+      // 只给首屏前几行做交错入场；长列表的其余行立即可见、可滚动、可聚焦，
+      // 不让第 N 行的可用性等 N×stagger
+      const STAGGER_HEAD = 8;
+      const items = Array.from(
+        listRef.current.querySelectorAll('.grid-strategy-library__item')
+      ).slice(0, STAGGER_HEAD);
       gsap.fromTo(
         items,
         { autoAlpha: 0, y: 10 },

@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { message } from 'antd';
 import { PositionConfigForm } from '@/components/sunburst/position-config-form';
 import { LazySunburstChart } from '@/components/sunburst/lazy-sunburst-chart';
+import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
 import {
   buildSunburstChartDataFromNodes,
   canGenerateSunburstChart,
@@ -115,8 +116,10 @@ export default function SunburstPage() {
     if (!chartData?.length) return;
     const timer = window.setTimeout(() => {
       // 系统"减少动态效果"时直接跳转，不做平滑滚动
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      chartSectionRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+      chartSectionRef.current?.scrollIntoView({
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        block: 'center',
+      });
     }, 300);
     return () => window.clearTimeout(timer);
   }, [chartData]);

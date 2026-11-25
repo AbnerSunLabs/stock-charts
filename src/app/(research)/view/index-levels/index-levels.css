@@ -36,8 +36,9 @@
     sans-serif;
   letter-spacing: 0;
   font-variant-numeric: lining-nums tabular-nums;
-  /* 进场一次性轻淡入：解释"视图到了"（切工具/切指数只在此处播一次） */
-  animation: viewFadeIn var(--duration-normal) var(--ease-out-expo) both;
+  /* 页面根只做纯透明度入场：带位移的动画会保留 transform，
+     令内部 position:fixed 的 E大侧栏失去视口定位（跟随内容滚动） */
+  animation: fade-in var(--duration-normal) var(--ease-out-expo) both;
 }
 
 .index-levels *,
@@ -512,18 +513,9 @@
   animation: viewFadeIn var(--duration-normal) var(--ease-out-expo) both;
 }
 
-/* 悬停卡只做出现淡入；移动完全跟手（不加位移过渡） */
+/* 悬停卡只做出现淡入（keyframes 见 globals.css）；移动完全跟手（不加位移过渡） */
 .index-levels .tip.show {
-  animation: index-tip-in var(--duration-fast) var(--ease-out-expo) both;
-}
-
-@keyframes index-tip-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  animation: fade-in var(--duration-fast) var(--ease-out-expo) both;
 }
 .index-levels .panel .chart {
   display: block;

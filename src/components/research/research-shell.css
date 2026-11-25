@@ -175,21 +175,10 @@
     color var(--duration-fast) var(--ease-snappy);
 }
 
-/* 折叠/展开图标换向：换节点时做一次轻淡入，交代方向变了 */
+/* 折叠/展开图标换向：换节点时做一次轻淡入，交代方向变了（keyframes 见 globals.css） */
 .research-rail-toggle__icon {
   display: inline-flex;
-  animation: research-icon-swap var(--duration-normal) var(--ease-out-expo) both;
-}
-
-@keyframes research-icon-swap {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  animation: icon-swap var(--duration-normal) var(--ease-out-expo) both;
 }
 
 .research-rail-toggle:hover {
@@ -252,9 +241,5 @@
   .research-rail-label,
   .research-brand-name {
     transition: none;
-  }
-
-  .research-rail-toggle__icon {
-    animation: none;
   }
 }

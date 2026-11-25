@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
 
 /**
  * 弹层在场控制：open 变 false 时先切到不可见态播放退场过渡，
@@ -14,22 +16,27 @@ export function usePresence(
 ): { mounted: boolean; visible: boolean } {
   const [mounted, setMounted] = useState(open);
   const [visible, setVisible] = useState(false);
+  // 回调里读最新 open：渲染被并发调度推迟时，迟到的帧不得把已关闭的弹层重新点亮
+  const openRef = useRef(open);
+  openRef.current = open;
 
   useEffect(() => {
     if (open) {
       setMounted(true);
-      const raf = requestAnimationFrame(() =>
-        requestAnimationFrame(() => setVisible(true))
-      );
-      return () => cancelAnimationFrame(raf);
+      // 两层 rAF 的 id 都要留：只取消外层时，已排队的内层帧仍会执行
+      let innerRaf = 0;
+      const outerRaf = requestAnimationFrame(() => {
+        innerRaf = requestAnimationFrame(() => {
+          if (openRef.current) setVisible(true);
+        });
+      });
+      return () => {
+        cancelAnimationFrame(outerRaf);
+        cancelAnimationFrame(innerRaf);
+      };
     }
     setVisible(false);
-    // jsdom 等环境没有 matchMedia，按"无偏好"处理（走定时器卸载）
-    if (
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
+    if (prefersReducedMotion()) {
       setMounted(false);
       return undefined;
     }

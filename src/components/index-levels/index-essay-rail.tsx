@@ -20,19 +20,32 @@ export function EssayRail({
   onClose: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const railRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const { mounted, visible } = usePresence(open, ESSAY_EXIT_MS);
 
   useEffect(() => {
     if (!open) return undefined;
     triggerRef.current = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
+    const rail = railRef.current;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      // 关闭即把焦点移出面板：退场窗口内消失中的层不应持有键盘焦点
+      if (rail?.contains(document.activeElement)) {
+        triggerRef.current?.focus?.();
+      }
+    };
   }, [open, onClose]);
+
+  // 面板由 usePresence 控制晚一帧挂载，聚焦关闭按钮要等可见态而非 open 边沿
+  useEffect(() => {
+    if (!visible) return;
+    closeRef.current?.focus();
+  }, [visible]);
 
   // 面板卸载后焦点若掉到 body，还给打开它的触发元素（键盘路径下尤为必要）
   useEffect(() => {
@@ -47,13 +60,14 @@ export function EssayRail({
 
   return (
     <aside
+      ref={railRef}
       className="essay-rail"
       data-open={visible ? 'true' : 'false'}
       role="dialog"
       aria-modal="true"
       aria-label="E大怎么说"
     >
-      <button type="button" className="essay-backdrop" aria-label="关闭发言" onClick={onClose} />
+      <button type="button" className="essay-backdrop" aria-label="关闭发言" tabIndex={-1} onClick={onClose} />
       <div className="essay-panel">
         <div className="essay-head">
           <div>

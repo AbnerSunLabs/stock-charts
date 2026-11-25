@@ -562,6 +562,28 @@ body::after {
   }
 }
 
+/* 公共 keyframes：全站"内容淡入"（仅透明度）与"图标换向"（淡入+缩放），
+   各视图只引用不自造，避免同一语义多份定义后调参漂移 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes icon-swap {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* 家庭财务页面共享视觉基础，仅在页面容器内生效。 */
 .family-finance-page {
   --family-primary: #0052ff;
@@ -578,8 +600,9 @@ body::after {
   margin-inline: auto;
   padding: 40px 24px 64px;
   color: var(--family-ink);
-  /* 进场一次性轻淡入：解释"页面到了"，不与内部动效串联 */
-  animation: viewFadeIn var(--duration-normal) var(--ease-out-expo) both;
+  /* 页面根只做纯透明度入场（原因见 index-levels.css 同款注释：避免 transform
+     令内部 fixed 层失去视口定位） */
+  animation: fade-in var(--duration-normal) var(--ease-out-expo) both;
 }
 
 .family-finance-page .family-finance-page__header,
@@ -857,18 +880,7 @@ body::after {
 /* 显隐换挡：图标换节点时做一次轻淡入交代状态翻转；金额本身立即生效 */
 .family-finance-page .family-amount-visibility-toggle__icon {
   display: inline-flex;
-  animation: family-icon-swap var(--duration-normal) var(--ease-out-expo) both;
-}
-
-@keyframes family-icon-swap {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  animation: icon-swap var(--duration-normal) var(--ease-out-expo) both;
 }
 
 .family-finance-page.family-overview-page .family-finance-header p {

@@ -136,13 +136,15 @@ export function GridTradeEntryModal({
   const [form] = Form.useForm<FormValues>();
   const price = Form.useWatch('price', form);
   const qty = Form.useWatch('qty', form);
-  // 记住最近一次 defaults：提交成功后父层会清空 defaults 并关闭，
-  // 若直接 return null 会连 Modal 退场动画一起吞掉；保留到退场结束再隐去
+  // 渲染期优先取当前 defaults、退场期（父层已清空）回落到上一次的值：
+  // 既零陈旧帧，又让 Modal 有内容可播完退场动画
   const [lastDefaults, setLastDefaults] = useState(defaults);
 
   useEffect(() => {
     if (defaults) setLastDefaults(defaults);
   }, [defaults]);
+
+  const shownDefaults = defaults ?? lastDefaults;
 
   useEffect(() => {
     if (!open || !defaults) return;
@@ -153,12 +155,12 @@ export function GridTradeEntryModal({
     });
   }, [open, defaults, form]);
 
-  if (!lastDefaults) return null;
+  if (!shownDefaults) return null;
 
   return (
     <Modal
       open={open}
-      title={lastDefaults.side === 'buy' ? '记录买入' : '记录卖出'}
+      title={shownDefaults.side === 'buy' ? '记录买入' : '记录卖出'}
       onCancel={loading ? undefined : onCancel}
       footer={null}
       destroyOnHidden
@@ -171,7 +173,7 @@ export function GridTradeEntryModal({
     >
       <TradeEntryFields
         form={form}
-        defaults={lastDefaults}
+        defaults={shownDefaults}
         loading={loading}
         price={price}
         qty={qty}

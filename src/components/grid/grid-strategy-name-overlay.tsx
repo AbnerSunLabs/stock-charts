@@ -12,6 +12,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { HelpTooltip } from '@/components/shared/help-tooltip';
+import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
 import { createPortal } from 'react-dom';
 
 gsap.registerPlugin(useGSAP);
@@ -29,11 +30,6 @@ export interface GridStrategyNameOverlayProps {
 }
 
 type OverlayPhase = 'form' | 'success';
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
 
 /**
  * 自建居中命名浮层：GSAP 进退场与成功确认（替代 Ant Modal）。

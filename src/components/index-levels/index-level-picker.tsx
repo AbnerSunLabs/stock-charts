@@ -33,24 +33,44 @@ export function IndexLevelPicker({
 
   useEffect(() => {
     if (!open) return undefined;
+    const root = rootRef.current;
     const onPointer = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!root?.contains(event.target as Node)) setOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
     };
     document.addEventListener('mousedown', onPointer);
     document.addEventListener('keydown', onKey);
-    rootRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus();
     return () => {
       document.removeEventListener('mousedown', onPointer);
       document.removeEventListener('keydown', onKey);
+      // 关闭即把焦点移出菜单：退场窗口内 aria-hidden 不能包住持有焦点的元素
+      if (root?.contains(document.activeElement)) {
+        root
+          ?.querySelector<HTMLButtonElement>('.index-select')
+          ?.focus();
+      }
     };
   }, [open]);
 
-  // 菜单卸载后焦点若掉到 body，还给触发按钮
+  // 菜单由 usePresence 控制晚一帧挂载，聚焦选中项要等可见态而非 open 边沿
   useEffect(() => {
-    if (mounted) return;
+    if (!visible) return;
+    rootRef.current
+      ?.querySelector<HTMLButtonElement>('[aria-selected="true"]')
+      ?.focus();
+  }, [visible]);
+
+  // 菜单卸载后焦点若掉到 body，还给触发按钮。
+  // 只在"曾挂载过"之后生效：初次挂载（mounted 恒为 false 的首帧）不能抢焦点
+  const wasMountedRef = useRef(false);
+  useEffect(() => {
+    if (mounted) {
+      wasMountedRef.current = true;
+      return;
+    }
+    if (!wasMountedRef.current) return;
     if (document.activeElement === document.body) {
       rootRef.current
         ?.querySelector<HTMLButtonElement>('.index-select')
@@ -120,7 +140,13 @@ function IndexMenu({
     >
       {INDEX_WATCHES.map(item => (
         <li key={item.code} role="presentation">
-          <button type="button" role="option" aria-selected={item.code === value} onClick={() => onPick(item.code)}>
+          <button
+            type="button"
+            role="option"
+            aria-selected={item.code === value}
+            tabIndex={open ? 0 : -1}
+            onClick={() => onPick(item.code)}
+          >
             <span>{item.name}</span>
             <span className="index-menu-code">{item.code}</span>
           </button>

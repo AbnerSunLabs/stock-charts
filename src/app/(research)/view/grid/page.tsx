@@ -48,15 +48,17 @@ import type {
 import { App, Button, Card, Drawer, Empty, Grid, Tabs, message } from 'antd';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
+
 /** 平滑滚动；系统开启"减少动态效果"时改为直接跳转 */
 function scrollIntoViewMotionAware(
   element: HTMLElement | null,
   block: ScrollLogicalPosition = 'start'
 ): void {
-  const reduce =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  element?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block });
+  element?.scrollIntoView({
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    block,
+  });
 }
 
 /**
@@ -64,7 +66,7 @@ function scrollIntoViewMotionAware(
  */
 export default function GridStrategyPage() {
   return (
-    <div className="relative overflow-x-hidden text-[var(--foreground)] animate-[viewFadeIn_0.24s_var(--ease-out-expo)_both]">
+    <div className="relative overflow-x-hidden text-[var(--foreground)] animate-[fade-in_0.24s_var(--ease-out-expo)_both]">
       <GridAntdProvider>
         <GridStrategyPageInner />
       </GridAntdProvider>

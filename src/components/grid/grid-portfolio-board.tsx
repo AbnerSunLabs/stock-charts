@@ -113,9 +113,10 @@ export function GridPortfolioBoard({
   }
 
   if (loading && !strategies.length) {
-    // 加载是过程不是结果：用骨架占住版面，避免"加载中"被误读成空数据
+    // 加载是过程不是结果：用骨架占住版面，避免"加载中"被误读成空数据。
+    // 套一层 .grid-portfolio-board 让骨架与就绪态共用同一套容器查询列数，避免列数跳变
     return (
-      <Card aria-busy="true">
+      <div className="grid-portfolio-board" aria-busy="true">
         <div className="grid-portfolio-board__summary">
           {[0, 1, 2, 3, 4].map(index => (
             <Card key={index} className="grid-portfolio-board__summary-item">
@@ -130,7 +131,7 @@ export function GridPortfolioBoard({
             </Card>
           ))}
         </div>
-      </Card>
+      </div>
     );
   }
 

@@ -5,6 +5,8 @@ import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { useEffect, useRef, useState } from 'react';
 
+import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
+
 gsap.registerPlugin(useGSAP);
 
 export interface GridSaveStatusIslandProps {
@@ -13,11 +15,6 @@ export interface GridSaveStatusIslandProps {
   loading: boolean;
   reason: string | null;
   onSave: () => void;
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /**
