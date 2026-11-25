@@ -230,7 +230,26 @@ export function IndexLevelTracker() {
   );
   const { fundPoints, fundPhase } = useFundSeries(current?.chartFund?.code);
   const cmb = useCmbFxSeries(current?.chartBankFx === true);
-  const [span, setSpan] = useState<CloseSpan>("5");
+  // 记住用户最后主动选择的时间范围（系统能记住的不让重设）
+  const [span, setSpanState] = useState<CloseSpan>("5");
+  const setSpan = (next: CloseSpan) => {
+    setSpanState(next);
+    try {
+      window.localStorage.setItem("index-levels:span", next);
+    } catch {
+      /* 隐私模式等存储不可用时静默降级 */
+    }
+  };
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("index-levels:span");
+      if (saved && SPANS.some(item => item.id === saved)) {
+        setSpanState(saved as CloseSpan);
+      }
+    } catch {
+      /* 同上 */
+    }
+  }, []);
   const [levelId, setLevelId] = useState<string | null>(
     defaultLevelId(current?.levels ?? []),
   );

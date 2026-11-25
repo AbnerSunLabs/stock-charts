@@ -43,6 +43,7 @@ import {
 import { formatCny, formatDateTime } from '@/lib/family-finance/format';
 import { listTransferTargetOptions } from '@/lib/family-finance/ledger-transfer';
 import { FamilyAmountVisibilityProvider } from '@/components/family/family-amount-visibility';
+import { describeError } from '@/lib/describe-error';
 import { FamilyAssetStructurePie } from '@/components/family/family-asset-structure-pie';
 import { FamilyAssetHistoryLine } from '@/components/family/family-asset-history-line';
 import { buildFamilyAssetHistory } from '@/lib/family-finance/history';
@@ -102,7 +103,7 @@ export function FamilyLedgerPage() {
       setItems(i);
       setAssetHistory(buildFamilyAssetHistory(historyRows));
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载失败');
+      message.error(describeError(e, '账目加载失败，请重试'));
     } finally {
       setLoading(false);
     }
@@ -239,11 +240,14 @@ export function FamilyLedgerPage() {
       if (e && typeof e === 'object' && 'errorFields' in e) {
         throw e;
       }
-      // 转移已提交时刷新列表，避免关闭弹窗后看到过期余额
+      // 转移已提交时刷新列表，避免关闭弹窗后看到过期余额；
+      // rethrow 让 Modal 保持打开，用户重试时只提交条目信息（转移输入已清空）
       if (transferCommitted) {
         void reload();
+        message.error('余额转移已完成，条目信息未保存，请重试保存');
+        throw e instanceof Error ? e : new Error('条目信息未保存');
       }
-      message.error(e instanceof Error ? e.message : '保存失败');
+      message.error(describeError(e, '保存失败，请重试'));
       throw e instanceof Error ? e : new Error('保存失败');
     } finally {
       itemSavingRef.current = false;
@@ -350,11 +354,20 @@ export function FamilyLedgerPage() {
               danger
               onClick={() => {
                 modal.confirm({
-                  title: '删除该条目？',
+                  title: `删除条目「${row.name}」？`,
+                  content: '该条目将从账本移除，资产或负债合计随之更新。',
+                  okText: '删除',
+                  okButtonProps: { danger: true },
+                  cancelText: '取消',
                   onOk: async () => {
-                    await repo.deleteLedgerItem(row.id);
-                    message.success('已删除');
-                    await reload();
+                    try {
+                      await repo.deleteLedgerItem(row.id);
+                      message.success('已删除');
+                      await reload();
+                    } catch (e) {
+                      message.error(describeError(e, '删除失败，请重试'));
+                      throw e;
+                    }
                   },
                 });
               }}

@@ -17,6 +17,7 @@ type GateState =
   | { status: 'loading' }
   | { status: 'need_login' }
   | { status: 'denied' }
+  | { status: 'check_failed' }
   | { status: 'allowed'; user: User };
 
 /**
@@ -37,6 +38,12 @@ export function AuthGate({ children, redirectPath }: AuthGateProps) {
         return;
       }
       if (!result.allowed) {
+        if (result.reason === 'error') {
+          // 校验请求失败：保留会话，给出重试，不误报"无权限"
+          setState({ status: 'check_failed' });
+          setLoginOpen(false);
+          return;
+        }
         message.warning('当前 GitHub 账号无家庭财务访问权限');
         await signOut();
         setState({ status: 'denied' });
@@ -45,16 +52,30 @@ export function AuthGate({ children, redirectPath }: AuthGateProps) {
       }
       setState({ status: 'allowed', user: result.user! });
       setLoginOpen(false);
-    } catch (e) {
-      message.error(e instanceof Error ? e.message : '鉴权失败');
-      setState({ status: 'need_login' });
-      setLoginOpen(true);
+    } catch {
+      setState({ status: 'check_failed' });
+      setLoginOpen(false);
     }
   }, [message]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  if (state.status === 'check_failed') {
+    return (
+      <Result
+        status="warning"
+        title="暂时无法验证家庭财务权限"
+        subTitle="网络或服务暂时不可用，你的登录状态未受影响。"
+        extra={
+          <Button type="primary" onClick={() => void refresh()}>
+            重试
+          </Button>
+        }
+      />
+    );
+  }
 
   if (state.status === 'loading') {
     return (

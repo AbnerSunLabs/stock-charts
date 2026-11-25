@@ -77,14 +77,28 @@ export default function SunburstPage() {
   const chartSectionRef = useRef<HTMLElement>(null);
   const [chartSize, setChartSize] = useState({ width: 800, height: 600 });
 
+  /** 已填持仓合计：总额留空时按它作图（系统能判断的不留给用户） */
+  const allocatedTotal = useMemo(
+    () => Object.values(leafAmounts).reduce((sum, v) => sum + v, 0),
+    [leafAmounts]
+  );
+  const effectiveTotal = totalInvestment ?? allocatedTotal;
+
+  // 计算树必须用有效总额：占比是图表取值依据，按 0 算会得到全 0 的空图
   const { nodes: calculatedNodes, warnings } = useMemo(
     () =>
       calculatePositionTree(POSITION_CATEGORY_TREE, {
-        totalInvestment: totalInvestment ?? 0,
+        totalInvestment: effectiveTotal,
         leafAmounts,
       }),
-    [totalInvestment, leafAmounts]
+    [effectiveTotal, leafAmounts]
   );
+
+  // 生成快照：下载只在图表与当前输入一致时可用，避免拿到旧图
+  const chartSnapshotRef = useRef<string>('');
+  const chartStale =
+    chartData != null &&
+    chartSnapshotRef.current !== JSON.stringify({ effectiveTotal, leafAmounts });
 
   const handleLeafAmountChange = useCallback((path: string, value: number | null) => {
     setLeafAmounts(prev => {
@@ -103,14 +117,42 @@ export default function SunburstPage() {
   }, []);
 
   const handleGenerateChart = useCallback(() => {
-    const total = totalInvestment ?? 0;
+    const total = totalInvestment ?? allocatedTotal;
     if (!canGenerateSunburstChart(total)) {
-      message.error('请先填写总投资额（大于 0）');
+      message.error(
+        totalInvestment == null
+          ? '请先填写持仓金额，或填写总投资额'
+          : '请先填写总投资额（大于 0）'
+      );
       return;
     }
-    setChartData(buildSunburstChartDataFromNodes(calculatedNodes, total));
-    message.success('图表已生成');
-  }, [totalInvestment, calculatedNodes]);
+    if (allocatedTotal <= 0) {
+      message.error('请至少填写一项持仓金额');
+      return;
+    }
+    if (totalInvestment != null && allocatedTotal > totalInvestment) {
+      // 超额时阻止生成：表单已有警告，不让错误状态进入图表
+      message.error('持仓合计超过总投资额，请调整金额后生成');
+      return;
+    }
+    chartSnapshotRef.current = JSON.stringify({ effectiveTotal, leafAmounts });
+    const data = buildSunburstChartDataFromNodes(calculatedNodes, total);
+    if (data.length === 0) {
+      // 兜底：占比全零等异常情况下不假装生成成功
+      message.error('没有可生成的持仓数据，请检查已填金额');
+      return;
+    }
+    setChartData(data);
+    message.success(
+      totalInvestment == null ? '图表已生成（按持仓合计作图）' : '图表已生成'
+    );
+  }, [
+    totalInvestment,
+    allocatedTotal,
+    effectiveTotal,
+    leafAmounts,
+    calculatedNodes,
+  ]);
 
   useEffect(() => {
     if (!chartData?.length) return;
@@ -127,12 +169,12 @@ export default function SunburstPage() {
   const handleDownloadPng = useCallback(() => {
     const wrap = chartWrapRef.current;
     if (!wrap) {
-      message.error('图表区域未就绪，请重试');
+      message.info('图表正在准备，请稍候再下载');
       return;
     }
     const canvas = wrap.querySelector('canvas');
     if (!canvas) {
-      message.error('请先生成图表后再下载');
+      message.info('图表正在准备，请稍候再下载');
       return;
     }
     try {
@@ -168,16 +210,22 @@ export default function SunburstPage() {
           className={SUNBURST_BTN_PRIMARY}
           onClick={handleGenerateChart}
         >
-          生成图表
+          {chartData ? '重新生成图表' : '生成图表'}
         </button>
         <button
           type="button"
           className={SUNBURST_BTN_SECONDARY}
           onClick={handleDownloadPng}
-          disabled={!chartData?.length}
+          disabled={!chartData?.length || chartStale}
+          title={chartStale ? '金额已修改，重新生成后可下载' : undefined}
         >
-          下载 PNG
+          下载图表 PNG
         </button>
+        {chartStale ? (
+          <span className="text-xs text-[var(--text-muted)]">
+            金额已修改，重新生成后可下载
+          </span>
+        ) : null}
       </section>
 
       {chartData?.length ? (

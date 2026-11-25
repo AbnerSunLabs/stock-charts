@@ -27,6 +27,7 @@ import {
   isDraftConfigDirty,
 } from '@/lib/grid/grid-strategy-workflow';
 import { normalizeJournalStrategyId } from '@/lib/grid/grid-journal-filter';
+import { describeError } from '@/lib/describe-error';
 import { formatGridAmount, formatGridPrice } from '@/lib/grid/format-grid-amount';
 import { extractEtfCode } from '@/lib/grid/grid-board-close-quote';
 import {
@@ -153,7 +154,18 @@ function GridStrategyPageInner() {
     [params, dynamicGridEnabled, dynamicGridMode]
   );
 
-  const draftDirty = isDraftConfigDirty(draftConfig, generatedConfig);
+  // 草稿基线：从未生成结果时的对照物。新建重置回到默认，打开/保存后随配置更新，
+  // 使"首次生成前"的参数编辑也纳入放弃确认（否则会被静默丢弃）
+  const baselineConfigRef = useRef<GridStrategyConfigV1>({
+    params: DEFAULT_GRID_PARAMS,
+    dynamicGridEnabled: false,
+    dynamicGridMode: 'stable',
+  });
+  const draftDirty = isDraftConfigDirty(
+    draftConfig,
+    generatedConfig,
+    baselineConfigRef.current
+  );
 
   const applyOpenedStrategy = useCallback(
     (strategy: SavedGridStrategyV1) => {
@@ -161,6 +173,7 @@ function GridStrategyPageInner() {
       setDynamicGridEnabled(strategy.config.dynamicGridEnabled);
       setDynamicGridMode(strategy.config.dynamicGridMode);
       setGeneratedConfig(strategy.config);
+      baselineConfigRef.current = strategy.config;
       setResult(strategy.resultSnapshot);
       setGeneratedDirty(false);
       setParamsDrawerOpen(false);
@@ -207,7 +220,7 @@ function GridStrategyPageInner() {
       const list = await strategyRepo.listAll();
       setBoardStrategies(list);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载看板失败');
+      message.error(describeError(error, '加载看板失败，请重试'));
       setBoardStrategies([]);
     } finally {
       setBoardLoading(false);
@@ -231,7 +244,7 @@ function GridStrategyPageInner() {
     if (!id || tab === 'journal' || tab === 'board') return;
     openedStrategyQuery.current = true;
     void persistence.openStrategy(id).catch(error => {
-      message.error(error instanceof Error ? error.message : '打开失败');
+      message.error(describeError(error, '打开失败，请重试'));
     });
   }, [persistence.user, persistence.openStrategy]);
 
@@ -251,6 +264,22 @@ function GridStrategyPageInner() {
       setJournalStrategyFilter(normalized);
     }
   }, [boardLoading, boardStrategies, journalStrategyFilter]);
+
+  // 页签与流水筛选写回 URL：刷新/分享后停在当前位置，不用用户重找（能替人做的直接做）
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', mainTab);
+    if (mainTab === 'journal' && journalStrategyFilter !== 'all') {
+      params.set('strategy', journalStrategyFilter);
+    } else {
+      params.delete('strategy');
+    }
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}?${params.toString()}`
+    );
+  }, [mainTab, journalStrategyFilter]);
 
   const currentStrategyTrades = useMemo(() => {
     const id = persistence.currentStrategy?.id;
@@ -415,6 +444,11 @@ function GridStrategyPageInner() {
     setGeneratedConfig(null);
     setGeneratedDirty(false);
     setParamsDrawerOpen(false);
+    baselineConfigRef.current = {
+      params: DEFAULT_GRID_PARAMS,
+      dynamicGridEnabled: false,
+      dynamicGridMode: 'stable',
+    };
   };
 
   const handleCreateGridStrategy = () => {
@@ -485,7 +519,7 @@ function GridStrategyPageInner() {
           await persistence.updateCurrentStrategy(payload);
           setGeneratedDirty(false);
         } catch (error) {
-          message.error(error instanceof Error ? error.message : '更新失败');
+          message.error(describeError(error, '更新失败，请重试'));
         }
       })();
       return;
@@ -531,11 +565,14 @@ function GridStrategyPageInner() {
         config: { ...payload.config, note },
       });
       setGeneratedConfig(prev => (prev ? { ...prev, note } : prev));
+      if (generatedConfig) {
+        baselineConfigRef.current = { ...generatedConfig, note };
+      }
       setGeneratedDirty(false);
       void tradesApi.refresh();
       void refreshBoardStrategies();
     } catch (error) {
-      setNameModalError(error instanceof Error ? error.message : '保存失败');
+      setNameModalError(describeError(error, '保存失败，请重试'));
       throw error;
     }
   };
@@ -549,7 +586,7 @@ function GridStrategyPageInner() {
           if (opened) onOpened?.();
         })
         .catch(error => {
-          message.error(error instanceof Error ? error.message : '打开失败');
+          message.error(describeError(error, '打开失败，请重试'));
         })
         .finally(() => {
           setOpeningStrategyId(null);
@@ -558,9 +595,17 @@ function GridStrategyPageInner() {
   };
 
   const handleDeleteStrategy = (strategy: GridStrategyMetadata) => {
+    // 库表对 grid_strategy_trades.strategy_id 定义了 ON DELETE CASCADE（见
+    // docs/superpowers/specs/2026-09-09-grid-portfolio-journal-design.md），删除必须说清连带后果
+    const tradeCount = tradesApi.trades.filter(
+      t => t.strategyId === strategy.id
+    ).length;
     modal.confirm({
-      title: '删除该策略？',
-      content: '只删除该保存记录，不影响其他策略。删除后可在当前页重新保存。',
+      title: `删除策略「${strategy.name}」？`,
+      content:
+        tradeCount > 0
+          ? `该策略及其 ${tradeCount} 笔成交流水将一并永久删除，无法恢复。`
+          : '该保存记录将永久删除，无法恢复。',
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -571,7 +616,7 @@ function GridStrategyPageInner() {
           await refreshBoardStrategies();
           message.success('已删除');
         } catch (error) {
-          message.error(error instanceof Error ? error.message : '删除失败');
+          message.error(describeError(error, '删除失败，请重试'));
           throw error;
         }
       },
@@ -816,14 +861,16 @@ function GridStrategyPageInner() {
                 trades={tradesApi.trades}
                 strategyId={journalStrategyFilter}
                 onStrategyChange={setJournalStrategyFilter}
+                loadError={tradesApi.error}
+                onRetry={() => void tradesApi.refresh()}
                 onDelete={async id => {
                   try {
                     await tradesApi.deleteTrade(id);
                     message.success('已删除');
                   } catch (error) {
-                    message.error(
-                      error instanceof Error ? error.message : '删除失败'
-                    );
+                    // 抛回给确认框：保留弹窗以便重试，避免"看着关了其实没删掉"
+                    message.error(describeError(error, '删除失败，请重试'));
+                    throw error;
                   }
                 }}
               />
@@ -975,7 +1022,11 @@ function GridStrategyPageInner() {
       <LoginModal
         open={persistence.loginOpen}
         onClose={() => persistence.setLoginOpen(false)}
-        redirectTo="/view/grid"
+        redirectTo={
+          typeof window === 'undefined'
+            ? '/view/grid'
+            : `${window.location.pathname}${window.location.search}`
+        }
         title={loginTitle}
         description={loginDescription}
       />
@@ -1043,7 +1094,7 @@ function GridStrategyPageInner() {
             );
             setTradeDefaults(null);
           } catch (error) {
-            message.error(error instanceof Error ? error.message : '记账失败');
+            message.error(describeError(error, '记账失败，请重试'));
           } finally {
             setTradeSubmitting(false);
           }

@@ -25,7 +25,12 @@ import {
 } from '@/types/family-finance';
 import { computePolicyCoverage } from '@/lib/family-finance/aggregates';
 import { formatCny } from '@/lib/family-finance/format';
-import { useFamilyAmountVisibility } from '@/components/family/family-amount-visibility';
+import {
+  FamilyAmountVisibilityProvider,
+  useFamilyAmountVisibility,
+} from '@/components/family/family-amount-visibility';
+import { EyeFilled, EyeInvisibleFilled } from '@ant-design/icons';
+import { describeError } from '@/lib/describe-error';
 
 /**
  * 保单管理页面；可作为家庭财务总览内嵌面板复用。
@@ -52,7 +57,7 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
       setMembers(m);
       setPolicies(p);
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载失败');
+      message.error(describeError(e, '保单加载失败，请重试'));
     } finally {
       setLoading(false);
     }
@@ -122,15 +127,21 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
       await reload();
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return;
-      message.error(e instanceof Error ? e.message : '保存失败');
+      message.error(describeError(e, '保单保存失败，请重试'));
     } finally {
       savingRef.current = false;
       setSaving(false);
     }
   };
 
+  // 独立打开时默认隐藏金额（与总览/记账一致）；内嵌总览时透传外层开关
+  const inheritedVisible = useFamilyAmountVisibility();
+  const [standaloneVisible, setStandaloneVisible] = useState(false);
+  const effectiveVisible = embedded ? inheritedVisible : standaloneVisible;
+
   return (
-    <div className="space-y-4">
+    <FamilyAmountVisibilityProvider value={effectiveVisible}>
+      <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           {embedded ? (
@@ -152,9 +163,27 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
             ))}
           </Space>
         </div>
-        <Button type="primary" onClick={openCreate}>
-          + 添加保单
-        </Button>
+        <Space>
+          {!embedded ? (
+            <button
+              type="button"
+              className="family-amount-visibility-toggle"
+              aria-label={standaloneVisible ? '隐藏金额' : '显示金额'}
+              aria-pressed={standaloneVisible}
+              onClick={() => setStandaloneVisible(v => !v)}
+            >
+              <span
+                key={standaloneVisible ? 'visible' : 'masked'}
+                className="family-amount-visibility-toggle__icon"
+              >
+                {standaloneVisible ? <EyeFilled /> : <EyeInvisibleFilled />}
+              </span>
+            </button>
+          ) : null}
+          <Button type="primary" onClick={openCreate}>
+            + 添加保单
+          </Button>
+        </Space>
       </div>
 
       <Table
@@ -241,11 +270,20 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
                   danger
                   onClick={() => {
                     modal.confirm({
-                      title: '删除保单？',
+                      title: `删除保单「${row.name}」？`,
+                      content: '该记录将从保单列表与保障摘要中移除。',
+                      okText: '删除',
+                      okButtonProps: { danger: true },
+                      cancelText: '取消',
                       onOk: async () => {
-                        await repo.deletePolicy(row.id);
-                        message.success('已删除');
-                        await reload();
+                        try {
+                          await repo.deletePolicy(row.id);
+                          message.success('已删除');
+                          await reload();
+                        } catch (e) {
+                          message.error(describeError(e, '删除失败，请重试'));
+                          throw e;
+                        }
                       },
                     });
                   }}
@@ -302,6 +340,7 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+      </div>
+    </FamilyAmountVisibilityProvider>
   );
 }

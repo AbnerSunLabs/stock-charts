@@ -5,6 +5,8 @@ export interface FamilyAccessResult {
   allowed: boolean;
   session: Session | null;
   user: User | null;
+  /** denied = 白名单明确拒绝；error = 校验请求本身失败（网络/服务），不应据此登出会话 */
+  reason?: 'denied' | 'error';
 }
 
 interface OAuthLocation {
@@ -81,9 +83,23 @@ export async function checkFamilyAccess(
     return { allowed: false, session: null, user: null };
   }
 
-  const { data, error } = await supabase.rpc('is_family_access_allowed');
-  if (error || data !== true) {
-    return { allowed: false, session, user: session.user };
+  // rpc 的网络异常可能以 reject 形式抛出，这里统一归一为 error 语义，
+  // 保证本函数对调用方是完整契约：临时故障一律 reason:'error'，绝不抛出
+  let data: unknown = null;
+  let rpcError: unknown = null;
+  try {
+    const res = await supabase.rpc('is_family_access_allowed');
+    data = res.data;
+    rpcError = res.error;
+  } catch (e) {
+    rpcError = e;
+  }
+  if (rpcError) {
+    // fail-closed 依旧拦截内容，但调用方不得把临时故障当作"无权限"处理（如登出）
+    return { allowed: false, session, user: session.user, reason: 'error' };
+  }
+  if (data !== true) {
+    return { allowed: false, session, user: session.user, reason: 'denied' };
   }
   return { allowed: true, session, user: session.user };
 }

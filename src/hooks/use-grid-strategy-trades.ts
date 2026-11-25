@@ -30,6 +30,7 @@ export function useGridStrategyTrades(options: UseGridStrategyTradesOptions) {
   const refresh = useCallback(async () => {
     if (!options.enabled) {
       setTrades([]);
+      setError(null);
       return;
     }
     setLoading(true);
@@ -42,8 +43,8 @@ export function useGridStrategyTrades(options: UseGridStrategyTradesOptions) {
       const list = await repo.list();
       setTrades(list);
     } catch (e) {
+      // 刷新失败保留上次数据：把"读失败"误当"无流水"会让人误判持仓与收益
       setError(e instanceof Error ? e.message : '加载流水失败');
-      setTrades([]);
     } finally {
       setLoading(false);
     }

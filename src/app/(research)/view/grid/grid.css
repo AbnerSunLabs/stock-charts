@@ -1322,12 +1322,14 @@
   color: var(--foreground);
 }
 
+/* 方向色对齐全站 A股语义（红涨绿跌，同 index-levels 的 .chg）：
+   "再跌"= 跌（绿）、"再涨"= 涨（红）；盈亏金额仍用 盈绿亏红，两者语义不同 */
 .grid-shell .grid-portfolio-card__quote-main--drop {
-  color: var(--loss);
+  color: var(--profit);
 }
 
 .grid-shell .grid-portfolio-card__quote-main--rise {
-  color: var(--profit);
+  color: var(--loss);
 }
 
 .grid-shell .grid-portfolio-card__quote-main--flat,

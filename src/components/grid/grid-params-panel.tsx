@@ -6,7 +6,7 @@ import {
   GridStepConfig,
   GridStepFormulaHelp,
 } from '@/components/grid/grid-step-config';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 export interface GridParamsPanelProps {
   minTradeUnit: number;
@@ -76,6 +76,7 @@ export function GridParamsPanel({
   embedded = false,
   footer,
 }: GridParamsPanelProps) {
+  const [stepOpen, setStepOpen] = useState(stepDefaultOpen);
   return (
     <div className={embedded ? 'grid-params-panel--embedded' : 'grid-card'}>
       <div className="border-b border-[var(--border)]">
@@ -102,7 +103,11 @@ export function GridParamsPanel({
         />
       </div>
 
-      <details className="grid-step-details" open={stepDefaultOpen || undefined}>
+      <details
+        className="grid-step-details"
+        open={stepOpen || undefined}
+        onToggle={event => setStepOpen(event.currentTarget.open)}
+      >
         <summary className="grid-step-details__summary">
           <div>
             <div className="flex items-center gap-2">
@@ -122,7 +127,7 @@ export function GridParamsPanel({
             </p>
           </div>
           <span className="grid-step-details__hint" aria-hidden>
-            展开
+            {stepOpen ? '收起' : '展开'}
           </span>
         </summary>
         <div className="border-b border-[var(--border)]">

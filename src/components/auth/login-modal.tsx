@@ -3,6 +3,7 @@
 import { Modal, Button, Typography, App } from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
 import { signInWithGitHub } from '@/lib/supabase/auth';
+import { describeError } from '@/lib/describe-error';
 import { useState } from 'react';
 
 const { Paragraph } = Typography;
@@ -43,12 +44,12 @@ export function LoginModal({
     try {
       const { error } = await signInWithGitHub(redirectTo);
       if (error) {
-        message.error(error.message);
+        message.error(describeError(error, '登录失败，请重试'));
         setLoading(false);
       }
       // 成功时会整页跳转，无需关 Modal
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '登录失败');
+      message.error(describeError(e, '登录失败，请重试'));
       setLoading(false);
     }
   };
