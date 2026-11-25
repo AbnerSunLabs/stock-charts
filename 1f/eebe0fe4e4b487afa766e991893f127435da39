@@ -1,0 +1,33 @@
+e2e/sunburst.spec.ts
+  s_e87d28495b4fbe::t_10de0306b89ae8 25
+src/app/(research)/view/grid/page.tsx
+  s_e87d28495b4fbe::t_9779fba21451c2 112-113,229,264,269,271-273,275-278,617,875,878
+src/app/(research)/view/sunburst/page.tsx
+  s_e87d28495b4fbe::t_6ecdf6724b914f 97-105,109,137-141,152,251
+src/components/auth/auth-gate.tsx
+  s_e87d28495b4fbe::t_65f6acb6a845d4 35-40
+src/components/family/family-policies-page.tsx
+  s_e87d28495b4fbe::t_39312c937b7129 223,230
+src/components/grid/grid-trade-journal.tsx
+  s_e87d28495b4fbe::t_051e82d6964573 25-26,75,248,251,288
+src/hooks/use-grid-strategy-trades.ts
+  s_e87d28495b4fbe::t_14d064059d9ed6 9,29-30,34,39,47,49-50,52,56
+src/lib/supabase/auth.ts
+  s_e87d28495b4fbe::t_e56a63af4456f1 80,83-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1feebe0fe4e4b487afa766e991893f127435da39",
+  "prompts": {},
+  "sessions": {
+    "s_e87d28495b4fbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a8e420a3e64f9d94d",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
