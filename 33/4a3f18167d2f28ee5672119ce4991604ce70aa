@@ -1,0 +1,51 @@
+docs/design/motion-language.md
+  s_e87d28495b4fbe::t_465c54d9f3c2a6 31-32,51-59
+src/app/(research)/view/grid/grid.css
+  s_e87d28495b4fbe::t_ab00f7e5eb4666 259,263,531
+src/app/(research)/view/grid/page.tsx
+  s_e87d28495b4fbe::t_42130f101df19d 51-52,58-61,69
+src/app/(research)/view/index-levels/index-levels.css
+  s_e87d28495b4fbe::t_4e727d08771cff 39-41,516,518
+src/app/(research)/view/sunburst/page.tsx
+  s_e87d28495b4fbe::t_a3151f5f5aab44 7,119-122
+src/app/globals.css
+  s_e87d28495b4fbe::t_11f9d31bdb81e6 565-586,603-605,883
+src/app/home-final-b.css
+  s_e87d28495b4fbe::t_bbc1671beb9564 242-245
+src/components/grid/grid-portfolio-board.tsx
+  s_e87d28495b4fbe::t_6c61ccb567a5eb 116-117,119,134
+src/components/grid/grid-save-status-island.tsx
+  s_e87d28495b4fbe::t_326a2d5b6d716b 8-9
+src/components/grid/grid-strategy-library-drawer.tsx
+  s_e87d28495b4fbe::t_1be3c475fbeb9d 15-16,120-125
+src/components/grid/grid-strategy-name-overlay.tsx
+  s_e87d28495b4fbe::t_903c36e7a04fcb 15
+src/components/grid/grid-trade-entry-modal.tsx
+  s_e87d28495b4fbe::t_03bdd573f4b645 139-140,147-148,158,163,176
+src/components/index-levels/index-essay-rail.tsx
+  s_e87d28495b4fbe::t_2234a152184b28 23,30,35-41,44-49,63,70
+src/components/index-levels/index-level-picker.tsx
+  s_e87d28495b4fbe::t_1f7243bac3b48c 36,38,48-53,57,59-73,143-149
+src/components/research/research-shell.css
+  s_e87d28495b4fbe::t_3ae0365353a23f 178,181
+src/hooks/use-presence.ts
+  s_e87d28495b4fbe::t_1586097f17e8cc 3-5,19-21,26-36,39
+src/lib/prefers-reduced-motion.ts
+  s_e87d28495b4fbe::t_dd1b465465be80 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "334a3f18167d2f28ee5672119ce4991604ce70aa",
+  "prompts": {},
+  "sessions": {
+    "s_e87d28495b4fbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a8e420a3e64f9d94d",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
