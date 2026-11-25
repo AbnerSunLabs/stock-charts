@@ -77,8 +77,13 @@ export async function checkFamilyAccess(
   const supabase = client ?? createBrowserSupabaseClient();
   const {
     data: { session },
+    error: sessionError,
   } = await supabase.auth.getSession();
 
+  if (sessionError) {
+    // 会话查询失败（如 token 刷新的网络故障）：可重试故障，不引导用户重新登录
+    return { allowed: false, session: null, user: null, reason: 'error' };
+  }
   if (!session?.user) {
     return { allowed: false, session: null, user: null };
   }

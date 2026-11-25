@@ -6,7 +6,7 @@ import type {
   GridStrategyTrade,
   GridStrategyTradeCreatePayload,
 } from '@/types/grid-strategy-trade';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface UseGridStrategyTradesOptions {
   enabled: boolean;
@@ -26,27 +26,34 @@ export function useGridStrategyTrades(options: UseGridStrategyTradesOptions) {
   const [trades, setTrades] = useState<GridStrategyTrade[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 请求代际：登出/禁用后作废在途请求，防止旧账号响应写回
+  const epochRef = useRef(0);
 
   const refresh = useCallback(async () => {
     if (!options.enabled) {
+      epochRef.current += 1;
       setTrades([]);
       setError(null);
       return;
     }
+    const epoch = ++epochRef.current;
     setLoading(true);
-    setError(null);
     try {
       if (!repo) {
         setTrades([]);
         return;
       }
       const list = await repo.list();
+      if (epoch !== epochRef.current) return;
       setTrades(list);
+      // 成功才清错误：重试期间保留失败提示，用户不失去"正在重试"的语境
+      setError(null);
     } catch (e) {
+      if (epoch !== epochRef.current) return;
       // 刷新失败保留上次数据：把"读失败"误当"无流水"会让人误判持仓与收益
       setError(e instanceof Error ? e.message : '加载流水失败');
     } finally {
-      setLoading(false);
+      if (epoch === epochRef.current) setLoading(false);
     }
   }, [options.enabled, repo]);
 

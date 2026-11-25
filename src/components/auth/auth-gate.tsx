@@ -32,18 +32,18 @@ export function AuthGate({ children, redirectPath }: AuthGateProps) {
     setState({ status: 'loading' });
     try {
       const result = await checkFamilyAccess();
+      if (result.reason === 'error') {
+        // 校验请求失败（含会话查询失败）：保留会话，给出重试，不误报"无权限"
+        setState({ status: 'check_failed' });
+        setLoginOpen(false);
+        return;
+      }
       if (!result.session) {
         setState({ status: 'need_login' });
         setLoginOpen(true);
         return;
       }
       if (!result.allowed) {
-        if (result.reason === 'error') {
-          // 校验请求失败：保留会话，给出重试，不误报"无权限"
-          setState({ status: 'check_failed' });
-          setLoginOpen(false);
-          return;
-        }
         message.warning('当前 GitHub 账号无家庭财务访问权限');
         await signOut();
         setState({ status: 'denied' });

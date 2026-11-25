@@ -94,11 +94,19 @@ export default function SunburstPage() {
     [effectiveTotal, leafAmounts]
   );
 
-  // 生成快照：下载只在图表与当前输入一致时可用，避免拿到旧图
+  // 生成快照：下载只在图表与当前输入一致时可用，避免拿到旧图。
+  // 键按路径排序，避免"清空再填回"因录入顺序不同被误判为已过期
+  const snapshotOf = (total: number, leaves: Record<string, number>) =>
+    JSON.stringify({
+      total,
+      leaves: Object.keys(leaves)
+        .sort()
+        .map(k => [k, leaves[k]]),
+    });
   const chartSnapshotRef = useRef<string>('');
   const chartStale =
     chartData != null &&
-    chartSnapshotRef.current !== JSON.stringify({ effectiveTotal, leafAmounts });
+    chartSnapshotRef.current !== snapshotOf(effectiveTotal, leafAmounts);
 
   const handleLeafAmountChange = useCallback((path: string, value: number | null) => {
     setLeafAmounts(prev => {
@@ -126,12 +134,11 @@ export default function SunburstPage() {
       );
       return;
     }
-    if (allocatedTotal <= 0) {
-      message.error('请至少填写一项持仓金额');
-      return;
-    }
-    if (totalInvestment != null && allocatedTotal > totalInvestment) {
-      // 超额时阻止生成：表单已有警告，不让错误状态进入图表
+    // 超额判断与表单警告同一精度（按分归一），避免 0.10+0.20 > 0.30 这类浮点误差误拦
+    if (
+      totalInvestment != null &&
+      roundAmount(allocatedTotal) > roundAmount(totalInvestment)
+    ) {
       message.error('持仓合计超过总投资额，请调整金额后生成');
       return;
     }
@@ -142,7 +149,7 @@ export default function SunburstPage() {
       return;
     }
     // 快照在确认生成成功后才更新：失败时保持旧快照，旧图+新输入仍判定为"已过期"
-    chartSnapshotRef.current = JSON.stringify({ effectiveTotal, leafAmounts });
+    chartSnapshotRef.current = snapshotOf(effectiveTotal, leafAmounts);
     setChartData(data);
     message.success(
       totalInvestment == null ? '图表已生成（按持仓合计作图）' : '图表已生成'
@@ -241,7 +248,7 @@ export default function SunburstPage() {
       ) : (
         <div className="flex-1 flex items-center justify-center min-h-[min(280px,50vh)] p-4 sm:p-8 bg-[var(--bg-card)] border border-dashed border-[var(--border-muted)] rounded-2xl">
           <p className="m-0 text-[0.9375rem] text-[var(--text-muted)] text-center max-w-[40ch]">
-            填写总投资额与各分类持仓金额后，点击「生成图表」查看旭日图。
+            填写各分类持仓金额后点击「生成图表」；总投资额可留空，将按持仓合计作图。
           </p>
         </div>
       )}

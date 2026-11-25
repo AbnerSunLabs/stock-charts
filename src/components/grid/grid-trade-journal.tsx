@@ -22,6 +22,8 @@ export interface GridTradeJournalProps {
   /** 流水读取失败（保留上次数据展示）；null 表示无错误 */
   loadError?: string | null;
   onRetry?: () => void;
+  /** 正在（重新）读取流水，用于重试按钮的加载态 */
+  loading?: boolean;
 }
 
 interface JournalRow {
@@ -70,6 +72,7 @@ export function GridTradeJournal({
   onDelete,
   loadError,
   onRetry,
+  loading,
 }: GridTradeJournalProps) {
   const { modal, message } = App.useApp();
   const [sideFilter, setSideFilter] = useState<'all' | 'buy' | 'sell'>('all');
@@ -242,10 +245,10 @@ export function GridTradeJournal({
           message={
             rows.length > 0 ? '流水刷新失败，当前显示上次结果' : '流水加载失败'
           }
-          description={loadError}
+          description={describeError(loadError, '网络或服务暂时不可用，请稍后重试')}
           action={
             onRetry ? (
-              <Button size="small" onClick={() => void onRetry()}>
+              <Button size="small" loading={loading} onClick={() => void onRetry()}>
                 重试
               </Button>
             ) : undefined
@@ -282,7 +285,7 @@ export function GridTradeJournal({
         ) : null}
       </Space>
       {rows.length === 0 ? (
-        hasFilter ? (
+        loadError ? null : hasFilter ? (
           <Empty description="当前筛选没有流水">
             <Button
               shape="round"

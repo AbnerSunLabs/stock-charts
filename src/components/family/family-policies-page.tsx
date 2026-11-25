@@ -38,7 +38,6 @@ import { describeError } from '@/lib/describe-error';
 export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean }) {
   const { message, modal } = App.useApp();
   const repo = useMemo(() => new FamilyFinanceRepository(createBrowserSupabaseClient()), []);
-  const amountsVisible = useFamilyAmountVisibility();
 
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<FamilyMember[]>([]);
@@ -221,14 +220,14 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
             dataIndex: 'coverageAmount',
             align: 'right',
             width: 120,
-            render: (v: number) => formatCny(v, { visible: amountsVisible }),
+            render: (v: number) => formatCny(v, { visible: effectiveVisible }),
           },
           {
             title: '年缴',
             dataIndex: 'annualPremium',
             align: 'right',
             width: 120,
-            render: (v: number) => formatCny(v, { visible: amountsVisible }),
+            render: (v: number) => formatCny(v, { visible: effectiveVisible }),
           },
           {
             title: '状态',

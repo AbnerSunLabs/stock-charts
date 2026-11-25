@@ -109,6 +109,8 @@ function GridStrategyPageInner() {
     []
   );
   const [boardLoading, setBoardLoading] = useState(false);
+  // 首次拉取是否已结束：区分"还没加载"与"加载完确实为空"，深链筛选不被提前归一
+  const [boardFetched, setBoardFetched] = useState(false);
   const [journalStrategyFilter, setJournalStrategyFilter] = useState<
     string | 'all'
   >('all');
@@ -224,6 +226,7 @@ function GridStrategyPageInner() {
       setBoardStrategies([]);
     } finally {
       setBoardLoading(false);
+      setBoardFetched(true);
     }
   }, [persistence.user, strategyRepo]);
 
@@ -258,15 +261,21 @@ function GridStrategyPageInner() {
     const normalized = normalizeJournalStrategyId(
       journalStrategyFilter,
       boardStrategies.map(strategy => strategy.id),
-      boardLoading
+      boardLoading || !boardFetched
     );
     if (normalized !== journalStrategyFilter) {
       setJournalStrategyFilter(normalized);
     }
-  }, [boardLoading, boardStrategies, journalStrategyFilter]);
+  }, [boardLoading, boardFetched, boardStrategies, journalStrategyFilter]);
 
-  // 页签与流水筛选写回 URL：刷新/分享后停在当前位置，不用用户重找（能替人做的直接做）
+  // 页签与流水筛选写回 URL：刷新/分享后停在当前位置，不用用户重找（能替人做的直接做）。
+  // 跳过首次运行：挂载首帧写回会抢在深链（?tab&strategy）被异步消费之前把它抹掉
+  const urlSyncInitRef = useRef(false);
   useEffect(() => {
+    if (!urlSyncInitRef.current) {
+      urlSyncInitRef.current = true;
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     params.set('tab', mainTab);
     if (mainTab === 'journal' && journalStrategyFilter !== 'all') {
@@ -605,7 +614,7 @@ function GridStrategyPageInner() {
       content:
         tradeCount > 0
           ? `该策略及其 ${tradeCount} 笔成交流水将一并永久删除，无法恢复。`
-          : '该保存记录将永久删除，无法恢复。',
+          : '该策略及其全部成交流水（如有）将一并永久删除，无法恢复。',
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -863,13 +872,12 @@ function GridStrategyPageInner() {
                 onStrategyChange={setJournalStrategyFilter}
                 loadError={tradesApi.error}
                 onRetry={() => void tradesApi.refresh()}
+                loading={tradesApi.loading}
                 onDelete={async id => {
                   try {
+                    // 成败提示由流水组件统一负责，避免双重 toast
                     await tradesApi.deleteTrade(id);
-                    message.success('已删除');
                   } catch (error) {
-                    // 抛回给确认框：保留弹窗以便重试，避免"看着关了其实没删掉"
-                    message.error(describeError(error, '删除失败，请重试'));
                     throw error;
                   }
                 }}
