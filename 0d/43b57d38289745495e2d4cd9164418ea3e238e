@@ -1,0 +1,62 @@
+src/lib/supabase/auth.ts
+  s_e87d28495b4fbe::t_f09d3cf6d2b104 8-9,96-102
+  s_f7038c20f4bf70::t_9182554d258a35 86-95
+src/components/family/family-policies-page.tsx
+  s_e87d28495b4fbe::t_828367c54cd434 28-33,60,130,137-141,143-144,166-186,273-277,279-286,343-344
+src/components/grid/grid-params-panel.tsx
+  s_e87d28495b4fbe::t_9d3f1d7100b516 9,79,106-110,130
+__tests__/family-finance/auth.test.ts
+  s_e87d28495b4fbe::t_94a70d836b89fb 5-21,48-74
+src/components/family/family-ledger-page.tsx
+  s_e87d28495b4fbe::t_36204a896de335 46,106,243-244,247-248,250,357-361,363-370
+src/components/auth/auth-gate.tsx
+  s_e87d28495b4fbe::t_cb3b8f9d08f97f 20,41-46,55-57,65-79
+src/lib/grid/grid-strategy-workflow.ts
+  s_e87d28495b4fbe::t_46f89256befdca 70-72,76-77,79-81
+src/app/(research)/view/sunburst/page.tsx
+  s_e87d28495b4fbe::t_852c894b3c99dd 80-87,91,94,97-102,120,122-142,145-155,172,177,213,219-220,222,224-228
+src/app/(research)/view/grid/page.tsx
+  s_e87d28495b4fbe::t_4fa4493eae30b4 30,157-168,176,223,247,268-283,447-451,522,568-570,575,589,598-602,604-608,619,864-865,871-873,1025-1029,1097
+src/app/(research)/view/grid/grid.css
+  s_e87d28495b4fbe::t_94cc7a5c25bdab 1325-1326,1328,1332
+src/lib/describe-error.ts
+  s_e87d28495b4fbe::t_bed65e1f31367c 1-10
+src/components/sunburst/position-config-form.tsx
+  s_e87d28495b4fbe::t_78a2b340003ab0 252-253,255-259,289-293
+src/hooks/use-grid-strategy-trades.ts
+  s_e87d28495b4fbe::t_43dc7de14d4649 33,46
+src/components/index-levels/index-level-tracker.tsx
+  s_e87d28495b4fbe::t_6d7c8a9cff5302 233-252
+docs/design/motion-language.md
+  s_e87d28495b4fbe::t_09f9e6365ecc07 60-73
+src/components/home/home-final-b.tsx
+  s_e87d28495b4fbe::t_90d2a52be0493c 6,62,76-80,84
+src/components/auth/login-modal.tsx
+  s_e87d28495b4fbe::t_aaa54254545d5c 6,47,52
+src/components/grid/grid-trade-journal.tsx
+  s_e87d28495b4fbe::t_fcf1f3acca2374 9,12,22-24,42-61,71-72,74,82-83,201-228,234-235,238-254,278-282,285-299
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0d43b57d38289745495e2d4cd9164418ea3e238e",
+  "prompts": {},
+  "sessions": {
+    "s_e87d28495b4fbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a8e420a3e64f9d94d",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    },
+    "s_f7038c20f4bf70": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e03a23d4-34e7-4ef9-9eef-99c80511b08c",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
