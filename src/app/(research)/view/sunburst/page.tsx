@@ -135,13 +135,14 @@ export default function SunburstPage() {
       message.error('持仓合计超过总投资额，请调整金额后生成');
       return;
     }
-    chartSnapshotRef.current = JSON.stringify({ effectiveTotal, leafAmounts });
     const data = buildSunburstChartDataFromNodes(calculatedNodes, total);
     if (data.length === 0) {
-      // 兜底：占比全零等异常情况下不假装生成成功
+      // 兜底：占比全零等异常情况下不假装生成成功（快照不更新，下载锁定语义不变）
       message.error('没有可生成的持仓数据，请检查已填金额');
       return;
     }
+    // 快照在确认生成成功后才更新：失败时保持旧快照，旧图+新输入仍判定为"已过期"
+    chartSnapshotRef.current = JSON.stringify({ effectiveTotal, leafAmounts });
     setChartData(data);
     message.success(
       totalInvestment == null ? '图表已生成（按持仓合计作图）' : '图表已生成'
