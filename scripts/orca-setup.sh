@@ -21,7 +21,11 @@ if ! command -v pnpm >/dev/null 2>&1; then
   # shellcheck disable=SC1091
   if [ -s "$NVM_DIR/nvm.sh" ]; then
     . "$NVM_DIR/nvm.sh"
-    nvm use --silent >/dev/null 2>&1 || true
+    # 失败不静默：提示缺哪个版本，避免后续 command not found 无从定位
+    if ! nvm use --silent >/dev/null 2>&1; then
+      WANT=$(tr -d '[:space:]' < .nvmrc 2>/dev/null || echo '?')
+      echo "[orca-setup] 警告：nvm use 失败（.nvmrc=$WANT），请先 nvm install $WANT" >&2
+    fi
   fi
 fi
 if command -v pnpm >/dev/null 2>&1; then
@@ -33,11 +37,11 @@ else
   echo "[orca-setup] 警告：未找到 nvm/pnpm，使用 corepack 默认版本安装" >&2
 fi
 
-# ---- 从主 checkout 拷贝本地文件（已存在则跳过，保留 worktree 内的定制）----
 if [ -n "$MAIN" ]; then
+  # ---- 从主 checkout 拷贝本地文件（已存在则跳过，保留 worktree 内的定制）----
   # 对齐 .gitignore 的 .env*.local 通配语义，覆盖所有本地 env 变体
   for f in "$MAIN"/.env*.local "$MAIN"/pnpm-lock.yaml; do
-    [ -e "$f" ] || continue # glob 无匹配时跳过
+    [ -e "$f" ] || continue # glob 无匹配时跳过（缺失告警在循环后统一处理）
     name=$(basename "$f")
     if [ ! -e "./$name" ]; then
       cp "$f" "./$name"
@@ -46,10 +50,22 @@ if [ -n "$MAIN" ]; then
       echo "[orca-setup] $name 已存在，跳过（保留当前 worktree 定制）"
     fi
   done
-elif [ ! -f ./.env.local ]; then
-  # 主 checkout 自跑且 env 未配置：及早告警，避免失败推迟到 build 阶段无从定位
-  echo "[orca-setup] 警告：主 checkout 缺 .env.local，新 worktree 将无法拷贝" >&2
+  # 关键文件缺失显式告警：静默跳过会把失败推迟到 build 阶段且无从定位
+  if ! compgen -G "$MAIN/.env*.local" >/dev/null; then
+    echo "[orca-setup] 警告：主 checkout 无任何 .env*.local，worktree 将缺环境变量" >&2
+  fi
+  if [ ! -f "$MAIN/pnpm-lock.yaml" ]; then
+    echo "[orca-setup] 警告：主 checkout 缺 pnpm-lock.yaml，依赖将无锁解析" >&2
+  fi
+  # ---- 装依赖（pnpm 全局 store 硬链复用，独立安装秒级且互不污染）----
+  $PNPM install
+else
+  # ---- 主 checkout 自跑：只做体检不装依赖，避免改写既有 node_modules 布局 ----
+  if ! compgen -G ".env*.local" >/dev/null; then
+    echo "[orca-setup] 警告：主 checkout 缺 .env*.local，新 worktree 将无法拷贝" >&2
+  fi
+  if [ ! -f ./pnpm-lock.yaml ]; then
+    echo "[orca-setup] 警告：主 checkout 缺 pnpm-lock.yaml，新 worktree 将无锁安装" >&2
+  fi
+  echo "[orca-setup] 主 checkout 自跑，跳过依赖安装（由日常流程管理）"
 fi
-
-# ---- 装依赖（pnpm 全局 store 硬链复用，各 worktree 独立安装、秒级且互不污染）----
-$PNPM install
