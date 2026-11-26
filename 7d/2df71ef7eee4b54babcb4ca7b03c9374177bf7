@@ -1,0 +1,21 @@
+orca.yaml
+  s_d95e9b30c4224d::t_8241ee6f013d53 1-3
+scripts/orca-setup.sh
+  s_d95e9b30c4224d::t_5a5b0a9695daf7 5-6,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7d2df71ef7eee4b54babcb4ca7b03c9374177bf7",
+  "prompts": {},
+  "sessions": {
+    "s_d95e9b30c4224d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_d95e9b30c4224d",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
