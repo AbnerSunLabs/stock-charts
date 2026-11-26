@@ -2,8 +2,8 @@
 # Orca 新 worktree 初始化脚本（repo setup hook 调用）
 # 为什么：新 worktree 只含 git 追踪文件，而本地必备的 .env.local（含密钥）与
 # pnpm-lock.yaml（被 .gitignore 忽略，git 只追踪 npm 锁）均不在 git 内；
-# 缺前者 build/dev 不水合，缺后者 pnpm 会无锁全量解析并改写共享的 node_modules，
-# 故统一从主 checkout 拷贝后再装依赖
+# 缺前者 build/dev 不水合，缺后者 pnpm 会无锁全量解析产生依赖漂移，
+# 故统一从主 checkout 拷贝后再独立安装依赖
 set -euo pipefail
 
 # ---- 定位主 checkout：git worktree 列表首个条目；sed 取整段路径，兼容含空格目录 ----
@@ -48,5 +48,5 @@ if [ "$IN_WORKTREE" = true ]; then
   done
 fi
 
-# ---- 装依赖（node_modules 由 orca.yaml 软链共享；锁已拷入，按锁解析不漂移）----
+# ---- 装依赖（pnpm 全局 store 硬链复用，各 worktree 独立安装、秒级且互不污染）----
 $PNPM install
