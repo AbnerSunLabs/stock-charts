@@ -1,0 +1,19 @@
+scripts/orca-setup.sh
+  s_4dcf18fcd7c70d::t_e0d3fa64f07d21 49,54-56,59,61,63,67,70,98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d25a83403450a14b90cce6b2b12c14bcde71ed45",
+  "prompts": {},
+  "sessions": {
+    "s_4dcf18fcd7c70d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_4dcf18fcd7c70d",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
