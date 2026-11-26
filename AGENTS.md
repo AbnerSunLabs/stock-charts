@@ -133,3 +133,9 @@ Usage notes:
 <!-- SKILLS_TABLE_END -->
 
 </skills_system>
+
+## PR 化 CR 闭环（所有代码改动强制流程，详见 CLAUDE.md 第 7 节）
+
+- 任何改动禁止直推 main：`feature/<语义名>` 分支 → PR 到 main → `/code-review <PR号> --comment`（发现贴行内评论）
+- 正确性缺陷必须修复后复审；策略/防御性建议挂账不阻塞；**超 3 轮不收敛即停下向用户汇报**
+- 正确性发现清零 → squash 合并 + 删分支 → 本地 main 同步 → 端到端验证交付物
