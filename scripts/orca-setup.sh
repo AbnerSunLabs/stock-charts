@@ -46,26 +46,28 @@ if [ -n "$MAIN" ]; then
   # 闸门不只看 pnpm：pnpm 在 PATH 而 node 错位时同样要切，防按错误 ABI 装依赖
   WANT_V=$(nvmrc_major)
   GOT_V=""
-  command -v node >/dev/null 2>&1 && GOT_V=$(node -p 'process.versions.node.split(".")[0]')
+  command -v node >/dev/null 2>&1 && GOT_V=$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo "")
   NEED_NVM=false
   { [ -n "$WANT_V" ] && [ "$WANT_V" != "$GOT_V" ]; } && NEED_NVM=true
   command -v pnpm >/dev/null 2>&1 || NEED_NVM=true
   if [ "$NEED_NVM" = true ]; then
-    # NVM_DIR 探测含 brew 安装路径：非交互 hook 不加载 profile
+    # NVM_DIR 探测含 brew 安装路径：非交互 hook 不加载 profile；
+    # 注意 brew 场景 nvm.sh 在 keg，但版本目录按 caveats 仍在 ~/.nvm
+    NVM_SH="${NVM_DIR:-}/nvm.sh"
     if [ -z "${NVM_DIR:-}" ]; then
       if [ -s "$HOME/.nvm/nvm.sh" ]; then
-        export NVM_DIR="$HOME/.nvm"
+        export NVM_DIR="$HOME/.nvm"; NVM_SH="$NVM_DIR/nvm.sh"
       elif [ -s "/opt/homebrew/opt/nvm/nvm.sh" ]; then
-        export NVM_DIR="/opt/homebrew/opt/nvm"
+        export NVM_DIR="$HOME/.nvm"; NVM_SH="/opt/homebrew/opt/nvm/nvm.sh"
       elif [ -s "/usr/local/opt/nvm/nvm.sh" ]; then
-        export NVM_DIR="/usr/local/opt/nvm"
+        export NVM_DIR="$HOME/.nvm"; NVM_SH="/usr/local/opt/nvm/nvm.sh"
       fi
     fi
     # shellcheck disable=SC1091
-    if [ -n "${NVM_DIR:-}" ] && [ -s "$NVM_DIR/nvm.sh" ]; then
+    if [ -s "$NVM_SH" ]; then
       # source 与 nvm use 均在 set +u 保护内：部分 nvm 版本与 set -u 不兼容
       set +u
-      . "$NVM_DIR/nvm.sh"
+      . "$NVM_SH"
       if ! nvm use --silent >/dev/null 2>&1; then
         echo "[orca-setup] 警告：nvm use 失败（.nvmrc=$(nvmrc_raw)），请先 nvm install $(nvmrc_raw)" >&2
       fi
@@ -93,7 +95,7 @@ fi
 # ---- node 大版本终检（装完依赖后与自跑共用；非数字 .nvmrc 跳过）----
 WANT_V=$(nvmrc_major)
 if [ -n "$WANT_V" ] && command -v node >/dev/null 2>&1; then
-  GOT_V=$(node -p 'process.versions.node.split(".")[0]')
+  GOT_V=$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo "")
   [ "$WANT_V" = "$GOT_V" ] || echo "[orca-setup] 警告：node v$GOT_V 与 .nvmrc（$WANT_V）不一致，原生依赖可能按错误 ABI 安装" >&2
 fi
 
