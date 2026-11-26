@@ -1,4 +1,7 @@
 # Orca 仓库级配置：worktree 共享目录，避免每个子树重装 node_modules
+# setup 随 git 追溯，与本机 Orca 界面 hookSettings 同值（双保险，clone 即生效）
 worktree:
   sharedDirectories:
     - node_modules
+scripts:
+  setup: bash scripts/orca-setup.sh
