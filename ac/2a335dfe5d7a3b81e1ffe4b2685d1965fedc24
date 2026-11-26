@@ -1,0 +1,19 @@
+scripts/orca-setup.sh
+  s_c2c96a1bb9b0b8::t_9efdc33aa533c7 14-19,44-49,55,64-67,72-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ac2a335dfe5d7a3b81e1ffe4b2685d1965fedc24",
+  "prompts": {},
+  "sessions": {
+    "s_c2c96a1bb9b0b8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a216ff-d55b-73e0-820f-090679352abe",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
