@@ -1,0 +1,4 @@
+# Orca 仓库级配置：worktree 共享目录，避免每个子树重装 node_modules
+worktree:
+  sharedDirectories:
+    - node_modules
