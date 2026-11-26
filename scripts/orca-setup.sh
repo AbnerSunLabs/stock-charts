@@ -19,35 +19,6 @@ if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then
   MAIN=$(cd "$COMMON_DIR/.." && pwd -P)
 fi
 
-# ---- 补全 PATH：非交互 shell 不加载 nvm，source 官方 nvm.sh 以原生支持 .nvmrc ----
-# （含裸版本号、v 前缀、alias 等全部写法，避免手搓解析与 nvm 语义漂移）
-if ! command -v pnpm >/dev/null 2>&1; then
-  export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-  # shellcheck disable=SC1091
-  if [ -s "$NVM_DIR/nvm.sh" ]; then
-    . "$NVM_DIR/nvm.sh"
-    # 失败不静默：提示缺哪个版本，避免后续 command not found 无从定位
-    if ! nvm use --silent >/dev/null 2>&1; then
-      WANT=$(tr -d '[:space:]' < .nvmrc 2>/dev/null || echo '?')
-      echo "[orca-setup] 警告：nvm use 失败（.nvmrc=$WANT），请先 nvm install $WANT" >&2
-    fi
-  fi
-fi
-if command -v pnpm >/dev/null 2>&1; then
-  PNPM="pnpm"
-else
-  # 兜底：corepack 默认版本可能偏离项目环境，仅作 nvm 缺失时的最后手段
-  export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-  PNPM="corepack pnpm"
-  echo "[orca-setup] 警告：未找到 nvm/pnpm，使用 corepack 默认版本安装" >&2
-fi
-# pnpm 已在 PATH（跳过 nvm）时校验 node 大版本与 .nvmrc 一致，工具链错位仅告警
-if command -v node >/dev/null 2>&1 && [ -f .nvmrc ]; then
-  WANT_V=$(tr -d '[:space:]' < .nvmrc | sed 's/^v//;s/^\([0-9]*\).*/\1/')
-  GOT_V=$(node -p 'process.versions.node.split(".")[0]')
-  [ "$WANT_V" = "$GOT_V" ] || echo "[orca-setup] 警告：node v$GOT_V 与 .nvmrc（$WANT_V）不一致" >&2
-fi
-
 if [ -n "$MAIN" ]; then
   # ---- 从主 checkout 拷贝本地文件（已存在则跳过，保留 worktree 内的定制）----
   # 对齐 .gitignore 的 .env*.local 通配语义，覆盖所有本地 env 变体
@@ -66,8 +37,48 @@ if [ -n "$MAIN" ]; then
     rm ./node_modules
     echo "[orca-setup] 已移除遗留的 node_modules 软链（旧共享方案）"
   fi
-  # ---- 装依赖（pnpm 全局 store 硬链复用，独立安装秒级且互不污染）----
-  $PNPM install
+
+  # ---- 工具链解析（仅 worktree 需要装依赖；自跑不 install，解析属空转）----
+  # 非交互 shell 不加载 nvm，source 官方 nvm.sh 以原生支持 .nvmrc 全部写法；
+  # 前后临时 set +u：部分 nvm 版本与 set -u 不兼容（unbound variable 会中止脚本）
+  if ! command -v pnpm >/dev/null 2>&1; then
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+    # shellcheck disable=SC1091
+    if [ -s "$NVM_DIR/nvm.sh" ]; then
+      set +u
+      . "$NVM_DIR/nvm.sh"
+      set -u
+      # 失败不静默：提示缺哪个版本，避免后续 command not found 无从定位
+      if ! nvm use --silent >/dev/null 2>&1; then
+        WANT=$(tr -d '[:space:]' < .nvmrc 2>/dev/null || echo '?')
+        echo "[orca-setup] 警告：nvm use 失败（.nvmrc=$WANT），请先 nvm install $WANT" >&2
+      fi
+    fi
+  fi
+  if command -v pnpm >/dev/null 2>&1; then
+    PNPM="pnpm"
+  else
+    # 兜底：corepack 默认版本可能偏离项目环境，仅作 nvm 缺失时的最后手段
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+    PNPM="corepack pnpm"
+    echo "[orca-setup] 警告：未找到 nvm/pnpm，使用 corepack 默认版本安装" >&2
+  fi
+
+  # ---- 装依赖：frozen 优先，锁与 package.json 不匹配时显式警告后再回退解析 ----
+  # （拷来的锁来自主 checkout 本地文件，可能落后于 worktree 检出的提交）
+  if ! $PNPM install --frozen-lockfile; then
+    echo "[orca-setup] 警告：锁与 package.json 不匹配（主 checkout 锁过期？），回退重新解析" >&2
+    $PNPM install
+  fi
+fi
+
+# ---- node 大版本校验（worktree 装完依赖后与自跑体检共用；非数字 .nvmrc 跳过）----
+if command -v node >/dev/null 2>&1 && [ -f .nvmrc ]; then
+  WANT_V=$(tr -d '[:space:]' < .nvmrc | sed 's/^v//;s/^\([0-9]*\).*/\1/')
+  if [ -n "$WANT_V" ]; then
+    GOT_V=$(node -p 'process.versions.node.split(".")[0]')
+    [ "$WANT_V" = "$GOT_V" ] || echo "[orca-setup] 警告：node v$GOT_V 与 .nvmrc（$WANT_V）不一致" >&2
+  fi
 fi
 
 # ---- 体检（worktree 拷贝后与主 checkout 自跑共用；以本目录实际状态为准）----
