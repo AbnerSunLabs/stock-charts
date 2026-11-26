@@ -1,0 +1,21 @@
+orca.yaml
+  s_3210204ec9c2a4::t_77e462f027c3f3 2,6-7
+scripts/orca-setup.sh
+  s_3210204ec9c2a4::t_f984126b5c4bdb 3-6,9-19,21-25,31,34,37-48,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9cf127a5290156f76866f92d7fd580cf280a596f",
+  "prompts": {},
+  "sessions": {
+    "s_3210204ec9c2a4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_3210204ec9c2a4",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
