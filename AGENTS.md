@@ -134,8 +134,6 @@ Usage notes:
 
 </skills_system>
 
-## PR 化 CR 闭环（所有代码改动强制流程，详见 CLAUDE.md 第 7 节）
+## 代码改动流程
 
-- 任何改动禁止直推 main：`feature/<语义名>` 分支 → PR 到 main → `/code-review <PR号> --comment`（发现贴行内评论）
-- 正确性缺陷必须修复后复审；策略/防御性建议挂账不阻塞；**超 3 轮不收敛即停下向用户汇报**
-- 正确性发现清零 → squash 合并 + 删分支 → 本地 main 同步 → 端到端验证交付物
+所有代码改动遵循 CLAUDE.md 第 7 节「PR 化 CR 闭环」：本地 CR 先于 push → PR 化 → 行内评论 CR（CI 与本地两源均计入）→ 正确性清零才合并；超 3 轮不收敛停止上报。

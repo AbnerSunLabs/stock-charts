@@ -62,12 +62,15 @@ alwaysApply: true
 ## 7. PR 化 CR 闭环（所有代码改动强制流程）
 
 PR 即任务触发器：创建 PR 后必须完成 CR 闭环才能合并，任何环节不得跳过。
+本节为用户 2026-11-27 明确授权的流程，在此范围内 push 与建 PR 无需逐次确认；
+`.cursor/rules/dual-repo-branch-sync.mdc` 的双仓同名分支、数据边界、回 main 同步约定仍并行适用。
 
-1. **建 PR**：改动提交到 `feature/<语义名>` 分支并推送，`gh pr create` 到 main（中文 Conventional Commits，PR 描述含改动说明与验证记录）
-2. **触发 CR**：PR 创建即触发 `/code-review <PR号> --comment`，发现自动贴为 PR 行内评论
-3. **处置循环**：逐条评估——正确性缺陷必须修复（commit + push 后复审）；策略/防御性建议挂账不阻塞（记入 PR 评论或最终汇报）
-4. **收敛线**：正确性发现清零即可合并；**循环超过 3 轮仍不收敛时停止并向用户汇报**，禁止无限返工
-5. **合并**：`gh pr review --approve`（平台拒绝批准自己的 PR 时记录后跳过）→ `gh pr merge <PR号> --squash --delete-branch`
-6. **收尾**：本地 main 同步（`git pull`）；有运行时交付物的改动须端到端验证后才算完成；汇报结果与挂账清单
+1. **本地先行**：改动提交到 `feature/<语义名>` 分支（双仓场景同步建同名分支）→ **本地 CR**（`/code-review` 审分支 diff）→ 处置完毕才 push（对齐全局「CR 先于 push」规则）
+2. **建 PR**：push 后 `gh pr create` 到 main（中文 Conventional Commits，PR 描述含改动说明与验证记录）；CI（`.github/workflows/claude-code-review.yml`）随 PR 打开/更新自动触发审查
+3. **PR CR**：`/code-review <PR号> --comment` 贴行内评论为主审；**CI 与本地两源发现均计入收敛线**
+4. **处置循环**：正确性缺陷必须修复（commit + push 后复审）；策略/防御性建议挂账不阻塞（记入 PR 评论或最终汇报）
+5. **收敛线**：正确性发现清零即可合并；**循环超过 3 轮仍不收敛时停止并向用户汇报**，禁止无限返工
+6. **合并**：`gh pr review --approve`——单人仓库（作者=审查者同账号）**预期被平台拒绝，属正常路径**，记录后跳过；随后 `gh pr merge <PR号> --squash --delete-branch`
+7. **收尾**：本地 main 同步（双仓场景两边一起切回 main）；有运行时交付物的改动须端到端验证后才算完成；汇报结果与挂账清单
 
-环境备注：本机直连 GitHub 不通，push/gh 失败时探测本机代理端口（如 `127.0.0.1:7890`）用命令级代理重试（`git -c http.proxy=... push`），不写入全局配置。
+环境备注：本机访问 GitHub 可能需代理，push/gh 失败时先测直连，不通再探测本机代理端口（如 `127.0.0.1:7890`）用命令级代理重试（`git -c http.proxy=... push`），不写入全局配置。
