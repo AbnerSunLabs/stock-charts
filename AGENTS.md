@@ -133,3 +133,7 @@ Usage notes:
 <!-- SKILLS_TABLE_END -->
 
 </skills_system>
+
+## 代码改动流程
+
+所有代码改动以 CLAUDE.md「PR 化 CR 闭环」章节为准：本地 CR 先于 push → PR 化 → 行内评论 CR → 本地正确性发现清零合并（CI 为辅助源、失败不阻塞），超 3 轮不收敛停止上报。
