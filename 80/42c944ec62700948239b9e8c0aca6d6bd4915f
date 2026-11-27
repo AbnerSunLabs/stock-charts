@@ -1,0 +1,23 @@
+.cursor/rules/dual-repo-branch-sync.mdc
+  s_14b55f5f38f463::t_26f9f089064b84 28
+AGENTS.md
+  s_14b55f5f38f463::t_04e7d8668730d5 139
+CLAUDE.md
+  s_14b55f5f38f463::t_49d19014708aca 71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8042c944ec62700948239b9e8c0aca6d6bd4915f",
+  "prompts": {},
+  "sessions": {
+    "s_14b55f5f38f463": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "32aa0588-2cfd-4c8e-a19c-d550ac3c7a97",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
