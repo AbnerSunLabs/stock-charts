@@ -68,7 +68,7 @@ PR 即任务触发器：创建 PR 后必须完成 CR 闭环才能合并，任何
 2. **建 PR**：push 后 `gh pr create` 到 main（中文 Conventional Commits，PR 描述含改动说明与验证记录）
 3. **PR CR**：`/code-review <PR号> --comment` 贴行内评论留档；与第 1 步同 diff 且无新提交时可将本地发现转贴、不重复全量审；**处置循环产生新 push 后必须复审**
 4. **处置循环**：正确性缺陷必须修复（commit + push 后复审）；策略/防御性建议挂账不阻塞（记入 PR 评论或最终汇报）
-5. **收敛线**：本地与 CI（`.github/workflows/claude-code-review.yml`，PR 打开/更新自动触发）**两源正确性发现均清零**方可合并——CI 在运行则等待完成并读取其发现（`gh run watch` / `gh pr view --comments`）；CI 未配置或不可用时记录后以本地主审为准。**循环超过 3 轮仍不收敛时停止并向用户汇报**，禁止无限返工
+5. **收敛线**：本地主审的正确性发现清零方可合并；CI（`.github/workflows/claude-code-review.yml`，PR 打开/更新自动触发）为辅助源——运行成功时其发现一并计入（用 `gh api repos/<owner>/<repo>/pulls/<PR号>/comments` 读取，行内评论在 `gh pr view --comments` 中不可见），运行失败或未配置时记录后不阻塞（CI workflow 修复挂账中）。**循环超过 3 轮仍不收敛时停止并向用户汇报**，禁止无限返工
 6. **合并**：`gh pr review --approve`——单人仓库（作者=审查者同账号）**预期被平台拒绝，属正常路径**，记录后跳过；随后 `gh pr merge <PR号> --squash --delete-branch`
 7. **收尾**：本地 main 同步（双仓场景两边一起切回 main）；有运行时交付物的改动须端到端验证后才算完成；汇报结果与挂账清单
 
