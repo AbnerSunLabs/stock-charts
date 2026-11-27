@@ -31,7 +31,7 @@ alwaysApply: true
 
 <skill>
 <name>algorithmic-art</name>
-<description>用 p5.js 创作算法艺术（种子随机、参数交互探索）。用户要求生成艺术、代码艺术、流程图或粒子系统时使用；创作原创内容，不得抄袭他人作品。</description>
+<description>用 p5.js 创作算法艺术（种子随机、参数交互探索）。用户要求生成艺术、代码艺术、向量流场（flow fields）或粒子系统时使用；创作原创内容，不得抄袭他人作品。</description>
 <location>global</location>
 </skill>
 
@@ -55,7 +55,7 @@ alwaysApply: true
 
 <skill>
 <name>docx</name>
-<description>Word 文档（.docx）的创建、读取与编辑：页码目录、查找替换、批注修订、格式化等。用户提到 Word 文档或要求报告/备忘录类交付物时使用；不适用于表格、PDF 或通用编码任务。</description>
+<description>Word 文档（.docx）的创建、读取与编辑：页码目录、查找替换、批注修订、格式化等。用户提到 Word 文档或要求报告/备忘录类交付物时使用；不适用于 PDF、电子表格（走 xlsx 技能）、Google Docs 或通用编码任务。</description>
 <location>global</location>
 </skill>
 
@@ -73,7 +73,7 @@ alwaysApply: true
 
 <skill>
 <name>mcp-builder</name>
-<description>构建高质量 MCP（Model Context Protocol）服务器的指南，让 LLM 通过工具与外部系统交互（Python/FastAPI 或 Node/TypeScript SDK）。</description>
+<description>构建高质量 MCP（Model Context Protocol）服务器的指南，让 LLM 通过工具与外部系统交互（Python/FastMCP 或 Node/TypeScript MCP SDK）。</description>
 <location>global</location>
 </skill>
 
@@ -97,7 +97,7 @@ alwaysApply: true
 
 <skill>
 <name>slack-gif-creator</name>
-<description>制作适配 Slack 的动态 GIF：约束校验、工具与动画概念。用户要求「做个 GIF」时使用。</description>
+<description>制作适配 Slack 的动态 GIF：约束校验、工具与动画概念。用户要求为 Slack 制作 GIF 时使用。</description>
 <location>global</location>
 </skill>
 
