@@ -1,0 +1,19 @@
+AGENTS.md
+  s_2b3cad13aa12bc::t_839e1d4fcb0acd 2,6-8,12,16-27,34,40,46,52,58,64,70,76,82,88,94,100,106,112,118,124,130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4c1e34bb9a7a748c1c70bff4fabc9da0157bf7cf",
+  "prompts": {},
+  "sessions": {
+    "s_2b3cad13aa12bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21150-466b-7eb1-b4c4-1bc3d9317313",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
