@@ -1,0 +1,19 @@
+AGENTS.md
+  s_14b55f5f38f463::t_6b98c7aecae917 34,58,76,100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "25efcaf669efbcf06a65949f688d4707baec9b72",
+  "prompts": {},
+  "sessions": {
+    "s_14b55f5f38f463": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "32aa0588-2cfd-4c8e-a19c-d550ac3c7a97",
+        "model": "unknown"
+      },
+      "human_author": "AbnerSun <sunyujiejohn@sina.com>"
+    }
+  }
+}
