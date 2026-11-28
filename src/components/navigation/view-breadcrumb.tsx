@@ -20,7 +20,7 @@ const ROUTES: Record<string, string> = {
 export function ViewBreadcrumb() {
   const pathname = usePathname();
 
-  const items: Array<{ title: ReactNode }> = [{ title: <Link href="/">工具集</Link> }];
+  const items: Array<{ title: ReactNode }> = [{ title: <Link href="/">长流</Link> }];
 
   if (pathname?.startsWith('/view/family')) {
     items.push({ title: <Link href="/view/family">家庭财务总览</Link> });
@@ -34,8 +34,9 @@ export function ViewBreadcrumb() {
   }
 
   return (
+    /* 状态变化：悬停面包屑链接时文字颜色切到强调色——color 过渡走 micro token，与全站 hover 节奏一致 */
     <nav
-      className="mb-4 pr-12 sm:pr-0 [&_.ant-breadcrumb-link]:text-[var(--text-muted)] [&_.ant-breadcrumb-link:hover]:text-[var(--text-accent)] [&_.ant-breadcrumb-separator]:text-[var(--text-muted)] [&_.ant-breadcrumb-separator]:opacity-60"
+      className="mb-4 pr-12 sm:pr-0 [&_.ant-breadcrumb-link]:text-[var(--text-muted)] [&_.ant-breadcrumb-link:hover]:text-[var(--text-accent)] [&_.ant-breadcrumb-link]:[transition:color_var(--motion-duration-micro)_var(--motion-ease-out)] [&_.ant-breadcrumb-separator]:text-[var(--text-muted)] [&_.ant-breadcrumb-separator]:opacity-60"
       aria-label="面包屑"
     >
       <Breadcrumb items={items} />

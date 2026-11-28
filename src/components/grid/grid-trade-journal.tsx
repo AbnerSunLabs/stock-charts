@@ -75,7 +75,8 @@ export function GridTradeJournal({
         key: t.id,
         id: t.id,
         date: t.tradeDate,
-        strategyName: s?.name ?? '?',
+        /* 策略已被删除时兜底为可读文案，不暴露异常占位符 */
+        strategyName: s?.name ?? '未命名策略',
         symbol: s?.symbol ?? '',
         side: t.side,
         level: leg ? leg.positionRatio.toFixed(2) : '-',
@@ -221,7 +222,7 @@ export function GridTradeJournal({
         />
       </Space>
       {rows.length === 0 ? (
-        <Empty description="暂无流水。保存策略后在结果表点买入/卖出；同档可反复。" />
+        <Empty description="还没有成交流水。保存策略后，可在档位表中记录每一笔买入与卖出。" />
       ) : (
         <Table
           size="middle"

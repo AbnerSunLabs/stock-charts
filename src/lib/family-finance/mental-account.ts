@@ -90,13 +90,14 @@ export function compareMentalAccountPace(
   const depositPct = Number((deposit * 100).toFixed(2));
   const timePct = Number((time * 100).toFixed(2));
 
+  // 状态说明：存款进度与时间进度的对比结论；文案对齐「长流」平实克制的语气
   if (depositPct === timePct) {
-    return { status: 'on_track', message: '继续保持哦', timePercent: time };
+    return { status: 'on_track', message: '与计划同步', timePercent: time };
   }
   if (depositPct > timePct) {
-    return { status: 'ahead', message: '你们好棒棒', timePercent: time };
+    return { status: 'ahead', message: '领先于计划', timePercent: time };
   }
-  return { status: 'behind', message: '需要抓紧存钱啦', timePercent: time };
+  return { status: 'behind', message: '落后于计划', timePercent: time };
 }
 
 function clampUnit(value: number): number {

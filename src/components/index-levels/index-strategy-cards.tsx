@@ -48,7 +48,8 @@ export function IndexStrategyCards({ funds }: { funds: TrackingEtf[] }) {
   if (views.length === 0 && unmatched.length === 0) return null;
 
   return (
-    <div className="index-strategy-cards">
+    // 状态变化：数据就绪整块插入 = 走全局统一入场（淡入 + 轻微上浮，token 见 globals.css）。
+    <div className="index-strategy-cards motion-enter">
       {views.length > 0 ? (
         <div className="grid-shell">
           {views.map(view => (

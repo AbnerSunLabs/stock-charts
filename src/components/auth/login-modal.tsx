@@ -48,7 +48,8 @@ export function LoginModal({
       }
       // 成功时会整页跳转，无需关 Modal
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '登录失败');
+      // 文案规范：出错给下一步动作
+      message.error(e instanceof Error ? e.message : '登录失败，请重试');
       setLoading(false);
     }
   };
@@ -62,19 +63,23 @@ export function LoginModal({
       destroyOnHidden
       centered
     >
-      <Paragraph type="secondary" className="mb-4">
-        {description}
-      </Paragraph>
-      <Button
-        type="primary"
-        block
-        size="large"
-        icon={<GithubOutlined />}
-        loading={loading}
-        onClick={() => void handleLogin()}
-      >
-        使用 GitHub 登录
-      </Button>
+      {/* 状态变化：弹窗内容随挂载（destroyOnHidden 下每次打开）以 micro 档淡入；
+          弹窗开合保留 antd motion token，内容层只做纯淡切不与缩放叠加抢戏 */}
+      <div className="animate-[viewFadeIn_var(--motion-duration-micro)_var(--motion-ease-out)_both]">
+        <Paragraph type="secondary" className="mb-4">
+          {description}
+        </Paragraph>
+        <Button
+          type="primary"
+          block
+          size="large"
+          icon={<GithubOutlined />}
+          loading={loading}
+          onClick={() => void handleLogin()}
+        >
+          使用 GitHub 登录
+        </Button>
+      </div>
     </Modal>
   );
 }

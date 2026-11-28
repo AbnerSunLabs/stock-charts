@@ -175,8 +175,15 @@ function MarketCell({
   return (
     <div className="grid-portfolio-card__quote-cell">
       <div className="grid-portfolio-card__quote-k">{label}</div>
-      <div className={mainClass}>{main}</div>
-      {sub ? <div className="grid-portfolio-card__quote-sub">{sub}</div> : null}
+      {/* 收盘价异步到达/距离重算：key 跟随数值触发 small 档微闪淡入，涨跌色走 CSS 过渡 */}
+      <div key={main} className={`${mainClass} grid-value-swap`}>
+        {main}
+      </div>
+      {sub ? (
+        <div key={sub} className="grid-value-swap grid-portfolio-card__quote-sub">
+          {sub}
+        </div>
+      ) : null}
     </div>
   );
 }

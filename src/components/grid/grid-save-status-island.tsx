@@ -1,11 +1,10 @@
 'use client';
 
 import { CheckOutlined } from '@ant-design/icons';
+import { MOTION, isReducedMotion } from '@/lib/motion';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { useEffect, useRef, useState } from 'react';
-
-gsap.registerPlugin(useGSAP);
 
 export interface GridSaveStatusIslandProps {
   label: '保存策略' | '更新策略' | '已保存';
@@ -13,11 +12,6 @@ export interface GridSaveStatusIslandProps {
   loading: boolean;
   reason: string | null;
   onSave: () => void;
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /**
@@ -48,11 +42,17 @@ export function GridSaveStatusIsland({
 
   useGSAP(
     () => {
-      if (!flashSaved || !checkRef.current || prefersReducedMotion()) return;
+      if (!flashSaved || !checkRef.current || isReducedMotion()) return;
+      /* 保存成功打勾：轻弹簧曲线，仅限这类微小确认，严禁用于大卡片/弹窗 */
       gsap.fromTo(
         checkRef.current,
         { scale: 0.6, autoAlpha: 0 },
-        { scale: 1, autoAlpha: 1, duration: 0.35, ease: 'power2.out' }
+        {
+          scale: 1,
+          autoAlpha: 1,
+          duration: MOTION.duration.medium,
+          ease: MOTION.ease.spring,
+        }
       );
     },
     { scope: rootRef, dependencies: [flashSaved] }
@@ -61,6 +61,12 @@ export function GridSaveStatusIsland({
   const isSaved = label === '已保存';
   const interactive = !disabled && !loading && !isSaved;
   const showCheck = isSaved || flashSaved;
+  /* 进行中文案原位替换，交代「正在写入」而不仅靠扫光 */
+  const displayLabel = loading
+    ? label === '更新策略'
+      ? '更新中…'
+      : '保存中…'
+    : label;
 
   const button = (
     <button
@@ -87,7 +93,7 @@ export function GridSaveStatusIsland({
           <CheckOutlined />
         </span>
       ) : null}
-      <span className="grid-save-island__label">{label}</span>
+      <span className="grid-save-island__label">{displayLabel}</span>
     </button>
   );
 

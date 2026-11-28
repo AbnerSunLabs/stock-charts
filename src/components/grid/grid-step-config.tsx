@@ -135,14 +135,14 @@ export function GridStepConfig({
         aria-checked={alignLastGridToStep}
         type="button"
         onClick={() => onAlignLastGridToStepChange(!alignLastGridToStep)}
-        className={`relative inline-flex h-7 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] ${
+        className={`grid-step-switch relative inline-flex h-7 w-11 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] ${
           alignLastGridToStep
             ? "bg-[var(--accent)]"
             : "bg-[color-mix(in_srgb,var(--muted-foreground)_28%,var(--border))]"
         }`}
       >
         <span
-          className={`inline-block h-[18px] w-[18px] transform rounded-full bg-[var(--card)] shadow-[var(--ds-shadow-sm)] transition-transform duration-200 ${
+          className={`grid-step-switch__thumb inline-block h-[18px] w-[18px] transform rounded-full bg-[var(--card)] shadow-[var(--ds-shadow-sm)] ${
             alignLastGridToStep ? "translate-x-[22px]" : "translate-x-1"
           }`}
         />
@@ -169,14 +169,14 @@ export function GridStepConfig({
         aria-checked={dynamicEnabled}
         type="button"
         onClick={() => onDynamicEnabledChange(!dynamicEnabled)}
-        className={`relative inline-flex h-7 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] ${
+        className={`grid-step-switch relative inline-flex h-7 w-11 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] ${
           dynamicEnabled
             ? "bg-[var(--accent)]"
             : "bg-[color-mix(in_srgb,var(--muted-foreground)_28%,var(--border))]"
         }`}
       >
         <span
-          className={`inline-block h-[18px] w-[18px] transform rounded-full bg-[var(--card)] shadow-[var(--ds-shadow-sm)] transition-transform duration-200 ${
+          className={`grid-step-switch__thumb inline-block h-[18px] w-[18px] transform rounded-full bg-[var(--card)] shadow-[var(--ds-shadow-sm)] ${
             dynamicEnabled ? "translate-x-[22px]" : "translate-x-1"
           }`}
         />
@@ -306,121 +306,113 @@ export function GridStepConfig({
           </div>
         </div>
 
-        {/* 动态模式提示 */}
-        {dynamicEnabled && (
-          <div className="rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--accent)_5%,var(--card))] px-3 py-2.5">
-            <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
-              已启用：价格步长随档位逐级放大（档位更疏），不改变单档买入金额。
-            </p>
-          </div>
-        )}
-
-        {/* 动态增强面板 - 展开层 */}
-        {dynamicEnabled && (
-          <div className="space-y-4 pt-1">
-            <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
-              感官模式
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* 稳健模式卡片 */}
-              <button
-                type="button"
-                onClick={() => onModeChange("stable")}
-                className={`relative rounded-xl border p-4 text-left transition-[box-shadow,border-color,background-color] duration-200 ${
-                  mode === "stable"
-                    ? "border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_7%,var(--card))] shadow-[var(--ds-shadow-sm)]"
-                    : "border-[var(--border)] bg-[var(--card)] hover:border-[color-mix(in_srgb,var(--accent)_25%,var(--border))]"
-                }`}
-              >
-                {mode === "stable" && (
-                  <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)]" />
-                )}
-
-                <div className="flex flex-col gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-subtle)]">
-                    <Shield className="h-5 w-5 text-[var(--accent)]" />
-                  </div>
-                  <div>
-                    <div className="mb-1 font-semibold text-[var(--foreground)]">
-                      稳健模式
-                    </div>
-                    <div className="text-xs leading-relaxed text-[var(--muted-foreground)]">
-                      步长放大较缓，档位更密一些，适合常规波动
-                    </div>
-                    <div className="mt-2 font-mono text-[11px] text-[var(--muted-foreground)]">
-                      Scale = 0.3
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* 抄底模式卡片 */}
-              <button
-                type="button"
-                onClick={() => onModeChange("aggressive")}
-                className={`relative rounded-xl border p-4 text-left transition-[box-shadow,border-color,background-color] duration-200 ${
-                  mode === "aggressive"
-                    ? "border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_7%,var(--card))] shadow-[var(--ds-shadow-sm)]"
-                    : "border-[var(--border)] bg-[var(--card)] hover:border-[color-mix(in_srgb,var(--accent)_25%,var(--border))]"
-                }`}
-              >
-                {mode === "aggressive" && (
-                  <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)]" />
-                )}
-
-                <div className="flex flex-col gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-subtle)]">
-                    <Filter className="h-5 w-5 text-[var(--accent-warm)]" />
-                  </div>
-                  <div>
-                    <div className="mb-1 font-semibold text-[var(--foreground)]">
-                      抄底模式
-                    </div>
-                    <div className="text-xs leading-relaxed text-[var(--muted-foreground)]">
-                      步长放大更快，档位更疏，适合更深接飞刀
-                    </div>
-                    <div className="mt-2 font-mono text-[11px] text-[var(--muted-foreground)]">
-                      Scale = 0.6
-                    </div>
-                  </div>
-                </div>
-              </button>
+        {/* 动态间距三段内容（提示条/节奏模式卡/底部状态条）包进单个 0fr→1fr 折叠容器，
+            与开关同语言：开关闭合时整组平滑收起，杜绝表单高度瞬跳 */}
+        <div
+          className={`grid-dynamic-reveal${dynamicEnabled ? " is-open" : ""}`}
+          aria-hidden={dynamicEnabled ? undefined : true}
+        >
+          <div className="grid-dynamic-reveal__inner space-y-5">
+            {/* 动态模式提示 */}
+            <div className="rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--accent)_5%,var(--card))] px-3 py-2.5">
+              <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
+                已启用：价格步长随档位逐级放大（档位更疏），不改变单档买入金额。
+              </p>
             </div>
-          </div>
-        )}
 
-        {/* 底部状态栏 */}
-        <div className="border-t border-[var(--border)] pt-4">
-          <div className="flex items-start gap-3">
-            <div
-              className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                dynamicEnabled
-                  ? "bg-[var(--accent)]"
-                  : "bg-[var(--muted-foreground)]"
-              }`}
-            />
-            <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
-              {dynamicEnabled ? (
-                <>
+            {/* 动态增强面板 - 展开层 */}
+            <div className="space-y-4 pt-1">
+              <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                扩张节奏
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 稳健模式卡片 */}
+                <button
+                  type="button"
+                  onClick={() => onModeChange("stable")}
+                  className={`grid-mode-card relative rounded-xl border p-4 text-left ${
+                    mode === "stable"
+                      ? "border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_7%,var(--card))] shadow-[var(--ds-shadow-sm)]"
+                      : "border-[var(--border)] bg-[var(--card)] hover:border-[color-mix(in_srgb,var(--accent)_25%,var(--border))]"
+                  }`}
+                >
+                  {mode === "stable" && (
+                    <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)]" />
+                  )}
+
+                  <div className="flex flex-col gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-subtle)]">
+                      <Shield className="h-5 w-5 text-[var(--accent)]" />
+                    </div>
+                    <div>
+                      <div className="mb-1 font-semibold text-[var(--foreground)]">
+                        稳健模式
+                      </div>
+                      <div className="text-xs leading-relaxed text-[var(--muted-foreground)]">
+                        步长放大较缓，档位更密一些，适合常规波动
+                      </div>
+                      <div className="mt-2 font-mono text-[11px] text-[var(--muted-foreground)]">
+                        Scale = 0.3
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {/* 抄底模式卡片 */}
+                <button
+                  type="button"
+                  onClick={() => onModeChange("aggressive")}
+                  className={`grid-mode-card relative rounded-xl border p-4 text-left ${
+                    mode === "aggressive"
+                      ? "border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_7%,var(--card))] shadow-[var(--ds-shadow-sm)]"
+                      : "border-[var(--border)] bg-[var(--card)] hover:border-[color-mix(in_srgb,var(--accent)_25%,var(--border))]"
+                  }`}
+                >
+                  {mode === "aggressive" && (
+                    <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)]" />
+                  )}
+
+                  <div className="flex flex-col gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-subtle)]">
+                      <Filter className="h-5 w-5 text-[var(--accent-warm)]" />
+                    </div>
+                    <div>
+                      <div className="mb-1 font-semibold text-[var(--foreground)]">
+                        抄底模式
+                      </div>
+                      <div className="text-xs leading-relaxed text-[var(--muted-foreground)]">
+                        步长放大更快，档位更疏，适合更深接飞刀
+                      </div>
+                      <div className="mt-2 font-mono text-[11px] text-[var(--muted-foreground)]">
+                        Scale = 0.6
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* 底部状态栏 */}
+            <div className="border-t border-[var(--border)] pt-4">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                    dynamicEnabled
+                      ? "bg-[var(--accent)]"
+                      : "bg-[var(--muted-foreground)]"
+                  }`}
+                />
+                <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
                   当前生效逻辑：
                   <span className="font-semibold text-[var(--foreground)]">
-                    {" "}
-                    加速扩张
-                  </span>{" "}
-                  （基础: {baseStep}%，系数: {getScaleFactor()}）
-                </>
-              ) : (
-                <>
-                  当前生效逻辑：
-                  <span className="font-semibold text-[var(--foreground)]">
-                    {" "}
-                    等差指数模型
-                  </span>{" "}
-                  （系数: 0）
-                </>
-              )}
-            </p>
+                    {dynamicEnabled
+                      ? ` 动态步长（基础 ${baseStep}%，系数 ${getScaleFactor()}）`
+                      : " 固定步长"}
+                  </span>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

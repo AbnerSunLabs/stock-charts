@@ -11,8 +11,12 @@ const MENU_KEYS: Record<string, number | 'start' | 'end'> = {
   End: 'end',
 };
 
+/** 与 --motion-duration-exit-small 同值的收起延时：菜单淡出后再卸载。 */
+const MENU_EXIT_MS = 140;
+
 /**
  * 自绘列表。macOS 原生 select 会按控件高度放大弹出层，和页头对不齐。
+ * 状态变化：开 = 顶部原点缩放淡入，合 = 更短的淡出（退场比进场短）。
  */
 export function IndexLevelPicker({
   value,
@@ -22,17 +26,34 @@ export function IndexLevelPicker({
   onChange: (code: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  // 菜单在收起动画结束前保持挂载，避免淡出被卸载斩断。
+  const [menuMounted, setMenuMounted] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const listId = useId();
   const current = INDEX_WATCHES.find(item => item.code === value) ?? INDEX_WATCHES[0];
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (open) {
+      setMenuMounted(true);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setMenuMounted(false), MENU_EXIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  useEffect(() => {
+    // 依赖 menuMounted：菜单真实挂载后再把焦点移到当前选项（open 翻转的那次提交里
+    // 菜单还不存在，querySelector 落空会让方向键失灵）
+    if (!open || !menuMounted) return undefined;
     const onPointer = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      // 键盘收起时把焦点还给触发按钮，避免焦点落在即将卸载的菜单上。
+      triggerRef.current?.focus();
     };
     document.addEventListener('mousedown', onPointer);
     document.addEventListener('keydown', onKey);
@@ -41,28 +62,31 @@ export function IndexLevelPicker({
       document.removeEventListener('mousedown', onPointer);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, menuMounted]);
 
   return (
     <div className="index-select-wrap" ref={rootRef}>
       <button
         type="button"
         className="index-select"
+        ref={triggerRef}
         aria-label="选择指数"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => setOpen(next => !next)}
       >
-        {`${current.name}\u3000${current.code}`}
+        {`${current.name}　${current.code}`}
       </button>
-      {open ? (
+      {menuMounted ? (
         <IndexMenu
           id={listId}
           value={value}
+          open={open}
           onPick={code => {
             onChange(code);
             setOpen(false);
+            triggerRef.current?.focus();
           }}
         />
       ) : null}
@@ -73,10 +97,12 @@ export function IndexLevelPicker({
 function IndexMenu({
   id,
   value,
+  open,
   onPick,
 }: {
   id: string;
   value: string;
+  open: boolean;
   onPick: (code: string) => void;
 }) {
   const move = (event: ReactKeyboardEvent<HTMLUListElement>): void => {
@@ -90,7 +116,14 @@ function IndexMenu({
   };
 
   return (
-    <ul className="index-menu" id={id} role="listbox" aria-label="选择指数" onKeyDown={move}>
+    <ul
+      className="index-menu"
+      id={id}
+      role="listbox"
+      aria-label="选择指数"
+      data-open={open ? 'true' : 'false'}
+      onKeyDown={move}
+    >
       {INDEX_WATCHES.map(item => (
         <li key={item.code} role="presentation">
           <button type="button" role="option" aria-selected={item.code === value} onClick={() => onPick(item.code)}>

@@ -53,7 +53,8 @@ describe('指数悬停', () => {
         svg!.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: 943, clientY: 240 }));
       }
     });
-    const tip = container.querySelector<HTMLElement>('.tip.show');
+    // tooltip 常驻挂载，显隐走 data-show 属性淡显（不再切换 .show 类）
+    const tip = container.querySelector<HTMLElement>('.tip[data-show="true"]');
     expect(tip).not.toBeNull();
     return tip!;
   }
@@ -66,6 +67,26 @@ describe('指数悬停', () => {
 
     expect(container.querySelector('.chart-error')?.textContent).toBe('点位或市盈率暂时读不出来');
     expect(container.querySelector('svg.chart')).toBeNull();
+  });
+
+  it('加载态显示正在读取收盘的占位，出错态带「重新加载」按钮并回调重试', () => {
+    act(() => root.render(createElement(IndexLevelChart, {
+      name: '中证传媒', code: '399971.SZ', points: [], phase: 'loading',
+    })));
+    expect(container.querySelector('.chart-loading')).not.toBeNull();
+    expect(container.textContent).toContain('正在读取收盘');
+    expect(container.querySelector('svg.chart')).toBeNull();
+
+    const onRetry = jest.fn();
+    act(() => root.render(createElement(IndexLevelChart, {
+      name: '中证传媒', code: '399971.SZ', points: [], phase: 'error',
+      errorLabel: '点位或市盈率暂时读不出来', onRetry,
+    })));
+    expect(container.querySelector('.chart-error')?.getAttribute('role')).toBe('status');
+    const retry = container.querySelector<HTMLButtonElement>('.chart-retry');
+    expect(retry?.textContent).toBe('重新加载');
+    act(() => retry!.click());
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
   it('点击时间胶囊后，累计涨跌显示实际基准日期和对应数值', () => {
@@ -122,7 +143,7 @@ describe('指数悬停', () => {
       bubbles: true, clientX: 53, clientY: 240,
     })));
 
-    expect(container.querySelector('.tip.show')?.textContent)
+    expect(container.querySelector('.tip[data-show="true"]')?.textContent)
       .toContain('距离最高点（2026-01-05）:-33.33%');
   });
 
@@ -139,7 +160,7 @@ describe('指数悬停', () => {
     act(() => svg.dispatchEvent(new MouseEvent('pointermove', {
       bubbles: true, clientX: 408, clientY: 240,
     })));
-    const tip = container.querySelector<HTMLElement>('.tip.show')!;
+    const tip = container.querySelector<HTMLElement>('.tip[data-show="true"]')!;
     expect(tip.textContent).toContain('2023-01-05');
     expect(tip.textContent).toContain('自2021-01-05以来累计涨跌');
     expect(tip.textContent).toContain('+25.00%');
@@ -156,7 +177,7 @@ describe('指数悬停', () => {
       act(() => container.querySelector('svg')!.dispatchEvent(new MouseEvent('pointermove', {
         bubbles: true, clientX: 975, clientY: 240,
       })));
-      return container.querySelector<HTMLElement>('.tip.show')!;
+      return container.querySelector<HTMLElement>('.tip[data-show="true"]')!;
     };
     expect(hoverLastPoint().textContent).toContain('自2007-01-05以来累计涨跌:+19.00%');
     act(() => container.querySelector('svg')!.dispatchEvent(new WheelEvent('wheel', {
@@ -180,7 +201,7 @@ describe('指数悬停', () => {
       bubbles: true, clientX: 975, clientY: 240,
     })));
 
-    expect(container.querySelector('.tip.show')?.textContent)
+    expect(container.querySelector('.tip[data-show="true"]')?.textContent)
       .toContain('距离最高点（2007-01-05）:-47.50%');
   });
 
@@ -207,11 +228,14 @@ describe('指数悬停', () => {
         svg.dispatchEvent(event);
       }
     });
-    expect(container.querySelector('.tip')?.textContent).toContain('2026-01-05');
+    expect(container.querySelector('.tip[data-show="true"]')?.textContent).toContain('2026-01-05');
     expect(svg.classList.contains('dragging')).toBe(false);
     const button = Array.from(container.querySelectorAll('button')).find(node => node.textContent === '近 10 年');
     act(() => button!.click());
-    expect(container.querySelector('.tip')).toBeNull();
+    // 提示卡常驻挂载：切换范围后收起（data-show=false）且旧内容同步卸载
+    expect(container.querySelector('.tip[data-show="true"]')).toBeNull();
+    expect(container.querySelector('.tip')).not.toBeNull();
+    expect(container.querySelector('.tip')?.textContent).not.toContain('2026-01-05');
   });
 
   it('ETF 悬停保留成交价精度和买点说明', () => {
@@ -237,14 +261,16 @@ describe('指数悬停', () => {
     const event = new MouseEvent('pointerdown', { bubbles: true, clientX: 943, clientY: 240 });
     Object.defineProperty(event, 'pointerType', { value: 'touch' });
     act(() => container.querySelector('svg')!.dispatchEvent(event));
-    expect(container.querySelector('.tip')).not.toBeNull();
+    expect(container.querySelector('.tip[data-show="true"]')).not.toBeNull();
     act(() => root.render(createElement(IndexLevelChart, {
       ...props, name: '沪深300', code: '000300.SH', phase: 'loading', points: [],
     })));
     act(() => root.render(createElement(IndexLevelChart, {
       ...props, name: '沪深300', code: '000300.SH',
     })));
-    expect(container.querySelector('.tip')).toBeNull();
+    // 提示卡常驻挂载，但不得沿用上一只指数的触屏提示
+    expect(container.querySelector('.tip[data-show="true"]')).toBeNull();
+    expect(container.querySelector('.tip')?.textContent).not.toContain('2026-01-05');
   });
 
   it('完整提示高于手机图表时向上展开，卡片底部保持可见', () => {
@@ -259,7 +285,12 @@ describe('指数悬停', () => {
       name: '中证传媒', code: '399971.SZ', points: POINTS, peHistory: POINTS, phase: 'ready',
     })));
     const tip = hoverLatest();
-    const top = Number.parseFloat(tip.style.top);
+    // 定位统一走 transform: translate3d（绘制前一次落位），不再写 left/top
+    expect(tip.style.left).toBe('');
+    expect(tip.style.top).toBe('');
+    const placed = /translate3d\(([-\d.]+)px, ([-\d.]+)px, 0\)/.exec(tip.style.transform);
+    expect(placed).not.toBeNull();
+    const top = Number.parseFloat(placed![2]);
     expect(321 + top).toBeGreaterThanOrEqual(0);
     expect(top + tip.offsetHeight).toBeLessThanOrEqual(352);
     expect(321 + top + tip.offsetHeight).toBeLessThanOrEqual(window.innerHeight);

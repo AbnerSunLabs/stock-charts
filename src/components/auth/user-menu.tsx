@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { Avatar, Dropdown, App } from 'antd';
+import { LoadingOutlined, LogoutOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import type { User } from '@supabase/supabase-js';
 import { signOut } from '@/lib/supabase/auth';
@@ -15,6 +17,7 @@ export interface UserMenuProps {
  */
 export function UserMenu({ user, onSignedOut }: UserMenuProps) {
   const { message } = App.useApp();
+  const [loggingOut, setLoggingOut] = useState(false);
   const meta = user.user_metadata ?? {};
   const avatarUrl = typeof meta.avatar_url === 'string' ? meta.avatar_url : undefined;
   const name =
@@ -32,11 +35,22 @@ export function UserMenu({ user, onSignedOut }: UserMenuProps) {
     { type: 'divider' },
     {
       key: 'logout',
-      label: '退出登录',
+      icon: loggingOut ? <LoadingOutlined /> : <LogoutOutlined />,
+      label: loggingOut ? '退出中…' : '退出登录',
+      disabled: loggingOut,
       onClick: async () => {
-        await signOut();
-        message.success('已退出');
-        onSignedOut?.();
+        // 状态变化：点击退出→网络请求期间该项立即禁用并切换为进行中文案+加载图标，
+        // 防止连点重复触发登出；成功后再进入门禁复核流转
+        setLoggingOut(true);
+        try {
+          await signOut();
+          message.success('已退出登录');
+          onSignedOut?.();
+        } catch {
+          message.error('退出登录失败，请重试');
+        } finally {
+          setLoggingOut(false);
+        }
       },
     },
   ];

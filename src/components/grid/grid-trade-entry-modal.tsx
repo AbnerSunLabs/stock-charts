@@ -20,6 +20,8 @@ export interface GridTradeEntryModalProps {
   loading?: boolean;
   defaults: GridTradeEntryDefaults | null;
   onCancel: () => void;
+  /** 退场动画结束后回调：父层在此清空 defaults，保证 Modal 完整播完关闭动画 */
+  afterClose: () => void;
   onSubmit: (values: {
     price: number;
     qty: number;
@@ -122,13 +124,15 @@ function TradeEntryFields({
 }
 
 /**
- * 档位买卖记账弹窗。
+ * 档位买卖记账弹窗。open 布尔与 defaults 数据解耦：
+ * 关闭只翻转 open，defaults 保留至 afterClose 再清空，杜绝 return null 斩断退场动画。
  */
 export function GridTradeEntryModal({
   open,
   loading,
   defaults,
   onCancel,
+  afterClose,
   onSubmit,
 }: GridTradeEntryModalProps) {
   const [form] = Form.useForm<FormValues>();
@@ -144,28 +148,29 @@ export function GridTradeEntryModal({
     });
   }, [open, defaults, form]);
 
-  if (!defaults) return null;
-
   return (
     <Modal
       open={open}
-      title={defaults.side === 'buy' ? '记录买入' : '记录卖出'}
+      title={defaults ? (defaults.side === 'buy' ? '记录买入' : '记录卖出') : '记账'}
       onCancel={onCancel}
+      afterClose={afterClose}
       footer={null}
       destroyOnHidden
       width={400}
       centered
       wrapClassName="grid-trade-entry-modal"
     >
-      <TradeEntryFields
-        form={form}
-        defaults={defaults}
-        loading={loading}
-        price={price}
-        qty={qty}
-        onCancel={onCancel}
-        onSubmit={onSubmit}
-      />
+      {defaults ? (
+        <TradeEntryFields
+          form={form}
+          defaults={defaults}
+          loading={loading}
+          price={price}
+          qty={qty}
+          onCancel={onCancel}
+          onSubmit={onSubmit}
+        />
+      ) : null}
     </Modal>
   );
 }

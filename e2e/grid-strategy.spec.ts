@@ -108,7 +108,7 @@ test.describe('网格策略', () => {
     expect(png.readUInt32BE(16)).toBeGreaterThan(0);
     expect(png.readUInt32BE(16)).toBeLessThanOrEqual(8192);
     expect(png.readUInt32BE(20)).toBeGreaterThan(0);
-    await expect(page.getByText(/已下载 网格策略-/)).toBeVisible({
+    await expect(page.getByText('已导出表格图片')).toBeVisible({
       timeout: 15_000,
     });
     expect(pageErrors).toEqual([]);
@@ -125,7 +125,7 @@ test.describe('网格策略', () => {
     await expect(page.getByRole('button', { name: '关闭行' }).first()).toBeVisible();
 
     await page.getByRole('button', { name: '下载表格' }).click();
-    await expect(page.getByText(/已下载 网格策略-/)).toBeVisible({
+    await expect(page.getByText('已导出表格图片')).toBeVisible({
       timeout: 15_000,
     });
 
@@ -143,7 +143,7 @@ test.describe('网格策略', () => {
     await expect(page.getByRole('button', { name: '关闭行' })).toHaveCount(0);
 
     await page.getByRole('button', { name: '下载表格' }).click();
-    await expect(page.getByText(/已下载 网格策略-/)).toBeVisible({
+    await expect(page.getByText('已导出表格图片')).toBeVisible({
       timeout: 15_000,
     });
 

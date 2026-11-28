@@ -1,6 +1,7 @@
 'use client';
 
 import { CheckOutlined } from '@ant-design/icons';
+import { MOTION, isReducedMotion } from '@/lib/motion';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import {
@@ -13,8 +14,6 @@ import {
 } from 'react';
 import { HelpTooltip } from '@/components/shared/help-tooltip';
 import { createPortal } from 'react-dom';
-
-gsap.registerPlugin(useGSAP);
 
 export interface GridStrategyNameOverlayProps {
   open: boolean;
@@ -29,11 +28,6 @@ export interface GridStrategyNameOverlayProps {
 }
 
 type OverlayPhase = 'form' | 'success';
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
 
 /**
  * 自建居中命名浮层：GSAP 进退场与成功确认（替代 Ant Modal）。
@@ -106,18 +100,33 @@ export function GridStrategyNameOverlay({
         return;
       }
       closingRef.current = true;
-      const reduce = prefersReducedMotion();
+      const reduce = isReducedMotion();
       const backdrop = rootRef.current.querySelector('.grid-name-overlay__backdrop');
       const panel = rootRef.current.querySelector('.grid-name-overlay__panel');
       if (reduce) {
         finishClose();
         return;
       }
+      /* 退场比进场短：面板 exit-large 缓入，遮罩 exit-medium */
       const tl = gsap.timeline({
         onComplete: contextSafe(() => finishClose()),
       });
-      tl.to(panel, { autoAlpha: 0, y: 12, scale: 0.97, duration: 0.2, ease: 'power2.in' }, 0);
-      tl.to(backdrop, { autoAlpha: 0, duration: 0.18, ease: 'power2.in' }, 0);
+      tl.to(
+        panel,
+        {
+          autoAlpha: 0,
+          y: 12,
+          scale: 0.97,
+          duration: MOTION.exit.large,
+          ease: MOTION.ease.in,
+        },
+        0
+      );
+      tl.to(
+        backdrop,
+        { autoAlpha: 0, duration: MOTION.exit.medium, ease: MOTION.ease.in },
+        0
+      );
     },
     [finishClose]
   );
@@ -125,7 +134,7 @@ export function GridStrategyNameOverlay({
   const { contextSafe } = useGSAP(
     () => {
       if (!mounted || !rootRef.current || !open) return;
-      const reduce = prefersReducedMotion();
+      const reduce = isReducedMotion();
       const backdrop = rootRef.current.querySelector('.grid-name-overlay__backdrop');
       const panel = rootRef.current.querySelector('.grid-name-overlay__panel');
       if (reduce) {
@@ -135,13 +144,24 @@ export function GridStrategyNameOverlay({
       }
       gsap.set(backdrop, { autoAlpha: 0 });
       gsap.set(panel, { autoAlpha: 0, y: 16, scale: 0.96 });
+      /* 居中弹窗：面板 large 进 + 缓出，遮罩略先行 */
       const tl = gsap.timeline({
         onComplete: () => inputRef.current?.focus(),
       });
-      tl.to(backdrop, { autoAlpha: 1, duration: 0.24, ease: 'power2.out' }, 0);
+      tl.to(
+        backdrop,
+        { autoAlpha: 1, duration: MOTION.duration.medium, ease: MOTION.ease.out },
+        0
+      );
       tl.to(
         panel,
-        { autoAlpha: 1, y: 0, scale: 1, duration: 0.28, ease: 'power2.out' },
+        {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: MOTION.duration.large,
+          ease: MOTION.ease.out,
+        },
         0.04
       );
     },
@@ -151,7 +171,7 @@ export function GridStrategyNameOverlay({
   useGSAP(
     () => {
       if (phase !== 'success' || !rootRef.current) return;
-      const reduce = prefersReducedMotion();
+      const reduce = isReducedMotion();
       const form = rootRef.current.querySelector('.grid-name-overlay__form');
       const success = rootRef.current.querySelector('.grid-name-overlay__success');
       if (reduce) {
@@ -163,11 +183,25 @@ export function GridStrategyNameOverlay({
       const tl = gsap.timeline({
         onComplete: contextSafe(() => animateOut(contextSafe)),
       });
-      tl.to(form, { autoAlpha: 0, y: -8, duration: 0.18, ease: 'power2.in' }, 0);
+      tl.to(
+        form,
+        {
+          autoAlpha: 0,
+          y: -8,
+          duration: MOTION.exit.medium,
+          ease: MOTION.ease.in,
+        },
+        0
+      );
       tl.fromTo(
         success,
         { autoAlpha: 0, scale: 0.92 },
-        { autoAlpha: 1, scale: 1, duration: 0.28, ease: 'power2.out' },
+        {
+          autoAlpha: 1,
+          scale: 1,
+          duration: MOTION.duration.medium,
+          ease: MOTION.ease.out,
+        },
         0.08
       );
       tl.to({}, { duration: 0.45 });

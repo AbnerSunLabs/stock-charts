@@ -18,7 +18,14 @@ describe('FamilyBalanceTrendChart source contract', () => {
     expect(source).toContain('ResizeObserver');
     expect(source).toContain('seriesField="type"');
     expect(source).toContain('colorField="type"');
-    expect(source).toContain("key={amountsVisible ? 'amt-visible' : 'amt-masked'}");
+    // 金额显隐：图表区由 FamilyChartAmountFade 统一原地淡切，
+    // Y 轴 / tooltip 文案走 formatter 遮罩（G2 update 通道），不再 key 重挂载整图
+    expect(source).toContain('FamilyChartAmountFade');
+    expect(source).toContain('useFamilyAmountVisibility');
+    expect(source).toContain('labelFormatter: formatYAxisLabel');
+    expect(source).toContain('formatCny(datum.amount, { visible: amountsVisible })');
+    // 防回退到 key={amountsVisible} 重挂载方案（图例点选状态会随之丢失）
+    expect(source).not.toContain('key={amountsVisible');
   });
 });
 

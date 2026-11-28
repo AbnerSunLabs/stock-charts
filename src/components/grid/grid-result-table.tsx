@@ -16,11 +16,12 @@ import {
 } from '@/lib/grid/grid-rounds-tag-style';
 import type { GridRow } from '@/types/grid';
 import type { AggregatedGridRow, GridLeg } from '@/types/grid-v2';
-import { Button, message, Space, Table, Tag } from 'antd';
+import { App, Button, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Download } from 'lucide-react';
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -141,10 +142,27 @@ function readRounds(
   return tradeActions?.getLevelQty(levelKey).rounds ?? 0;
 }
 
+/**
+ * 轮次 Tag：热力换色走 CSS 过渡；数字变化时叠加一次 accent 光环脉冲，
+ * 解释「记了一笔、轮次 +1」这一状态变化。脉冲用 key 随轮次数独立重挂的装饰层实现：
+ * 直接在 Tag 上切类名会被 React 批处理合并（类名未经历移除再添加，动画不重播）。
+ */
 function RoundsTag({ rounds }: { rounds: number }) {
+  // 首挂载不脉冲：记录是否已经历过一次真实渲染
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+  }, []);
+
   return (
-    <Tag className="m-0 tabular-nums" style={gridRoundsTagStyle(rounds)}>
+    <Tag
+      className="m-0 tabular-nums grid-rounds-tag"
+      style={gridRoundsTagStyle(rounds)}
+    >
       {rounds}
+      {mountedRef.current ? (
+        <span key={rounds} className="grid-rounds-tag__pulse" aria-hidden />
+      ) : null}
     </Tag>
   );
 }
@@ -158,27 +176,31 @@ function ExecuteTradeCell({
 }) {
   const { awaitingSell } = tradeActions.getLevelQty(levelKey);
 
-  if (awaitingSell) {
-    return (
-      <Space size="small" wrap>
-        <Tag color="processing">持仓中</Tag>
+  /* 记账成功后执行列内容翻转（买入 ↔ 持仓中+卖出）：key 切换触发 micro 纯淡切 */
+  return (
+    <span
+      key={awaitingSell ? 'held' : 'idle'}
+      className="grid-cell-swap inline-flex flex-wrap items-center gap-2"
+    >
+      {awaitingSell ? (
+        <>
+          <Tag color="processing">持仓中</Tag>
+          <Button
+            size="small"
+            onClick={() => tradeActions.onTrade('sell', levelKey)}
+          >
+            卖出
+          </Button>
+        </>
+      ) : (
         <Button
           size="small"
-          onClick={() => tradeActions.onTrade('sell', levelKey)}
+          onClick={() => tradeActions.onTrade('buy', levelKey)}
         >
-          卖出
+          买入
         </Button>
-      </Space>
-    );
-  }
-
-  return (
-    <Button
-      size="small"
-      onClick={() => tradeActions.onTrade('buy', levelKey)}
-    >
-      买入
-    </Button>
+      )}
+    </span>
   );
 }
 
@@ -263,48 +285,53 @@ function ExpandedLegRows({
   const hasExecCol = tradeActions !== undefined;
 
   return (
-    <table className="grid-result-expanded-table w-full border-collapse">
-      <colgroup>
-        <col style={{ width: EXPAND_COL_WIDTH }} />
-        <col />
-        <col />
-        <col style={{ width: ROUNDS_COL_WIDTH }} />
-        <col />
-        <col />
-        <col />
-        <col />
-        <col />
-        <col />
-        <col />
-        {hasExecCol ? <col style={{ width: EXEC_COL_WIDTH }} /> : null}
-      </colgroup>
-      <tbody>
-        {legIds.map(legId => {
-          const row = legRowMap.get(legId);
-          if (!row) return null;
+    /* 展开子表进场：0fr→1fr + 淡入，交代「档位明细展开」；收起时行被移除，瞬切可接受 */
+    <div className="grid-reveal">
+      <div className="grid-reveal__inner">
+        <table className="grid-result-expanded-table w-full border-collapse">
+          <colgroup>
+            <col style={{ width: EXPAND_COL_WIDTH }} />
+            <col />
+            <col />
+            <col style={{ width: ROUNDS_COL_WIDTH }} />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            {hasExecCol ? <col style={{ width: EXEC_COL_WIDTH }} /> : null}
+          </colgroup>
+          <tbody>
+            {legIds.map(legId => {
+              const row = legRowMap.get(legId);
+              if (!row) return null;
 
-          return (
-            <tr
-              key={legId}
-              className="grid-result-detail-row border-b border-[var(--border)] transition-colors last:border-b-0 hover:bg-[var(--hover-bg)]"
-            >
-              <td className="grid-result-expand-spacer" aria-hidden />
-              <DetailRowCells
-                row={row}
-                firstPositionByType={firstPositionByType}
-                priceDecimals={priceDecimals}
-                rounds={readRounds(legId, tradeActions)}
-              />
-              {hasExecCol ? (
-                <td className={DETAIL_CELL_CLS}>
-                  {renderExpandedExecuteCell(legId, tradeActions)}
-                </td>
-              ) : null}
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+              return (
+                <tr
+                  key={legId}
+                  className="grid-result-detail-row border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--hover-bg)]"
+                >
+                  <td className="grid-result-expand-spacer" aria-hidden />
+                  <DetailRowCells
+                    row={row}
+                    firstPositionByType={firstPositionByType}
+                    priceDecimals={priceDecimals}
+                    rounds={readRounds(legId, tradeActions)}
+                  />
+                  {hasExecCol ? (
+                    <td className={DETAIL_CELL_CLS}>
+                      {renderExpandedExecuteCell(legId, tradeActions)}
+                    </td>
+                  ) : null}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -519,7 +546,11 @@ function PositionQuoteRow({
       {items.map(item => (
         <div key={item.label}>
           <div className="text-xs text-[var(--muted-foreground)]">{item.label}</div>
-          <div className="mt-1 font-mono text-xl font-semibold tabular-nums tracking-tight">
+          {/* 数值刷新：key 跟随值变化触发 small 档微闪淡入（tabular-nums 保证宽度不抖） */}
+          <div
+            key={item.value}
+            className="grid-value-swap mt-1 font-mono text-xl font-semibold tabular-nums tracking-tight"
+          >
             {item.value}
           </div>
         </div>
@@ -536,6 +567,7 @@ export function GridResultTable({
   tradeActions,
   positionQuote,
 }: GridResultTableProps) {
+  const { message } = App.useApp();
   const visibleTableRef = useRef<HTMLDivElement>(null);
   const exportCaptureRef = useRef<HTMLDivElement>(null);
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
@@ -635,15 +667,15 @@ export function GridResultTable({
   const handleDownloadClick = useCallback(async () => {
     setIsDownloading(true);
     try {
-      const filename = await handleDownloadPng();
-      message.success(`已下载 ${filename}`);
+      await handleDownloadPng();
+      message.success('已导出表格图片');
     } catch (error) {
       console.error('[grid-table-export]', error);
-      message.error('下载失败，请重试');
+      message.error('表格导出失败，请重试');
     } finally {
       setIsDownloading(false);
     }
-  }, [handleDownloadPng]);
+  }, [handleDownloadPng, message]);
 
   if (tableRows.length === 0) return null;
 
@@ -655,10 +687,11 @@ export function GridResultTable({
           type="button"
           onClick={handleDownloadClick}
           disabled={isDownloading}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] shadow-[var(--ds-shadow-sm)] transition-colors hover:bg-[var(--hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="grid-quiet-btn inline-flex shrink-0 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] shadow-[var(--ds-shadow-sm)] hover:bg-[var(--hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Download className="h-3.5 w-3.5" aria-hidden />
-          下载表格
+          {/* 导出进行中文案原位替换，交代「正在导出图片」 */}
+          {isDownloading ? '导出中…' : '下载表格'}
         </button>
       </div>
 

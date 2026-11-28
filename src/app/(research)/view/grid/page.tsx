@@ -38,6 +38,7 @@ import {
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { fetchLatestEtfCloses } from '@/lib/supabase/etf-daily-repository';
 import { GridStrategyRepository } from '@/lib/supabase/grid-strategy-repository';
+import { MOTION, isReducedMotion } from '@/lib/motion';
 import { DEFAULT_GRID_PARAMS } from '@/types/grid';
 import type {
   GridStrategyConfigV1,
@@ -45,7 +46,9 @@ import type {
   GridStrategySavePayload,
   SavedGridStrategyV1,
 } from '@/types/grid-strategy-storage';
-import { App, Button, Card, Drawer, Empty, Grid, Tabs, message } from 'antd';
+import { useGSAP } from '@gsap/react';
+import { App, Button, Card, Drawer, Empty, Grid, Tabs } from 'antd';
+import { gsap } from 'gsap';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 /**
@@ -62,7 +65,7 @@ export default function GridStrategyPage() {
 }
 
 function GridStrategyPageInner() {
-  const { modal } = App.useApp();
+  const { modal, message } = App.useApp();
   const [result, setResult] = useState<GridRunResult | null>(null);
   const [generatedConfig, setGeneratedConfig] =
     useState<GridStrategyConfigV1 | null>(null);
@@ -91,9 +94,14 @@ function GridStrategyPageInner() {
   >('all');
   const [tradeDefaults, setTradeDefaults] =
     useState<GridTradeEntryDefaults | null>(null);
+  /** 记账弹窗开合布尔，与 defaults 数据解耦：defaults 保留到 afterClose 再清，完整保留退场动画 */
+  const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [tradeSubmitting, setTradeSubmitting] = useState(false);
   const [latestClose, setLatestClose] = useState<number | null>(null);
   const shellRef = useRef<HTMLElement | null>(null);
+  const resultRegionRef = useRef<HTMLDivElement | null>(null);
+  /** 结果区整组卡片入场只在「首次生成」播放，后续替换降级为纯淡切 */
+  const resultEntrancePlayedRef = useRef(false);
 
   const screens = Grid.useBreakpoint();
 
@@ -190,7 +198,7 @@ function GridStrategyPageInner() {
     } finally {
       setBoardLoading(false);
     }
-  }, [persistence.user, strategyRepo]);
+  }, [message, persistence.user, strategyRepo]);
 
   useLayoutEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -211,7 +219,7 @@ function GridStrategyPageInner() {
     void persistence.openStrategy(id).catch(error => {
       message.error(error instanceof Error ? error.message : '打开失败');
     });
-  }, [persistence.user, persistence.openStrategy]);
+  }, [message, persistence.user, persistence.openStrategy]);
 
   useEffect(() => {
     if (mainTab === 'board' || mainTab === 'journal') {
@@ -328,8 +336,9 @@ function GridStrategyPageInner() {
         maxSellQty: side === 'sell' ? q.openQty : undefined,
         priceDecimals,
       });
+      setTradeModalOpen(true);
     },
-    [getLevelQty, persistence.currentStrategy, priceDecimals, result]
+    [getLevelQty, message, persistence.currentStrategy, priceDecimals, result]
   );
 
   const hasResult =
@@ -337,6 +346,58 @@ function GridStrategyPageInner() {
     result.gridData.length > 0 &&
     result.stressTest !== null &&
     result.calculationErrors.length === 0;
+
+  /**
+   * 结果区入场语言：首次生成时 KPI 行/图卡/明细卡/表格卡 fade+translateY stagger 进场；
+   * 重新生成、打开云端策略、恢复草稿共用「内容替换」语言——整区纯淡切并让摘要条
+   * 策略名/参数摘要微闪一次，交代「内容换了」而不重播整列。
+   */
+  useGSAP(
+    () => {
+      const region = resultRegionRef.current;
+      if (!region || isReducedMotion()) return;
+      if (!resultEntrancePlayedRef.current) {
+        resultEntrancePlayedRef.current = true;
+        const cards = region.querySelectorAll('.grid-result-card');
+        gsap.fromTo(
+          cards,
+          { autoAlpha: 0, y: 12 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: MOTION.duration.medium,
+            ease: MOTION.ease.out,
+            stagger: MOTION.stagger.card,
+          }
+        );
+        return;
+      }
+      gsap.fromTo(
+        region,
+        { autoAlpha: 0.35 },
+        {
+          autoAlpha: 1,
+          duration: MOTION.duration.small,
+          ease: MOTION.ease.out,
+        }
+      );
+      const summaryBits = document.querySelectorAll(
+        '.grid-summary-bar__strategy-name, .grid-summary-bar__meta'
+      );
+      if (summaryBits.length > 0) {
+        gsap.fromTo(
+          summaryBits,
+          { autoAlpha: 0.35 },
+          {
+            autoAlpha: 1,
+            duration: MOTION.duration.small,
+            ease: MOTION.ease.out,
+          }
+        );
+      }
+    },
+    { dependencies: [result] }
+  );
 
   const saveState = getGridStrategySaveState({
     hasResult,
@@ -433,14 +494,23 @@ function GridStrategyPageInner() {
     return true;
   };
 
+  /**
+   * 生成成功后滚动到 KPI 行：reduced-motion 退化为瞬时定位；
+   * 延迟 120ms 与结果入场错峰，避免滚动与新内容落位同帧双重运动。
+   */
+  const scrollToPrimaryKpis = useCallback(() => {
+    window.setTimeout(() => {
+      document.getElementById('grid-primary-kpis')?.scrollIntoView({
+        behavior: isReducedMotion() ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    }, 120);
+  }, []);
+
   const handleGenerateStrategy = () => {
     const ok = applyCalculationResult();
     if (ok) {
-      requestAnimationFrame(() => {
-        document
-          .getElementById('grid-primary-kpis')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
+      scrollToPrimaryKpis();
     }
   };
 
@@ -448,11 +518,7 @@ function GridStrategyPageInner() {
     const ok = applyCalculationResult();
     if (ok) {
       setParamsDrawerOpen(false);
-      requestAnimationFrame(() => {
-        document
-          .getElementById('grid-primary-kpis')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
+      scrollToPrimaryKpis();
     }
   };
 
@@ -639,33 +705,41 @@ function GridStrategyPageInner() {
   const legs = result?.legs ?? [];
   const amountPerGrid = result?.amountPerGrid ?? 0;
 
+  /** 参数告警与跌破边界提示：进场 0fr→1fr 展开加淡入，离场瞬切（见 grid.css .grid-reveal） */
   const statusBlocks = (
     <>
       {warnings.length > 0 && hasResult && (
-        <div className="mb-4 space-y-2">
-          {warnings.map(warning => (
-            <div
-              key={warning.code}
-              role="alert"
-              className={`rounded-[var(--radius-compact)] border px-4 py-3 text-sm ${
-                warning.level === 'error'
-                  ? 'border-[var(--loss)] bg-[color-mix(in_srgb,var(--loss)_8%,var(--card))]'
-                  : 'border-[color-mix(in_srgb,var(--accent-warm)_40%,var(--border))] bg-[color-mix(in_srgb,var(--accent-warm)_6%,var(--card))]'
-              }`}
-            >
-              {warning.message}
+        <div className="grid-reveal">
+          <div className="grid-reveal__inner">
+            <div className="mb-4 space-y-2">
+              {warnings.map(warning => (
+                <div
+                  key={warning.code}
+                  role="alert"
+                  className={`rounded-[var(--radius-compact)] border px-4 py-3 text-sm ${
+                    warning.level === 'error'
+                      ? 'border-[var(--loss)] bg-[color-mix(in_srgb,var(--loss)_8%,var(--card))]'
+                      : 'border-[color-mix(in_srgb,var(--accent-warm)_40%,var(--border))] bg-[color-mix(in_srgb,var(--accent-warm)_6%,var(--card))]'
+                  }`}
+                >
+                  {warning.message}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       )}
 
       {strategyState === 'stopped' && (
-        <div
-          role="status"
-          className="mb-4 rounded-[var(--radius-compact)] border border-[var(--loss)] bg-[color-mix(in_srgb,var(--loss)_8%,var(--card))] px-4 py-3 text-sm"
-        >
-          当前价格已跌破最低价边界。本策略不再自动加码，等待价格回到网格区间或人工重新评估
-          basePrice/minPrice。
+        <div className="grid-reveal">
+          <div className="grid-reveal__inner">
+            <div
+              role="status"
+              className="mb-4 rounded-[var(--radius-compact)] border border-[var(--loss)] bg-[color-mix(in_srgb,var(--loss)_8%,var(--card))] px-4 py-3 text-sm"
+            >
+              当前价格已跌破最低价边界。本策略不再自动加码，等待价格回到网格区间，或重新调整基准价与最低价。
+            </div>
+          </div>
         </div>
       )}
     </>
@@ -725,79 +799,87 @@ function GridStrategyPageInner() {
         />
 
         {mainTab === 'board' ? (
-          !persistence.user ? (
-            <Card>
-              <Empty description="登录后查看组合看板">
-                <Button
-                  type="primary"
-                  shape="round"
-                  onClick={() => persistence.setLoginOpen(true)}
-                >
-                  登录
-                </Button>
-              </Empty>
-            </Card>
-          ) : (
-            <GridPortfolioBoard
-              strategies={boardStrategies}
-              trades={tradesApi.trades}
-              loading={boardLoading || tradesApi.loading}
-              onOpenCalculator={id => {
-                setMainTab('calc');
-                handleOpenStrategy(id);
-              }}
-              onOpenJournal={id => {
-                setJournalStrategyFilter(id);
-                setMainTab('journal');
-              }}
-              onEdit={strategy => {
-                setNameModalMode('rename');
-                setRenameTarget(strategy);
-                setNameModalError(null);
-                setNameModalOpen(true);
-              }}
-            />
-          )
+          /* Tab 面板切换：新内容统一 small 档淡入上移（grid-tab-panel），与 ink bar 同节奏 */
+          <div key="board" className="grid-tab-panel">
+            {!persistence.user ? (
+              <Card>
+                <Empty description="登录后查看组合看板">
+                  <Button
+                    type="primary"
+                    shape="round"
+                    onClick={() => persistence.setLoginOpen(true)}
+                  >
+                    登录
+                  </Button>
+                </Empty>
+              </Card>
+            ) : (
+              <GridPortfolioBoard
+                strategies={boardStrategies}
+                trades={tradesApi.trades}
+                loading={boardLoading || tradesApi.loading}
+                onOpenCalculator={id => {
+                  setMainTab('calc');
+                  handleOpenStrategy(id);
+                }}
+                onOpenJournal={id => {
+                  setJournalStrategyFilter(id);
+                  setMainTab('journal');
+                }}
+                onEdit={strategy => {
+                  setNameModalMode('rename');
+                  setRenameTarget(strategy);
+                  setNameModalError(null);
+                  setNameModalOpen(true);
+                }}
+              />
+            )}
+          </div>
         ) : null}
 
         {mainTab === 'journal' ? (
-          !persistence.user ? (
-            <div className="grid-card p-4 sm:p-6">
-              <Empty description="登录后查看成交流水">
-                <Button
-                  type="primary"
-                  shape="round"
-                  onClick={() => persistence.setLoginOpen(true)}
-                >
-                  登录
-                </Button>
-              </Empty>
-            </div>
-          ) : (
-            <div className="grid-card p-4 sm:p-6">
-              <GridTradeJournal
-                strategies={boardStrategies}
-                trades={tradesApi.trades}
-                strategyId={journalStrategyFilter}
-                onStrategyChange={setJournalStrategyFilter}
-                onDelete={async id => {
-                  try {
-                    await tradesApi.deleteTrade(id);
-                    message.success('已删除');
-                  } catch (error) {
-                    message.error(
-                      error instanceof Error ? error.message : '删除失败'
-                    );
-                  }
-                }}
-              />
-            </div>
-          )
+          <div key="journal" className="grid-tab-panel">
+            {!persistence.user ? (
+              <div className="grid-card p-4 sm:p-6">
+                <Empty description="登录后查看成交流水">
+                  <Button
+                    type="primary"
+                    shape="round"
+                    onClick={() => persistence.setLoginOpen(true)}
+                  >
+                    登录
+                  </Button>
+                </Empty>
+              </div>
+            ) : (
+              <div className="grid-card p-4 sm:p-6">
+                <GridTradeJournal
+                  strategies={boardStrategies}
+                  trades={tradesApi.trades}
+                  strategyId={journalStrategyFilter}
+                  onStrategyChange={setJournalStrategyFilter}
+                  onDelete={async id => {
+                    try {
+                      await tradesApi.deleteTrade(id);
+                      message.success('已删除');
+                    } catch (error) {
+                      message.error(
+                        error instanceof Error ? error.message : '删除失败'
+                      );
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </div>
         ) : null}
 
-        {mainTab === 'calc' && !hasResult ? (
-          <>
-            <ErrorAlert errors={errors} />
+        {mainTab === 'calc' ? (
+          /* 计算器面板容器只在 Tab 切换时淡入；空态↔结果态互换不重播（由结果区入场语言接管） */
+          <div key="calc" className="grid-tab-panel">
+            {!hasResult ? (
+              <>
+                <ErrorAlert errors={errors} />
             <ErrorAlert errors={calculationErrors} title="策略生成失败" />
 
             <div className="grid grid-cols-12 gap-4 sm:gap-8 xl:gap-10">
@@ -834,9 +916,9 @@ function GridStrategyPageInner() {
                 </div>
               </div>
             </div>
-          </>
-        ) : mainTab === 'calc' ? (
-          <>
+              </>
+            ) : (
+              <>
             <GridParamsSummaryBar
               basePrice={summaryParams.basePrice}
               minPrice={summaryParams.minPrice}
@@ -855,11 +937,16 @@ function GridStrategyPageInner() {
 
             {statusBlocks}
 
-            <div className="space-y-8">
-              {stressTest ? <GridPrimaryKpiRow stressTest={stressTest} /> : null}
+            {/* 结果区：四张卡片带 grid-result-card 标记，供首次生成 stagger 入场选中 */}
+            <div className="space-y-8" ref={resultRegionRef}>
+              {stressTest ? (
+                <div className="grid-result-card">
+                  <GridPrimaryKpiRow stressTest={stressTest} />
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-1 gap-6 xl:grid-cols-12 xl:gap-8">
-                <div className="grid-card flex h-full flex-col p-4 sm:p-6 md:p-8 xl:col-span-7">
+                <div className="grid-result-card grid-card flex h-full flex-col p-4 sm:p-6 md:p-8 xl:col-span-7">
                   <LazyStrategyComparisonChart
                     gridData={gridData}
                     basePrice={summaryParams.basePrice}
@@ -867,7 +954,7 @@ function GridStrategyPageInner() {
                   />
                 </div>
 
-                <div className="grid-card h-full p-4 sm:p-6 md:p-8 xl:col-span-5">
+                <div className="grid-result-card grid-card h-full p-4 sm:p-6 md:p-8 xl:col-span-5">
                   <div className="mb-5 border-b border-[var(--border)] pb-4">
                     <h3 className="ds-section-title">资金与收益明细</h3>
                     <p className="mt-1 text-xs text-[var(--muted-foreground)]">
@@ -884,7 +971,7 @@ function GridStrategyPageInner() {
                 </div>
               </div>
 
-              <div className="grid-card p-4 sm:p-6 md:p-8">
+              <div className="grid-result-card grid-card p-4 sm:p-6 md:p-8">
                 <div className="mb-6 border-b border-[var(--border)] pb-4 sm:mb-8 sm:pb-6">
                   <h3 className="ds-section-title text-lg">网格计算结果</h3>
                   <p className="mt-1 text-xs text-[var(--muted-foreground)]">
@@ -931,7 +1018,9 @@ function GridStrategyPageInner() {
                 footer={regenerateFooter}
               />
             </Drawer>
-          </>
+              </>
+            )}
+          </div>
         ) : null}
       </div>
 
@@ -982,10 +1071,11 @@ function GridStrategyPageInner() {
       />
 
       <GridTradeEntryModal
-        open={tradeDefaults !== null}
+        open={tradeModalOpen}
         loading={tradeSubmitting}
         defaults={tradeDefaults}
-        onCancel={() => setTradeDefaults(null)}
+        onCancel={() => setTradeModalOpen(false)}
+        afterClose={() => setTradeDefaults(null)}
         onSubmit={async values => {
           const strategyId = persistence.currentStrategy?.id;
           if (!strategyId || !tradeDefaults) return;
@@ -1004,7 +1094,7 @@ function GridStrategyPageInner() {
                 ? '已记录买入（卖出后可再买）'
                 : '已记录卖出（可再开一轮）'
             );
-            setTradeDefaults(null);
+            setTradeModalOpen(false);
           } catch (error) {
             message.error(error instanceof Error ? error.message : '记账失败');
           } finally {

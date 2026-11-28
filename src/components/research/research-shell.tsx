@@ -76,7 +76,26 @@ function ResearchRail({ pathname, collapsed }: { pathname: string; collapsed: bo
 }
 
 /**
+ * 折叠按钮的双图标叠层：两枚图标常驻不卸载，
+ * 由 is-folded 驱动 crossfade + 轻旋转，交代收起/展开的方向。
+ */
+function RailToggleIcon({ folded }: { folded: boolean }) {
+  const className = folded ? 'research-toggle-icon is-folded' : 'research-toggle-icon';
+  return (
+    <span className={className} aria-hidden="true">
+      <span className="research-toggle-icon-in">
+        <MenuFoldOutlined />
+      </span>
+      <span className="research-toggle-icon-in">
+        <MenuUnfoldOutlined />
+      </span>
+    </span>
+  );
+}
+
+/**
  * 投研工具壳：左侧菜单，右侧内容。内容区顶栏按钮在扩展与收缩之间切换。
+ * 换页淡入挂在 .research-content 的直接子级上：路由内容或加载骨架换入即重播。
  */
 export function ResearchShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '';
@@ -94,7 +113,7 @@ export function ResearchShell({ children }: { children: ReactNode }) {
             aria-expanded={!collapsed}
             onClick={() => setCollapsed((open) => !open)}
           >
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            <RailToggleIcon folded={collapsed} />
           </button>
         </div>
         <div className="research-content">{children}</div>

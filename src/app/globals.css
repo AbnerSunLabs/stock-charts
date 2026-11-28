@@ -32,10 +32,26 @@
   --gold-soft: rgba(245, 158, 11, 0.12);
   --font-display: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
-  --duration-fast: 0.2s;
-  --duration-normal: 0.35s;
+  /* 动效语言 Token —— 全站唯一来源，规范见 docs/motion-system.md。
+     退场比进场短 20-25%（离开不挽留）；任何交互动效 ≤ 360ms。 */
+  --motion-duration-micro: 120ms;
+  --motion-duration-small: 180ms;
+  --motion-duration-medium: 240ms;
+  --motion-duration-large: 320ms;
+  --motion-duration-exit-small: 140ms;
+  --motion-duration-exit-medium: 180ms;
+  --motion-duration-exit-large: 240ms;
+  --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.32, 0.64, 1);
+  --motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --motion-stagger-item: 30ms;
+  --motion-stagger-card: 40ms;
+  --motion-shift-sm: 6px;
+  --motion-shift-md: 12px;
+  --motion-press-scale: 0.98;
+  /* 骨架底色（修复历史未定义的 --bg-muted 引用） */
+  --bg-skeleton: #e9edf2;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08);
   /* 自适应页面宽度体系：
@@ -43,6 +59,35 @@
      随视口分档放大（见下方媒体查询），解决大屏两侧留白过多的问题。 */
   --page-max: 1200px;
   --page-max-wide: 1440px;
+}
+
+/* 减少动态效果：时长 token 归零（引用 token 的过渡立即到达终态，不卡中间态） */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-micro: 0ms;
+    --motion-duration-small: 0ms;
+    --motion-duration-medium: 0ms;
+    --motion-duration-large: 0ms;
+    --motion-duration-exit-small: 0ms;
+    --motion-duration-exit-medium: 0ms;
+    --motion-duration-exit-large: 0ms;
+    --motion-shift-sm: 0px;
+    --motion-shift-md: 0px;
+    --motion-press-scale: 1;
+  }
+}
+
+/* 全局兜底：keyframes 动画（入场、扫光、漂移、脉冲）与遗留硬编码过渡一并静止。
+   0.01ms 保证动画立即完成到终态而非停在起始帧。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* 大屏自适应：视口越宽，容器上限越高（内容页保留适度留白，数据密集页更充分利用空间） */
@@ -138,326 +183,6 @@ body::after {
   z-index: -1;
 }
 
-/* 首页工具卡片：仅作用于带 .home-tool-card 的 Card，避免影响其他 antd Card */
-.home-tool-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  transition: all 0.25s var(--ease-out-expo);
-  overflow: hidden;
-}
-
-.home-tool-card:hover {
-  border-color: var(--border-muted);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-elevated), 0 0 0 1px var(--accent-glow);
-}
-
-.home-tool-card .ant-card-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding: 1.75rem 1.5rem;
-  position: relative;
-}
-
-.home-tool-card-btn {
-  border-radius: 8px;
-  height: 38px;
-  font-weight: 500;
-  background: var(--bg-elevated);
-  border-color: var(--border-subtle);
-  color: var(--text-secondary);
-  transition: all 0.2s ease;
-}
-
-.home-tool-card-btn:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-/* 首页家庭资产特色卡片：独立作用域，避免影响投研工具卡片 */
-.home-family-finance-card {
-  --family-card-primary: #0052ff;
-  --family-card-primary-active: #003ecc;
-  --family-card-ink: #0a0b0d;
-  --family-card-body: #5b616e;
-  --family-card-muted: #7c828a;
-  --family-card-muted-soft: #a8acb3;
-  --family-card-hairline: #dee1e6;
-  --family-card-surface-soft: #f7f7f7;
-  --family-card-surface-strong: #eef0f3;
-  position: relative;
-  overflow: hidden;
-  min-height: 330px;
-  border: 1px solid var(--family-card-hairline);
-  border-radius: 24px;
-  background: var(--family-card-surface-soft);
-  box-shadow: 0 4px 12px rgba(10, 11, 13, 0.04);
-}
-
-.home-family-finance-card::before {
-  content: '';
-  position: absolute;
-  width: 300px;
-  height: 300px;
-  right: -160px;
-  bottom: -190px;
-  border: 1px solid var(--family-card-hairline);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.home-family-finance-card .ant-card-body {
-  min-height: 330px;
-  padding: 0;
-}
-
-.home-family-finance-card__content {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
-  align-items: center;
-  gap: 48px;
-  min-height: 330px;
-  padding: 38px 42px;
-}
-
-.home-family-finance-card__copy {
-  max-width: 600px;
-}
-
-.home-family-finance-card__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
-  color: var(--family-card-primary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-}
-
-.home-family-finance-card__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--family-card-surface-strong);
-}
-
-.home-family-finance-card__title {
-  max-width: 560px;
-  margin: 0 0 14px;
-  color: var(--family-card-ink);
-  font-family: var(--font-display);
-  font-size: clamp(1.75rem, 3vw, 2.5rem);
-  font-weight: 400;
-  line-height: 1.12;
-  letter-spacing: -0.025em;
-}
-
-.home-family-finance-card__description {
-  max-width: 540px;
-  margin: 0;
-  color: var(--family-card-body);
-  font-size: 0.9375rem;
-  line-height: 1.7;
-}
-
-.home-family-finance-card__features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 20px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.home-family-finance-card__features li {
-  padding: 5px 11px;
-  border-radius: 999px;
-  background: var(--family-card-surface-strong);
-  color: var(--family-card-body);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.home-family-finance-card__action.ant-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-width: 168px;
-  height: 46px;
-  margin-top: 24px;
-  padding-inline: 22px;
-  border-radius: 999px;
-  background: var(--family-card-primary);
-  border-color: var(--family-card-primary);
-  font-weight: 600;
-  box-shadow: none;
-}
-
-.home-family-finance-card__action.ant-btn:hover,
-.home-family-finance-card__action.ant-btn:focus-visible {
-  background: var(--family-card-primary-active) !important;
-  border-color: var(--family-card-primary-active) !important;
-}
-
-.home-family-finance-card__visual {
-  position: relative;
-  z-index: 1;
-  padding: 24px;
-  border: 1px solid var(--family-card-surface-strong);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-}
-
-.home-family-finance-card__visual-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 18px;
-  color: var(--family-card-ink);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.home-family-finance-card__status {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--family-card-surface-strong);
-  color: var(--family-card-body);
-  font-size: 0.6875rem;
-  font-weight: 500;
-}
-
-.home-family-finance-card__asset-row {
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 52px;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 0;
-  border-top: 1px solid var(--family-card-surface-strong);
-}
-
-.home-family-finance-card__asset-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(0, 82, 255, 0.1);
-  color: var(--family-card-primary);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.home-family-finance-card__asset-icon--neutral {
-  background: var(--family-card-surface-strong);
-  color: var(--family-card-body);
-}
-
-.home-family-finance-card__asset-label {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.home-family-finance-card__asset-label strong {
-  color: var(--family-card-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-.home-family-finance-card__asset-label small {
-  overflow: hidden;
-  color: var(--family-card-muted);
-  font-size: 0.6875rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home-family-finance-card__asset-mark {
-  width: 52px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--family-card-primary);
-}
-
-.home-family-finance-card__asset-mark--short {
-  width: 34px;
-  justify-self: end;
-  background: var(--family-card-muted-soft);
-}
-
-.home-family-finance-card__summary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.home-family-finance-card__summary span {
-  padding: 9px 6px;
-  border-radius: 8px;
-  background: var(--family-card-surface-soft);
-  color: var(--family-card-body);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  text-align: center;
-}
-
-@media (max-width: 767px) {
-  .home-family-finance-card__content {
-    grid-template-columns: 1fr;
-    gap: 28px;
-    padding: 28px 24px;
-  }
-
-  .home-family-finance-card__title {
-    font-size: 1.75rem;
-  }
-
-  .home-family-finance-card__action.ant-btn {
-    width: 100%;
-  }
-}
-
-@media (max-width: 420px) {
-  .home-family-finance-card__content {
-    padding: 24px 18px;
-  }
-
-  .home-family-finance-card__visual {
-    padding: 18px;
-  }
-
-  .home-family-finance-card__asset-row {
-    grid-template-columns: 38px minmax(0, 1fr) 34px;
-  }
-
-  .home-family-finance-card__asset-mark {
-    width: 34px;
-  }
-
-  .home-family-finance-card__asset-mark--short {
-    width: 22px;
-  }
-}
-
 /* Sunburst 金额输入：保证文字与背景对比度 */
 .sunburst-page .sunburst-amount-input.ant-input-number {
   width: 100%;
@@ -505,7 +230,7 @@ body::after {
 @keyframes pageFadeIn {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(var(--motion-shift-md));
   }
   to {
     opacity: 1;
@@ -516,7 +241,7 @@ body::after {
 @keyframes cardFadeIn {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.98);
+    transform: translateY(var(--motion-shift-md)) scale(0.98);
   }
   to {
     opacity: 1;
@@ -527,12 +252,58 @@ body::after {
 @keyframes viewFadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* 退场专用：与 viewFadeIn 不同名，确保进场→退场切换时动画必然重新开始，
+   不依赖「同名动画改参数会重播」这一浏览器行为差异 */
+@keyframes viewFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* 统一入场工具类：页面/视图容器与大块内容（时长曲线走 token，勿在业务处另设值） */
+.motion-enter {
+  animation: viewFadeIn var(--motion-duration-large) var(--motion-ease-out) both;
+}
+
+.motion-enter--card {
+  animation: cardFadeIn var(--motion-duration-large) var(--motion-ease-out) both;
+}
+
+/* 骨架扫光：供加载占位使用，reduced-motion 下由全局兜底块静止 */
+@keyframes motionSkeletonSheen {
+  from {
+    background-position: -160px 0;
+  }
+  to {
+    background-position: calc(100% + 160px) 0;
+  }
+}
+
+.motion-skeleton {
+  background:
+    linear-gradient(90deg, var(--bg-skeleton) 0%, #f4f7fa 45%, var(--bg-skeleton) 90%)
+    var(--bg-skeleton);
+  background-size: 320px 100%;
+  animation: motionSkeletonSheen 1.6s linear infinite;
+}
+
+/* 全站表格行 hover：统一节奏（颜色过渡不影响重排，reduced-motion 可豁免） */
+.ant-table-tbody > tr > td,
+.ant-table-tbody > tr.ant-table-row:hover > td {
+  transition: background-color var(--motion-duration-micro) var(--motion-ease-out);
 }
 
 /* 家庭财务页面共享视觉基础，仅在页面容器内生效。 */
@@ -810,6 +581,14 @@ body::after {
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
+  transition:
+    color var(--motion-duration-micro) var(--motion-ease-out),
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
+}
+
+.family-finance-page .family-amount-visibility-toggle:active {
+  transform: scale(0.94);
 }
 
 .family-finance-page .family-amount-visibility-toggle:hover {

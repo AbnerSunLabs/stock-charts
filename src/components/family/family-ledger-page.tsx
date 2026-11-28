@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { EyeFilled, EyeInvisibleFilled } from '@ant-design/icons';
 import {
   App,
   Button,
@@ -43,6 +42,13 @@ import {
 import { formatCny, formatDateTime } from '@/lib/family-finance/format';
 import { listTransferTargetOptions } from '@/lib/family-finance/ledger-transfer';
 import { FamilyAmountVisibilityProvider } from '@/components/family/family-amount-visibility';
+import { FamilyAmountVisibilityButton } from '@/components/family/family-amount-visibility-toggle';
+import { FamilyAmountText } from '@/components/family/family-amount-text';
+import {
+  FamilyFormDisclosure,
+  FamilyMotionStyles,
+  useFamilyRowFadeRemoval,
+} from '@/components/family/family-motion';
 import { FamilyAssetStructurePie } from '@/components/family/family-asset-structure-pie';
 import { FamilyAssetHistoryLine } from '@/components/family/family-asset-history-line';
 import { buildFamilyAssetHistory } from '@/lib/family-finance/history';
@@ -67,8 +73,13 @@ export function FamilyLedgerPage() {
   const [assetFourPotFilter, setAssetFourPotFilter] = useState<StructureFourPot | null>(null);
   /** 资产表：成员筛选；null 表示全部 */
   const [assetMemberFilter, setAssetMemberFilter] = useState<string | null>(null);
+  /** 筛选切换后资产表容器重放一次 small 档淡切（高频操作，纯淡切不抢戏） */
+  const [assetTableFading, setAssetTableFading] = useState(false);
   /** 金额默认隐藏；每次进入页面重置，不持久化。 */
   const [amountsVisible, setAmountsVisible] = useState(false);
+  /** 首屏加载完成后，后续增删改一律静默刷新（不再整页骨架闪一遍） */
+  const loadedOnceRef = useRef(false);
+  const { removingIds, fadeOutRow, settleRemovals } = useFamilyRowFadeRemoval();
   const [form] = Form.useForm();
   const sideWatch: LedgerSide = Form.useWatch('side', form) ?? 'asset';
   const transferToIdWatch: string | undefined = Form.useWatch('transferToId', form);
@@ -90,7 +101,9 @@ export function FamilyLedgerPage() {
           : `转移后本条目余额 ${formatCny(amountAfterTransfer)}`;
 
   const reload = useCallback(async () => {
-    setLoading(true);
+    // 状态变化：首屏加载 → 全页骨架；保存/删除等后续刷新 → 静默更新（按钮自有 confirmLoading）
+    const silent = loadedOnceRef.current;
+    if (!silent) setLoading(true);
     try {
       await repo.ensureSelfMember();
       const [m, i, historyRows] = await Promise.all([
@@ -102,11 +115,16 @@ export function FamilyLedgerPage() {
       setItems(i);
       setAssetHistory(buildFamilyAssetHistory(historyRows));
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载失败');
+      const reason = e instanceof Error ? e.message : '加载失败';
+      // 静默刷新失败：保留旧数据（回滚提示），明确告知当前展示的是最近一次数据
+      message.error(silent ? `数据刷新失败，当前展示的是最近一次数据（${reason}）` : reason);
     } finally {
-      setLoading(false);
+      loadedOnceRef.current = true;
+      if (!silent) setLoading(false);
+      // 刷新落定后清算删除淡出标记：失败时旧数据仍在的行恢复可见，杜绝幽灵行
+      settleRemovals();
     }
-  }, [repo, message]);
+  }, [repo, message, settleRemovals]);
 
   useEffect(() => {
     void reload();
@@ -230,7 +248,7 @@ export function FamilyLedgerPage() {
         note: values.note ?? null,
       });
       message.success(
-        willTransfer ? '已转移并更新' : editing ? '已更新' : '已添加'
+        willTransfer ? '已转移并更新条目' : editing ? '已更新条目' : '已添加条目'
       );
       setItemModalOpen(false);
       await reload();
@@ -302,10 +320,9 @@ export function FamilyLedgerPage() {
         title: '金额',
         dataIndex: 'amount',
         align: 'right',
+        /* 状态变化：金额显隐切换——同宽掩码 + blur/opacity 淡切，列宽不抖 */
         render: (v: number) => (
-          <span className="family-finance-monetary-value">
-            {formatCny(v, { visible: amountsVisible })}
-          </span>
+          <FamilyAmountText amount={v} className="family-finance-monetary-value" />
         ),
       },
       {
@@ -352,8 +369,10 @@ export function FamilyLedgerPage() {
                 modal.confirm({
                   title: '删除该条目？',
                   onOk: async () => {
+                    // 状态变化：删除确认成功 → 该行先淡出（exit-small）再静默刷新数据
                     await repo.deleteLedgerItem(row.id);
-                    message.success('已删除');
+                    message.success('已删除该条流水');
+                    await fadeOutRow(row.id);
                     await reload();
                   },
                 });
@@ -370,21 +389,16 @@ export function FamilyLedgerPage() {
 
   return (
     <FamilyAmountVisibilityProvider value={amountsVisible}>
-      <div className="family-finance-page family-ledger-page space-y-6">
+      {/* 状态变化：页面首次进入 —— 根容器统一 motion-enter（规范 token） */}
+      <div className="family-finance-page family-ledger-page space-y-6 motion-enter">
+      <FamilyMotionStyles />
       <header className="family-finance-header">
         <div>
           <div className="family-finance-eyebrow">资产记账</div>
           <div className="family-finance-header__title-row">
             <h1>家庭资产记账</h1>
-            <button
-              type="button"
-              className="family-amount-visibility-toggle"
-              aria-label={amountsVisible ? '隐藏金额' : '显示金额'}
-              aria-pressed={amountsVisible}
-              onClick={() => setAmountsVisible(v => !v)}
-            >
-              {amountsVisible ? <EyeFilled /> : <EyeInvisibleFilled />}
-            </button>
+            {/* 状态变化：金额显隐切换——图标叠层 crossfade，图表与文本金额统一淡切 */}
+            <FamilyAmountVisibilityButton onToggle={() => setAmountsVisible(v => !v)} />
           </div>
           <p>维护成员资产和家庭负债，保存后会同步更新家庭财务总览。</p>
         </div>
@@ -408,10 +422,34 @@ export function FamilyLedgerPage() {
             </p>
           </div>
           <div className="flex flex-1 items-center justify-center w-full">
-            {fourPotShares.length === 0 ? (
-              <Empty description="暂无活钱/稳钱/长钱标注资产" />
+            {/* 状态变化：首屏加载 → 同高骨架（先骨架后内容，禁止先闪空态）；空态↔图表互切 small 档淡入 */}
+            {loading && fourPotShares.length === 0 ? (
+              <div
+                className="motion-skeleton h-[320px] w-full max-w-[600px] rounded-lg"
+                role="status"
+                aria-label="正在加载资产结构…"
+              />
+            ) : fourPotShares.length === 0 ? (
+              <div
+                key="structure-empty"
+                style={{
+                  animationName: 'viewFadeIn',
+                  animationDuration: 'var(--motion-duration-small)',
+                  animationTimingFunction: 'var(--motion-ease-out)',
+                }}
+              >
+                <Empty description="还没有活钱/稳钱/长钱标注的资产" />
+              </div>
             ) : (
-              <div className="w-full max-w-[600px]">
+              <div
+                key="structure-chart"
+                className="w-full max-w-[600px]"
+                style={{
+                  animationName: 'viewFadeIn',
+                  animationDuration: 'var(--motion-duration-small)',
+                  animationTimingFunction: 'var(--motion-ease-out)',
+                }}
+              >
                 <FamilyAssetStructurePie
                   shares={fourPotShares}
                   totalAssets={totals.totalAssets}
@@ -439,9 +477,10 @@ export function FamilyLedgerPage() {
                     allowClear
                     placeholder="四笔钱"
                     value={assetFourPotFilter ?? undefined}
-                    onChange={(v: StructureFourPot | undefined) =>
-                      setAssetFourPotFilter(v ?? null)
-                    }
+                    onChange={(v: StructureFourPot | undefined) => {
+                      setAssetFourPotFilter(v ?? null);
+                      setAssetTableFading(true);
+                    }}
                     options={STRUCTURE_FOUR_POTS.map(k => ({
                       value: k,
                       label: FOUR_POT_LABELS[k],
@@ -453,28 +492,40 @@ export function FamilyLedgerPage() {
                     allowClear
                     placeholder="家庭成员"
                     value={assetMemberFilter ?? undefined}
-                    onChange={(v: string | undefined) => setAssetMemberFilter(v ?? null)}
+                    onChange={(v: string | undefined) => {
+                      setAssetMemberFilter(v ?? null);
+                      setAssetTableFading(true);
+                    }}
                     options={members.map(m => ({ value: m.id, label: m.name }))}
                     className="family-ledger-filter-select"
                     aria-label="按家庭成员筛选资产"
                   />
                 </Space>
               </div>
-              <Table
-                size="small"
-                loading={loading}
-                rowKey="id"
-                pagination={{ pageSize: 6 }}
-                scroll={{ x: 'max-content' }}
-                dataSource={filteredAssetItems}
-                columns={buildColumns('asset')}
-                locale={{
-                  emptyText:
-                    assetItems.length === 0
-                      ? '暂无资产条目'
-                      : '无匹配的资产条目',
-                }}
-              />
+              {/* 状态变化：筛选切换 → 行集合替换，容器重放一次 small 档纯淡切（表格本体不重挂载） */}
+              <div
+                className={assetTableFading ? 'family-table-swap-fade' : undefined}
+                onAnimationEnd={() => setAssetTableFading(false)}
+              >
+                <Table
+                  size="small"
+                  loading={loading}
+                  rowKey="id"
+                  pagination={{ pageSize: 6 }}
+                  scroll={{ x: 'max-content' }}
+                  dataSource={filteredAssetItems}
+                  columns={buildColumns('asset')}
+                  rowClassName={record =>
+                    removingIds.has(record.id) ? 'family-row-removing' : ''
+                  }
+                  locale={{
+                    emptyText:
+                      assetItems.length === 0
+                        ? '暂无资产条目'
+                        : '无匹配的资产条目',
+                  }}
+                />
+              </div>
             </div>
             <div>
               <h3 className="family-ledger-table-title">负债</h3>
@@ -486,6 +537,9 @@ export function FamilyLedgerPage() {
                 scroll={{ x: 'max-content' }}
                 dataSource={liabilityItems}
                 columns={buildColumns('liability')}
+                rowClassName={record =>
+                  removingIds.has(record.id) ? 'family-row-removing' : ''
+                }
                 locale={{ emptyText: '暂无负债条目' }}
               />
             </div>
@@ -503,13 +557,23 @@ export function FamilyLedgerPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {assetHistory.map(series => (
-            <FamilyAssetHistoryLine
-              key={series.memberId}
-              title={`${series.memberName}的资产`}
-              points={series.points}
-            />
-          ))}
+          {/* 状态变化：首屏加载 → 成员历史区同高骨架（先骨架后内容，避免区块凭空出现） */}
+          {loading && assetHistory.length === 0
+            ? [0, 1].map(i => (
+                <div
+                  key={`history-skeleton-${i}`}
+                  className="motion-skeleton h-[350px] rounded-xl"
+                  role="status"
+                  aria-label="正在加载成员资产变动…"
+                />
+              ))
+            : assetHistory.map(series => (
+                <FamilyAssetHistoryLine
+                  key={series.memberId}
+                  title={`${series.memberName}的资产`}
+                  points={series.points}
+                />
+              ))}
         </div>
       </section>
 
@@ -524,6 +588,7 @@ export function FamilyLedgerPage() {
         onOk={() => saveItem()}
         confirmLoading={itemSaving}
         okButtonProps={{ disabled: itemSaving }}
+        okText={itemSaving ? '保存中…' : '保存'}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="mt-2">
@@ -579,87 +644,110 @@ export function FamilyLedgerPage() {
                 />
               </Form.Item>
             </Col>
-            {sideWatch === 'asset' && (
-              <>
-                <Col span={12}>
-                  <Form.Item
-                    name="memberId"
-                    label="成员"
-                    rules={[{ required: true, message: '资产必须选择成员' }]}
-                  >
-                    <Select options={members.map(m => ({ value: m.id, label: m.name }))} />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="fourPot"
-                    label="四笔钱"
-                    rules={[{ required: true, message: '请选择四笔钱分类' }]}
-                  >
-                    <Select
-                      allowClear
-                      options={STRUCTURE_FOUR_POTS.map(k => ({
-                        value: k,
-                        label: FOUR_POT_LABELS[k],
-                      }))}
-                    />
-                  </Form.Item>
-                </Col>
-              </>
-            )}
-            {editing && sideWatch === 'asset' && editing.amount > 0 && (
-              <>
-                <Col span={12}>
-                  <Form.Item
-                    name="transferToId"
-                    label="转移至"
-                    extra={transferToExtra}
-                  >
-                    <Select
-                      allowClear
-                      showSearch
-                      optionFilterProp="label"
-                      placeholder="不转移"
-                      options={transferTargetOptions}
-                      onChange={() => {
-                        form.setFieldsValue({ transferAmount: undefined });
-                      }}
-                    />
-                  </Form.Item>
-                </Col>
-                {transferToIdWatch ? (
+            {/* 状态变化：类型切到「资产」→ 成员/四笔钱字段 0fr→1fr 展开并淡入，避免 Modal 高度跳变。
+                字段常挂（收起时 visibility 移出可访问性树），校验规则随可见性启停，负债保存不被隐藏字段拦截 */}
+            <Col span={24}>
+              <FamilyFormDisclosure visible={sideWatch === 'asset'}>
+                <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item
-                      name="transferAmount"
-                      label="转移金额"
-                      rules={[
-                        { required: true, message: '请输入转移金额' },
-                        {
-                          validator: async (_, value: number | null | undefined) => {
-                            const n = roundMoney(value ?? 0);
-                            if (!(n > 0)) {
-                              throw new Error('转移金额必须大于 0');
-                            }
-                            if (editing && n > editing.amount) {
-                              throw new Error('转移金额不能超过当前余额');
-                            }
-                          },
-                        },
-                      ]}
+                      name="memberId"
+                      label="成员"
+                      rules={
+                        sideWatch === 'asset'
+                          ? [{ required: true, message: '资产必须选择成员' }]
+                          : []
+                      }
                     >
-                      <InputNumber
-                        min={0.01}
-                        max={editing.amount}
-                        precision={2}
-                        className="w-full min-w-[10rem]"
-                        style={{ width: '100%', minWidth: '10rem' }}
-                        placeholder={`最多 ${formatCny(editing.amount)}`}
+                      <Select options={members.map(m => ({ value: m.id, label: m.name }))} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="fourPot"
+                      label="四笔钱"
+                      rules={
+                        sideWatch === 'asset'
+                          ? [{ required: true, message: '请选择四笔钱分类' }]
+                          : []
+                      }
+                    >
+                      <Select
+                        allowClear
+                        options={STRUCTURE_FOUR_POTS.map(k => ({
+                          value: k,
+                          label: FOUR_POT_LABELS[k],
+                        }))}
                       />
                     </Form.Item>
                   </Col>
-                ) : null}
-              </>
-            )}
+                </Row>
+              </FamilyFormDisclosure>
+            </Col>
+            {/* 状态变化：编辑资产且余额 > 0 → 「转移至/转移金额」区块展开；选择目标后金额输入再展开 */}
+            <Col span={24}>
+              <FamilyFormDisclosure
+                visible={Boolean(editing && sideWatch === 'asset' && editing.amount > 0)}
+              >
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="transferToId"
+                      label="转移至"
+                      extra={transferToExtra}
+                    >
+                      <Select
+                        allowClear
+                        showSearch
+                        optionFilterProp="label"
+                        placeholder="不转移"
+                        options={transferTargetOptions}
+                        onChange={() => {
+                          form.setFieldsValue({ transferAmount: undefined });
+                        }}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <FamilyFormDisclosure visible={Boolean(transferToIdWatch)}>
+                      <Form.Item
+                        name="transferAmount"
+                        label="转移金额"
+                        rules={
+                          /* 与区块显隐同门控：类型切到负债时字段隐藏，校验必须同步停用，
+                             不能只依赖 side onChange 清值（防御未来路径绕过） */
+                          sideWatch === 'asset' && transferToIdWatch
+                            ? [
+                                { required: true, message: '请输入转移金额' },
+                                {
+                                  validator: async (_, value: number | null | undefined) => {
+                                    const n = roundMoney(value ?? 0);
+                                    if (!(n > 0)) {
+                                      throw new Error('转移金额必须大于 0');
+                                    }
+                                    if (editing && n > editing.amount) {
+                                      throw new Error('转移金额不能超过当前余额');
+                                    }
+                                  },
+                                },
+                              ]
+                            : []
+                        }
+                      >
+                        <InputNumber
+                          min={0.01}
+                          max={editing?.amount}
+                          precision={2}
+                          className="w-full min-w-[10rem]"
+                          style={{ width: '100%', minWidth: '10rem' }}
+                          placeholder={editing ? `最多 ${formatCny(editing.amount)}` : undefined}
+                        />
+                      </Form.Item>
+                    </FamilyFormDisclosure>
+                  </Col>
+                </Row>
+              </FamilyFormDisclosure>
+            </Col>
             <Col span={24}>
               <Form.Item name="note" label="备注">
                 <Input.TextArea rows={2} />

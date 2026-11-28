@@ -1,6 +1,8 @@
 /**
  * 点位跟踪。视觉对齐聚焦预览：浅灰底、白卡片、靛色折线。
  * 涨红跌绿，买卖点落在收盘上。
+ * 动效：时长/曲线一律消费 globals.css 的 --motion-* token（全站唯一来源），
+ * 只过渡 transform/opacity 与颜色；reduced-motion 由 token 归零 + 全局兜底块接管。
  */
 
 .research-shell:has(.index-levels),
@@ -136,6 +138,12 @@
   font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
+  /* 状态变化：悬停/按压只换底色描边与轻微缩放 */
+  transition:
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    border-color var(--motion-duration-micro) var(--motion-ease-out),
+    color var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
 }
 .index-levels .essay-open b {
   color: var(--muted);
@@ -145,11 +153,22 @@
   background: #fff;
   border-color: #a5b4fc;
 }
+.index-levels .essay-open:active:not(:disabled) {
+  transform: scale(var(--motion-press-scale));
+}
 
+/* 「E大怎么说」抽屉：面板从右侧滑入、遮罩淡入。
+   组件在退场结束前保持挂载（TSX 延迟卸载），关闭态用 visibility 收掉交互。 */
 .index-levels .essay-rail {
   position: fixed;
   inset: 0;
   z-index: 80;
+  visibility: hidden;
+  transition: visibility 0s linear var(--motion-duration-exit-large);
+}
+.index-levels .essay-rail[data-open='true'] {
+  visibility: visible;
+  transition: visibility 0s;
 }
 .index-levels .essay-backdrop {
   position: absolute;
@@ -157,6 +176,15 @@
   padding: 0;
   border: 0;
   background: rgba(241, 245, 249, 0.72);
+  opacity: 0;
+  transition: opacity var(--motion-duration-medium) var(--motion-ease-out);
+}
+.index-levels .essay-rail[data-open='true'] .essay-backdrop {
+  opacity: 1;
+}
+.index-levels .essay-rail[data-open='false'] .essay-backdrop {
+  transition-duration: var(--motion-duration-exit-medium);
+  transition-timing-function: var(--motion-ease-in);
 }
 .index-levels .essay-panel {
   position: absolute;
@@ -169,6 +197,16 @@
   overflow: auto;
   background: #fff;
   border-left: 1px solid #e2e8f0;
+  /* 状态变化：抽屉开合 = 面板沿 X 轴进出（只动 transform） */
+  transform: translateX(100%);
+  transition: transform var(--motion-duration-large) var(--motion-ease-out);
+}
+.index-levels .essay-rail[data-open='true'] .essay-panel {
+  transform: translateX(0);
+}
+.index-levels .essay-rail[data-open='false'] .essay-panel {
+  transition-duration: var(--motion-duration-exit-large);
+  transition-timing-function: var(--motion-ease-in);
 }
 .index-levels .essay-close {
   display: inline-flex;
@@ -181,10 +219,17 @@
   background: #fff;
   color: var(--muted);
   font-size: 12px;
+  transition:
+    color var(--motion-duration-micro) var(--motion-ease-out),
+    border-color var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
 }
 .index-levels .essay-close:hover {
   color: var(--text);
   border-color: #a5b4fc;
+}
+.index-levels .essay-close:active:not(:disabled) {
+  transform: scale(var(--motion-press-scale));
 }
 .index-levels .essay-head {
   position: sticky;
@@ -234,6 +279,7 @@
   display: inline-block;
 }
 .index-levels .index-select {
+  position: relative;
   appearance: none;
   min-width: 240px;
   min-height: 40px;
@@ -241,21 +287,39 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background-color: #eef2f7;
-  background-image:
-    linear-gradient(45deg, transparent 50%, #69718a 50%),
-    linear-gradient(135deg, #69718a 50%, transparent 50%);
-  background-position:
-    calc(100% - 17px) 17px,
-    calc(100% - 12px) 17px;
-  background-size: 5px 5px;
-  background-repeat: no-repeat;
   color: var(--body);
   font-size: 12px;
   line-height: 20px;
   text-align: left;
   cursor: pointer;
   outline: none;
+  /* 状态变化：悬停/聚焦只换底色描边与阴影 */
+  transition:
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    border-color var(--motion-duration-micro) var(--motion-ease-out),
+    box-shadow var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
 }
+/* 下拉箭头改用伪元素画，开合时随菜单旋转（方向感） */
+.index-levels .index-select::after {
+  content: "";
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid #69718a;
+  border-bottom: 1.5px solid #69718a;
+  transform: translateY(-70%) rotate(45deg);
+  transition: transform var(--motion-duration-micro) var(--motion-ease-out);
+}
+.index-levels .index-select[aria-expanded='true']::after {
+  transform: translateY(-30%) rotate(225deg);
+}
+.index-levels .index-select:active:not(:disabled) {
+  transform: scale(var(--motion-press-scale));
+}
+/* 跟踪指数下拉菜单：展开 = 顶部原点缩放淡入（收起更短更快） */
 .index-levels .index-menu {
   position: absolute;
   z-index: 40;
@@ -272,6 +336,23 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   box-shadow: var(--ds-shadow-lg);
+  transform-origin: top right;
+  transform: translateY(-4px) scale(0.98);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--motion-duration-small) var(--motion-ease-out),
+    transform var(--motion-duration-small) var(--motion-ease-out);
+}
+.index-levels .index-menu[data-open='true'] {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+}
+.index-levels .index-menu[data-open='false'] {
+  transition-duration: var(--motion-duration-exit-small),
+    var(--motion-duration-exit-small);
+  transition-timing-function: var(--motion-ease-in), var(--motion-ease-in);
 }
 .index-levels .index-menu button {
   display: flex;
@@ -290,6 +371,10 @@
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
+  /* 状态变化：菜单项悬停/选中高亮淡切 */
+  transition:
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    color var(--motion-duration-micro) var(--motion-ease-out);
 }
 .index-levels .index-menu button:hover,
 .index-levels .index-menu button:focus-visible,
@@ -307,9 +392,12 @@
   color: #4338ca;
 }
 
+.index-levels .index-select:hover,
 .index-levels .index-select:focus {
   background-color: #fff;
   border-color: #a5b4fc;
+}
+.index-levels .index-select:focus {
   box-shadow:
     0 0 0 4px rgba(99, 102, 241, 0.2),
     0 10px 26px rgba(99, 102, 241, 0.14);
@@ -375,7 +463,12 @@
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.045em;
-  font-variant-numeric: lining-nums proportional-nums;
+  /* 等宽数字：收盘价更新时宽度稳定，涨跌幅徽章不左右横跳 */
+  font-variant-numeric: lining-nums tabular-nums;
+}
+/* 状态变化：新收盘到达 = 旧值保持后整体 0.4→1 微闪一次（不做滚动计数） */
+.index-levels .quote-fresh {
+  animation: ilValueFlash var(--motion-duration-small) var(--motion-ease-out) both;
 }
 .index-levels .chg {
   font-size: 15px;
@@ -409,9 +502,12 @@
   gap: 10px;
   flex: none;
 }
+/* 时间范围分段：等宽分段 + 绝对定位白色滑块 thumb，用 translateX 滑动跟随选中项。 */
 .index-levels .tabs {
-  display: flex;
-  gap: 0;
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   align-items: center;
   width: auto;
   margin: 0;
@@ -420,7 +516,25 @@
   background: #eef1ef;
   white-space: nowrap;
 }
+.index-levels .tab-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 1px 3px rgba(16, 24, 40, 0.08);
+  /* 状态变化：切换时间范围 = 滑块平移一格（跟手位移用 standard 曲线，只动 transform） */
+  transform: translateX(calc(var(--tab-index, 0) * 100%));
+  transition: transform var(--motion-duration-small) var(--motion-ease-standard);
+  pointer-events: none;
+}
 .index-levels .tab {
+  position: relative;
+  z-index: 1;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -430,20 +544,24 @@
   font-size: 13px;
   font-weight: 500;
   line-height: 20px;
+  text-align: center;
   box-shadow: none;
   cursor: pointer;
+  /* 状态变化：文字颜色随选中/悬停淡切 */
+  transition:
+    color var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
 }
 .index-levels .tab.active,
 .index-levels .tab[aria-pressed="true"] {
-  background: #fff;
   color: #30334b;
   font-weight: 600;
-  box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.06),
-    0 1px 3px rgba(16, 24, 40, 0.08);
 }
 .index-levels .tab:hover {
   color: #30334b;
+}
+.index-levels .tab:active:not(:disabled) {
+  transform: scale(var(--motion-press-scale));
 }
 
 .index-levels .chart-host {
@@ -465,9 +583,53 @@
   justify-content: center;
   cursor: default;
 }
+/* 状态变化：加载/出错占位进场 = 与内容同构的纯淡入（同高不跳动） */
+.index-levels .chart.chart-loading,
 .index-levels .chart.chart-error {
+  animation: ilFade var(--motion-duration-micro) var(--motion-ease-out) both;
+}
+.index-levels .chart.chart-error {
+  flex-direction: column;
+  gap: 14px;
   color: var(--muted);
   font-size: 13px;
+}
+/* 状态变化：数据就绪 = SVG 整图 180ms 淡入（各图统一节奏） */
+.index-levels .chart-host > svg.chart {
+  animation: ilFade var(--motion-duration-small) var(--motion-ease-out) both;
+}
+/* 图例开关联动：折线/轴文字/最新价标签常挂载，只切 opacity */
+.index-levels .chart .layer-price,
+.index-levels .chart .layer-pe,
+.index-levels .chart .now-tag {
+  transition: opacity var(--motion-duration-small) var(--motion-ease-out);
+}
+/* 状态变化：切换对照档位 = 虚线整组 translateY 平移到新档 */
+.index-levels .chart .key-level {
+  transition: transform var(--motion-duration-small) var(--motion-ease-out);
+}
+.index-levels .chart-retry {
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--body);
+  font-size: 12px;
+  cursor: pointer;
+  /* 状态变化：重试按钮悬停/按压反馈 */
+  transition:
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    border-color var(--motion-duration-micro) var(--motion-ease-out),
+    color var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
+}
+.index-levels .chart-retry:hover {
+  border-color: #a5b4fc;
+  color: var(--text);
+}
+.index-levels .chart-retry:active:not(:disabled) {
+  transform: scale(var(--motion-press-scale));
 }
 .index-levels .chart-loading-holder {
   width: 88px;
@@ -540,6 +702,16 @@
   font-weight: 400;
   line-height: 20px;
   cursor: pointer;
+  /* 状态变化：点位档选中/悬停 = 底色描边阴影淡切 + 按压缩放 */
+  transition:
+    background-color var(--motion-duration-small) var(--motion-ease-out),
+    border-color var(--motion-duration-small) var(--motion-ease-out),
+    box-shadow var(--motion-duration-small) var(--motion-ease-out),
+    color var(--motion-duration-small) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
+}
+.index-levels .level-picker button:active:not(:disabled) {
+  transform: scale(var(--motion-press-scale));
 }
 .index-levels .level-picker button b {
   color: var(--body);
@@ -568,6 +740,30 @@
   border-radius: 0 0 12px 12px;
   background: #f7f7ff;
   color: var(--text);
+}
+/* 状态变化：贴文列表出现/收起 = 折叠槽 0fr→1fr 展开（下方内容不瞬跳） */
+.index-levels .level-sheet-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin: 8px -24px 0;
+  transition: grid-template-rows var(--motion-duration-medium) var(--motion-ease-out);
+}
+.index-levels .level-sheet-wrap[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+.index-levels .level-sheet-wrap .level-sheet {
+  overflow: hidden;
+  min-height: 0;
+  margin: 0;
+  opacity: 0;
+  transition: opacity var(--motion-duration-small) var(--motion-ease-out);
+}
+.index-levels .level-sheet-wrap[data-open='true'] .level-sheet {
+  opacity: 1;
+}
+/* 状态变化：换对照档 = 贴文内容整体换新时淡入一次 */
+.index-levels .level-sheet-inner {
+  animation: ilFade var(--motion-duration-small) var(--motion-ease-out) both;
 }
 .index-levels .utter {
   display: grid;
@@ -613,6 +809,8 @@
   font-weight: 500;
   text-decoration: none;
   vertical-align: -3px;
+  /* 状态变化：原文链接悬停变色淡切 */
+  transition: color var(--motion-duration-micro) var(--motion-ease-out);
 }
 .index-levels .words a:hover {
   color: #4338ca;
@@ -687,10 +885,13 @@
   font-weight: 400;
 }
 
+/* 悬浮提示卡：常驻挂载（visibility 撑住量测），出现/消失走 opacity 淡显；
+   定位由 TSX 写 transform: translate3d，移动过程不过渡、跟手零延迟。 */
 .index-levels .tip {
   position: absolute;
+  left: 0;
+  top: 0;
   z-index: 2;
-  display: none;
   max-width: calc(100% - 16px);
   padding: 11px 14px;
   border: 1px solid #e2e8f0;
@@ -702,9 +903,22 @@
   line-height: 1.65;
   white-space: normal;
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--motion-duration-micro) var(--motion-ease-out),
+    visibility 0s linear var(--motion-duration-micro);
 }
-.index-levels .tip.show {
-  display: block;
+.index-levels .tip[data-show='true'] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--motion-duration-micro) var(--motion-ease-out),
+    visibility 0s;
+}
+/* 状态变化：悬停进入 = 提示卡淡显并上浮 4px 落位（只在出现那一拍播放） */
+.index-levels .tip[data-show='true'] .tip-card {
+  animation: ilTipIn var(--motion-duration-small) var(--motion-ease-out) both;
 }
 .index-levels .tip b {
   color: var(--text);
@@ -805,12 +1019,20 @@
   font: inherit;
   font-size: 13px;
   cursor: pointer;
+  /* 状态变化：图例开关 = 文字与色条淡切（关联折线走 opacity 过渡） */
+  transition:
+    color var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
+}
+.index-levels .series-legend button:active:not(:disabled) {
+  transform: scale(var(--motion-press-scale));
 }
 .index-levels .series-legend .swatch {
   display: inline-block;
   width: 18px;
   height: 3px;
   border-radius: 2px;
+  transition: background-color var(--motion-duration-micro) var(--motion-ease-out);
 }
 .index-levels .series-legend .swatch.price {
   background: #8183d8;
@@ -983,6 +1205,55 @@
 .index-levels select:focus-visible {
   outline: 2px solid #6366f1;
   outline-offset: 4px;
+}
+
+/* ---- 本区域自有关键帧（时长曲线全部引用 --motion-* token） ---- */
+
+/* 纯淡入：加载/出错占位、图表就绪、贴文换内容共用 */
+@keyframes ilFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 数值到达微闪：旧值保持到新值到位，0.4→1 交代一次更新（不做滚动计数） */
+@keyframes ilValueFlash {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 提示卡落位：淡显 + 上浮 4px */
+@keyframes ilTipIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- 以下为当前未挂载组件的动效链路（防止未来误挂时闪烁） ---- */
+
+/* 仪表盘指针上电扫针：双 rAF 放开角度后由该过渡完成（轻微过冲的仪表感） */
+.index-levels .gauge-needle {
+  transition: transform var(--motion-duration-large) var(--motion-ease-spring);
+}
+/* 仪表盘中央数值到达：'—'→数字淡入一次 */
+.index-levels .gauge-value-flash {
+  animation: ilValueFlash var(--motion-duration-small) var(--motion-ease-out) both;
+}
+/* 贴文列表两行截断文本在字体就绪/ resize 后重算：淡切掩盖文字替换 */
+.index-levels .notes-list .note > p {
+  animation: ilFade var(--motion-duration-micro) var(--motion-ease-out) both;
 }
 
 @media (max-width: 720px) {

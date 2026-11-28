@@ -87,6 +87,37 @@ function YuanInput({
   );
 }
 
+/**
+ * 状态变化：校验警告出现/消失——外层 grid-rows 0fr→1fr 折叠展开（不推挤兄弟布局，
+ * 不用 max-height hack），内层内容随之淡入；时长曲线走 medium/small token，
+ * reduced-motion 下归零立即到终态。
+ */
+function WarningsDisclosure({ warnings }: { warnings: string[] }) {
+  const open = warnings.length > 0;
+  return (
+    <div
+      className={`grid [transition:grid-template-rows_var(--motion-duration-medium)_var(--motion-ease-out)] ${
+        open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}
+      aria-hidden={!open}
+    >
+      <div
+        className={`overflow-hidden [transition:opacity_var(--motion-duration-small)_var(--motion-ease-out)] ${
+          open ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        <div className="pb-4" role="alert">
+          {warnings.map(w => (
+            <p key={w} className="m-0 text-[0.8125rem] text-amber-600">
+              {w}
+            </p>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** 节点汇总行：名称 + 金额 + 占比 */
 function SummaryCells({
   name,
@@ -286,15 +317,7 @@ export function PositionConfigForm({
         </div>
       </div>
 
-      {warnings.length > 0 && (
-        <div className="mb-4" role="alert">
-          {warnings.map(w => (
-            <p key={w} className="m-0 text-[0.8125rem] text-amber-600">
-              {w}
-            </p>
-          ))}
-        </div>
-      )}
+      <WarningsDisclosure warnings={warnings} />
 
       <div className="pt-4 border-t border-[var(--border-subtle)]">
         <p className="m-0 mb-3 text-[0.8125rem] font-semibold text-[var(--text-secondary)]">

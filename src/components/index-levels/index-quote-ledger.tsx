@@ -70,7 +70,8 @@ function ArticlePreview({ text }: { text: string }) {
     };
   }, [flat]);
 
-  return <p ref={ref}>{preview}</p>;
+  // key 随截断结果变化：字体就绪/resize 重算后文字替换走一次淡切（高度已被探针锁定）。
+  return <p ref={ref} key={preview}>{preview}</p>;
 }
 
 /**

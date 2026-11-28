@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import { Spin } from "antd";
@@ -108,15 +109,61 @@ function ChartTitle({
 function ChartLoading() {
   return (
     <div className="chart chart-loading">
-      <Spin tip="读取收盘">
+      <Spin tip="正在读取收盘…">
         <div className="chart-loading-holder" />
       </Spin>
     </div>
   );
 }
 
-function ChartError({ label }: { label: string }) {
-  return <div className="chart chart-error" role="status">{label}</div>;
+/** 出错态与加载态同构淡入，并带上「重新加载」入口（复用各自的加载函数）。 */
+function ChartError({ label, onRetry }: { label: string; onRetry?: () => void }) {
+  return (
+    <div className="chart chart-error" role="status">
+      <span>{label}</span>
+      {onRetry ? (
+        <button type="button" className="chart-retry" onClick={onRetry}>
+          重新加载
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * 时间范围分段：等宽分段 + 白色滑块 thumb。
+ * 状态变化「切换时间范围」由 thumb 的 translateX 滑动交代（CSS 见 .tab-thumb）。
+ */
+export function SpanTabs({
+  span,
+  onChange,
+  ariaLabel = "时间范围",
+}: {
+  span: CloseSpan;
+  onChange: (next: CloseSpan) => void;
+  ariaLabel?: string;
+}) {
+  const activeIndex = Math.max(
+    0,
+    SPANS.findIndex((item) => item.id === span),
+  );
+  const thumbStyle = { "--tab-index": activeIndex } as CSSProperties;
+  return (
+    <div className="tabs" role="group" aria-label={ariaLabel}>
+      <span className="tab-thumb" aria-hidden="true" style={thumbStyle} />
+      {SPANS.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          className={span === item.id ? "tab active" : "tab"}
+          aria-pressed={span === item.id}
+          onClick={() => onChange(item.id)}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -128,7 +175,8 @@ export function IndexLevelChart({
   code,
   points,
   phase,
-  errorLabel = "收盘暂时读不出来",
+  errorLabel = "收盘数据暂时无法读取",
+  onRetry,
   marks = [],
   priceDigits,
   wide = false,
@@ -148,6 +196,8 @@ export function IndexLevelChart({
   points: IndexClosePoint[];
   phase: "loading" | "ready" | "error";
   errorLabel?: string;
+  /** 出错态的「重新加载」回调：复用父级各自的加载函数。 */
+  onRetry?: () => void;
   /** 画在收盘线上的买卖点。 */
   marks?: EtfTradeMark[];
   /** 悬停收盘的小数位。 */
@@ -229,13 +279,19 @@ export function IndexLevelChart({
     return () => observer.disconnect();
   }, []);
 
+  /** 提示卡尺寸缓存：内容变高/变矮后钳位也只算一次，直接写 transform，不再二次 setState。 */
+  const tipSizeRef = useRef({ width: 0, height: 0 });
+
   useLayoutEffect(() => {
     const tip = tipRef.current;
     const host = hostRef.current;
-    if (!hover || !tip || !host) return;
+    if (!tip || !host) return;
     const width = tip.offsetWidth;
     const height = tip.offsetHeight;
-    if (width === 0 || height === 0) return;
+    // 仅在提示卡真实显示（有悬停内容）时缓存尺寸：隐藏态内容已卸载，
+    // 量到的只有内边距尺寸，写进缓存会污染靠近右缘时的翻面判定。
+    if (hover && width > 0 && height > 0) tipSizeRef.current = { width, height };
+    if (!hover) return;
     const left = Math.max(8, Math.min(hover.left, host.clientWidth - width - 8));
     const hostTop = host.getBoundingClientRect().top;
     // 手机图高可能小于完整提示卡，允许向上展开，优先保证视口内可读。
@@ -243,10 +299,9 @@ export function IndexLevelChart({
       8 - hostTop,
       Math.min(hover.top, host.clientHeight - height - 4, window.innerHeight - hostTop - height - 8),
     );
-    if (left !== hover.left || top !== hover.top) {
-      setHover({ ...hover, left, top });
-    }
-  }, [hover, size, seriesOn.pe, peHistory]);
+    // 定位统一走 translate3d（不写 left/top），绘制前一次性落位消除二次跳位。
+    tip.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+  }, [hover, size, seriesOn.pe, peHistory, phase]);
 
   const digits = digitsOf(priceDigits);
   const fromZero =
@@ -263,7 +318,6 @@ export function IndexLevelChart({
         showNow:
           levels.length > 0 &&
           rows[rows.length - 1]?.tradeDate === full[full.length - 1]?.tradeDate,
-        showPe: seriesOn.pe,
       }),
     [
       rows,
@@ -275,7 +329,6 @@ export function IndexLevelChart({
       digits,
       activeLevel,
       full,
-      seriesOn.pe,
     ],
   );
   const last = rows[rows.length - 1];
@@ -374,7 +427,10 @@ export function IndexLevelChart({
     const showPeTip =
       seriesOn.pe &&
       peHistory.some((point) => point.tradeDate === rows[index]?.tradeDate);
-    const tipWidth = indexTip ? 280 : showPeTip ? 260 : badge?.note ? 320 : 190;
+    // 优先用上次实测宽度决定翻面，避免首拍按估算值翻错边。
+    const tipWidth =
+      tipSizeRef.current.width ||
+      (indexTip ? 280 : showPeTip ? 260 : badge?.note ? 320 : 190);
     const host = hostRef.current;
     const hostRect = host?.getBoundingClientRect();
     let left = event.clientX - (hostRect?.left ?? rect.left) + 14;
@@ -395,7 +451,7 @@ export function IndexLevelChart({
         {phase === "loading" ? (
           <ChartLoading />
         ) : phase === "error" ? (
-          <ChartError label={errorLabel} />
+          <ChartError label={errorLabel} onRetry={onRetry} />
         ) : (
           <>
             <svg
@@ -431,33 +487,35 @@ export function IndexLevelChart({
                 onActiveLevel={onActiveLevel}
               />
             </svg>
-            {hover && rows[hover.index] ? (
-              <div
-                ref={tipRef}
-                className={indexTip ? "tip show index-tip" : "tip show"}
-                role="tooltip"
-                style={{ left: hover.left, top: hover.top }}
-              >
-                <TipBody
-                  name={name}
-                  code={code}
-                  rows={rows}
-                  index={hover.index}
-                  digits={digits}
-                  indexTip={indexTip}
-                  rangePoints={full}
-                  mark={geom.marks.find((item) => item.index === hover.index)}
-                  pe={
-                    seriesOn.pe
-                      ? peHoverStats(
-                          peHistory,
-                          rows[hover.index]?.tradeDate ?? "",
-                        )
-                      : null
-                  }
-                />
+            <div
+              ref={tipRef}
+              className={indexTip ? "tip index-tip" : "tip"}
+              data-show={hover && rows[hover.index] ? "true" : "false"}
+              role="tooltip"
+            >
+              <div className="tip-card">
+                {hover && rows[hover.index] ? (
+                  <TipBody
+                    name={name}
+                    code={code}
+                    rows={rows}
+                    index={hover.index}
+                    digits={digits}
+                    indexTip={indexTip}
+                    rangePoints={full}
+                    mark={geom.marks.find((item) => item.index === hover.index)}
+                    pe={
+                      seriesOn.pe
+                        ? peHoverStats(
+                            peHistory,
+                            rows[hover.index]?.tradeDate ?? "",
+                          )
+                        : null
+                    }
+                  />
+                ) : null}
               </div>
-            ) : null}
+            </div>
           </>
         )}
       </div>
@@ -490,21 +548,13 @@ export function IndexLevelChart({
           {titleHelp ? <span className="title-help">{titleHelp}</span> : null}
         </div>
         {spanProp == null ? (
-          <div className="tabs">
-            {SPANS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={span === item.id ? "tab active" : "tab"}
-                onClick={() => {
-                  setSpan(item.id);
-                  setView(null);
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+          <SpanTabs
+            span={span}
+            onChange={(next) => {
+              setSpan(next);
+              setView(null);
+            }}
+          />
         ) : null}
       </div>
       {plot}
@@ -551,25 +601,29 @@ function ChartPlot({
             x2={geom.left + geom.innerW}
             y2={tick.y}
           />
-          {showPrice ? (
-            <text x={geom.left - 8} y={tick.y + 3} textAnchor="end">
-              {tick.label}
-            </text>
-          ) : null}
         </g>
       ))}
-      {showPe
-        ? geom.peTicks.map((tick) => (
-            <text
-              key={`pe-${tick.value}`}
-              className="pe-tick"
-              x={geom.left + geom.innerW + 8}
-              y={tick.y + 3}
-            >
-              {tick.label}
-            </text>
-          ))
-        : null}
+      {/* 状态变化：图例开关「点位」= 左轴文字常挂载，只切 opacity 淡出淡入。 */}
+      <g className="layer-price" style={{ opacity: showPrice ? 1 : 0 }}>
+        {geom.ticks.map((tick) => (
+          <text key={tick.value} x={geom.left - 8} y={tick.y + 3} textAnchor="end">
+            {tick.label}
+          </text>
+        ))}
+      </g>
+      {/* 状态变化：图例开关「市盈率」= 右轴文字常挂载，只切 opacity。 */}
+      <g className="layer-pe" style={{ opacity: showPe ? 1 : 0 }}>
+        {geom.peTicks.map((tick) => (
+          <text
+            key={`pe-${tick.value}`}
+            className="pe-tick"
+            x={geom.left + geom.innerW + 8}
+            y={tick.y + 3}
+          >
+            {tick.label}
+          </text>
+        ))}
+      </g>
       {geom.years.map((item) => (
         <text
           key={item.year + item.x}
@@ -580,27 +634,36 @@ function ChartPlot({
           {item.year}
         </text>
       ))}
-      {showPrice ? <path fill={`url(#${gradientId})`} d={geom.area} /> : null}
-      {showPrice ? <path className="price-line" d={geom.line} /> : null}
-      {showPe && geom.peLine ? (
-        <path className="pe-line" d={geom.peLine} stroke={PE_LINE} />
+      <g className="layer-price" style={{ opacity: showPrice ? 1 : 0 }}>
+        <path fill={`url(#${gradientId})`} d={geom.area} />
+        <path className="price-line" d={geom.line} />
+      </g>
+      {geom.peLine ? (
+        <g className="layer-pe" style={{ opacity: showPe ? 1 : 0 }}>
+          <path className="pe-line" d={geom.peLine} stroke={PE_LINE} />
+        </g>
       ) : null}
+      {/* 状态变化：切换对照档位 = 虚线整组沿 Y 平移到新档（y1/y2 不可过渡，包一层 g 用 transform）。 */}
       {geom.levelY != null ? (
-        <g className="key-level" onClick={onActiveLevel}>
+        <g
+          className="key-level"
+          onClick={onActiveLevel}
+          style={{ transform: `translate(0px, ${geom.levelY.toFixed(2)}px)` }}
+        >
           <line
             x1={geom.left}
-            y1={geom.levelY}
+            y1={0}
             x2={geom.left + geom.innerW}
-            y2={geom.levelY}
+            y2={0}
             strokeWidth={1.2}
             strokeDasharray="5 6"
           />
-          <circle cx={geom.left + geom.innerW - 5} cy={geom.levelY} r={3} />
+          <circle cx={geom.left + geom.innerW - 5} cy={0} r={3} />
           <line
             x1={geom.left}
-            y1={geom.levelY}
+            y1={0}
             x2={geom.left + geom.innerW}
-            y2={geom.levelY}
+            y2={0}
             stroke="transparent"
             strokeWidth={12}
           />
@@ -632,8 +695,8 @@ function ChartPlot({
           {hoverLabel}
         </text>
       ) : null}
-      {showPrice && geom.now ? (
-        <g className="now-tag">
+      {geom.now ? (
+        <g className="now-tag" style={{ opacity: showPrice ? 1 : 0 }}>
           <line
             className="now-line"
             x1={geom.left}
@@ -942,7 +1005,6 @@ function buildGeom(
     digits: number;
     level: number | null;
     showNow: boolean;
-    showPe: boolean;
   },
 ): Geom {
   const empty: Geom = {
@@ -968,7 +1030,8 @@ function buildGeom(
 
   const hasPe = rows.some((row) => row.peTtm != null);
   const left = options.digits > 2 ? 48 : 52;
-  const right = options.showPe && hasPe ? 56 : PLOT_RIGHT;
+  // 右轴留白只看数据有没有市盈率：开关图例不改变绘图区宽度，杜绝整图横向跳位。
+  const right = hasPe ? 56 : PLOT_RIGHT;
   const top = PLOT_TOP;
   const bottom = PLOT_BOTTOM;
   const innerW = size.width - left - right;
@@ -1030,9 +1093,8 @@ function buildGeom(
   });
 
   const levelY = options.level == null ? null : yAt(options.level);
-  const pe = options.showPe
-    ? peOverlay(rows, xAt, top, innerH)
-    : { line: "", ticks: [] as GeomTick[] };
+  // 市盈率几何始终计算（有数据时），图例开关只影响渲染层 opacity。
+  const pe = peOverlay(rows, xAt, top, innerH);
   const lastRow = rows[rows.length - 1];
   const nowY = yAt(lastRow.close);
   const now = options.showNow

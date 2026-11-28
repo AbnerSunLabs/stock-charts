@@ -105,8 +105,9 @@ export function HelpTooltip({
         tabIndex={0}
         aria-label="查看说明"
       >
+        {/* 状态变化：悬停/聚焦问号图标时颜色与透明度同步升高——color 与 opacity 一起过渡（micro token），避免颜色瞬跳闪变 */}
         <QuestionCircleOutlined
-          className={`text-[var(--muted-foreground)] opacity-60 transition-opacity hover:text-[var(--accent)] hover:opacity-100 ${className}`}
+          className={`text-[var(--muted-foreground)] opacity-60 [transition:color,opacity_var(--motion-duration-micro)_var(--motion-ease-out)] hover:text-[var(--accent)] hover:opacity-100 ${className}`}
           style={{ fontSize: SIZE_PX[size] }}
         />
       </span>

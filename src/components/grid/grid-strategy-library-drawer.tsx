@@ -8,11 +8,10 @@ import {
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import type { GridStrategyMetadata } from '@/types/grid-strategy-storage';
+import { MOTION, isReducedMotion } from '@/lib/motion';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { useRef, type ReactNode } from 'react';
-
-gsap.registerPlugin(useGSAP);
 
 export interface GridStrategyLibraryDrawerProps {
   open: boolean;
@@ -27,11 +26,6 @@ export interface GridStrategyLibraryDrawerProps {
   onOpenStrategy: (id: string) => void;
   onRenameStrategy: (strategy: GridStrategyMetadata) => void;
   onDeleteStrategy: (strategy: GridStrategyMetadata) => void;
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /** 取策略名首字作为视觉锚点 */
@@ -77,10 +71,11 @@ function LibrarySkeleton() {
     <ul className="grid-strategy-library__list" aria-hidden>
       {[0, 1, 2].map(index => (
         <li key={index} className="grid-strategy-library__skeleton-item">
-          <div className="grid-strategy-library__skeleton-mark" />
+          {/* 骨架底色与扫光统一走全局 .motion-skeleton */}
+          <div className="motion-skeleton grid-strategy-library__skeleton-mark" />
           <div className="grid-strategy-library__skeleton-copy">
-            <div className="grid-strategy-library__skeleton-line grid-strategy-library__skeleton-line--title" />
-            <div className="grid-strategy-library__skeleton-line grid-strategy-library__skeleton-line--meta" />
+            <div className="motion-skeleton grid-strategy-library__skeleton-line grid-strategy-library__skeleton-line--title" />
+            <div className="motion-skeleton grid-strategy-library__skeleton-line grid-strategy-library__skeleton-line--meta" />
           </div>
         </li>
       ))}
@@ -106,11 +101,23 @@ export function GridStrategyLibraryDrawer({
   onDeleteStrategy,
 }: GridStrategyLibraryDrawerProps) {
   const listRef = useRef<HTMLUListElement>(null);
+  /** 记录上一帧 open：入场 stagger 只沿 open 的 false→true 沿触发，数据刷新不重播 */
+  const prevOpenRef = useRef(false);
 
   useGSAP(
     () => {
-      if (!open || loading || error || strategies.length === 0) return;
-      if (!listRef.current || prefersReducedMotion()) return;
+      if (!open) {
+        // 关闭：重置入场机会，下次打开重新沿触发
+        prevOpenRef.current = false;
+        return;
+      }
+      // 打开但列表未就绪（loading/error/空）：不消耗入场机会，等列表真实挂载那一帧
+      if (loading || error || strategies.length === 0) return;
+      const firstOpen = !prevOpenRef.current;
+      prevOpenRef.current = true;
+      // 打开期间的后续数据刷新（改名/删除/打开策略后重拉）不重播整列
+      if (!firstOpen) return;
+      if (!listRef.current || isReducedMotion()) return;
       const items = listRef.current.querySelectorAll(
         '.grid-strategy-library__item'
       );
@@ -120,9 +127,12 @@ export function GridStrategyLibraryDrawer({
         {
           autoAlpha: 1,
           y: 0,
-          duration: 0.3,
-          stagger: 0.055,
-          ease: 'power2.out',
+          duration: MOTION.duration.medium,
+          stagger: {
+            each: MOTION.stagger.item,
+            amount: MOTION.stagger.maxTotal,
+          },
+          ease: MOTION.ease.out,
           overwrite: true,
         }
       );

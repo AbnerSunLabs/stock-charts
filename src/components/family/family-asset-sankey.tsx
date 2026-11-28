@@ -14,10 +14,12 @@ import {
 } from '@/lib/family-finance/asset-sankey';
 import { formatCny } from '@/lib/family-finance/format';
 import { useFamilyAmountVisibility } from '@/components/family/family-amount-visibility';
+import { useFamilyChartAnimate } from '@/components/family/family-motion';
 
 const Sankey = dynamic(() => import('@ant-design/charts').then(mod => mod.Sankey), {
   ssr: false,
-  loading: () => <div className="h-[360px] animate-pulse rounded-lg bg-[var(--bg-muted)]" />,
+  /* 状态变化：图表库异步加载占位——骨架扫光统一走 motion-skeleton（--bg-muted 未定义会呈透明洞） */
+  loading: () => <div className="motion-skeleton h-[360px] rounded-lg" />,
 });
 
 /** 负债 / 总资产柱额外描边加宽。 */
@@ -94,9 +96,13 @@ function buildNodeColorResolver(links: FamilyAssetSankeyLink[]): (key: string) =
 /**
  * 家庭资产结构桑基图：负债/净资产 → 总资产 → 四笔钱 → 条目。
  * 配色对齐参考图；汇总柱纯色加宽；连线透明度 0.6。
+ *
+ * 金额显隐切换：使用方用 FamilyChartAmountFade 包裹本组件，节点文案（含金额）的
+ * 更新被延迟到容器淡出到底后走 G2 update 通道原地重排，不再 key 重挂载整图。
  */
 export function FamilyAssetSankey({ items, members, height = 420 }: FamilyAssetSankeyProps) {
   const amountsVisible = useFamilyAmountVisibility();
+  const chartAnimate = useFamilyChartAnimate();
   const data = useMemo(
     () => buildFamilyAssetSankeyLinks(items, members, { amountsVisible }),
     [items, members, amountsVisible]
@@ -127,9 +133,9 @@ export function FamilyAssetSankey({ items, members, height = 420 }: FamilyAssetS
       </div>
 
       <Sankey
-        key={amountsVisible ? 'amt-visible' : 'amt-masked'}
         data={data}
         height={height}
+        animate={chartAnimate}
         marginLeft={16}
         marginRight={16}
         marginTop={36}
