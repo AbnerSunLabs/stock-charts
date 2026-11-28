@@ -62,11 +62,17 @@ export function GridParamsSummaryBar({
             <span className="grid-summary-bar__strategy-name">未保存</span>
           </div>
         )}
-        {draftDirty ? (
-          <p className="grid-summary-bar__dirty-hint" role="status">
-            参数已改，下方结果仍是旧快照。请重新生成后再保存。
-          </p>
-        ) : null}
+        {/* 脏态提示常挂，0fr→1fr 平滑展开，消除下方内容顶跳 */}
+        <div
+          className={`grid-summary-bar__reveal${draftDirty ? ' is-open' : ''}`}
+          aria-hidden={draftDirty ? undefined : true}
+        >
+          <div className="grid-summary-bar__reveal-inner">
+            <p className="grid-summary-bar__dirty-hint" role="status">
+              参数已改，下方结果仍是旧快照。请重新生成后再保存。
+            </p>
+          </div>
+        </div>
       </div>
       <div className="grid-summary-bar__row">
         <div className="grid-summary-bar__meta">
@@ -85,9 +91,17 @@ export function GridParamsSummaryBar({
           </span>
         </div>
         <div className="grid-summary-bar__actions">
-          {draftDirty ? (
-            <span className="grid-summary-bar__dirty-chip">参数已改</span>
-          ) : null}
+          {/* 脏态 chip 横向 0fr→1fr 展开 + 淡入，避免按钮区宽度瞬跳 */}
+          <span
+            className={`grid-summary-bar__chip-reveal${
+              draftDirty ? ' is-open' : ''
+            }`}
+            aria-hidden={draftDirty ? undefined : true}
+          >
+            <span className="grid-summary-bar__chip-reveal-inner">
+              <span className="grid-summary-bar__dirty-chip">参数已改</span>
+            </span>
+          </span>
           <GridSaveStatusIsland
             label={saveLabel}
             disabled={saveDisabled}

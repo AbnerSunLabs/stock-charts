@@ -7,6 +7,7 @@
   background: var(--bg-main);
 }
 
+/* 侧栏收展：宽度过渡收口到全局 token；跟手位移走 standard 曲线 */
 .research-rail {
   display: flex;
   flex: none;
@@ -18,14 +19,14 @@
   overflow: hidden;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-subtle);
-  /* 折叠是整条轨宽的一次切换；范围仅此一条侧栏，允许布局属性过渡 */
-  transition: width var(--duration-normal) var(--ease-in-out-smooth);
+  transition: width var(--motion-duration-medium) var(--motion-ease-standard);
 }
 
+/* 收起态只改宽度：左右留白与展开态一致（内容宽 36px），子级自行居中，
+   水平几何在折叠前后不发生瞬变 */
 .research-rail.is-collapsed {
-  align-items: center;
   width: 56px;
-  padding: 0 0 8px;
+  padding: 0 10px 8px;
 }
 
 .research-rail nav {
@@ -36,10 +37,8 @@
   width: 100%;
 }
 
-.research-rail.is-collapsed nav {
-  align-items: center;
-}
-
+/* 悬停/选中高亮：颜色用 micro 渐变（亮起与熄灭不再瞬跳）；
+   收展时 gap/padding 与容器宽度同一节奏（medium + standard），全程无第二套速度 */
 .research-rail-home,
 .research-rail-item {
   display: flex;
@@ -47,21 +46,22 @@
   gap: 10px;
   width: 100%;
   height: 40px;
-  padding: 0 12px;
+  padding: 0 9px;
   border-radius: 8px;
   color: var(--text-secondary);
   text-decoration: none;
   white-space: nowrap;
   transition:
-    background-color var(--duration-fast) var(--ease-snappy),
-    color var(--duration-fast) var(--ease-snappy);
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    color var(--motion-duration-micro) var(--motion-ease-out),
+    gap var(--motion-duration-medium) var(--motion-ease-standard),
+    padding var(--motion-duration-medium) var(--motion-ease-standard);
 }
 
+/* 收起态：gap 归零即可。图标靠对称 padding（9+18+9=36）保持水平坐标
+   与展开态完全一致，宽度恒为 100% 随容器渐变，无跳位 */
 .research-rail.is-collapsed .research-rail-home,
 .research-rail.is-collapsed .research-rail-item {
-  justify-content: center;
-  width: 40px;
-  padding: 0;
   gap: 0;
 }
 
@@ -71,6 +71,11 @@
   margin-bottom: 8px;
   color: #1f2140;
   font-weight: 600;
+}
+
+/* 收起态品牌印记（26px）在 36px 内容宽里居中：展开/收起仅 4px 平滑滑移 */
+.research-rail.is-collapsed .research-rail-home {
+  padding: 0 5px;
 }
 
 .research-rail-home svg {
@@ -89,13 +94,8 @@
 }
 
 .research-rail-label {
-  overflow: hidden;
   font-size: 14px;
   line-height: 1;
-  max-width: 150px;
-  transition:
-    max-width var(--duration-normal) var(--ease-in-out-smooth),
-    opacity var(--duration-fast) var(--ease-in-out-smooth);
 }
 
 .research-brand-name {
@@ -103,18 +103,28 @@
   font-size: 17px;
   font-weight: 600;
   line-height: 1;
-  overflow: hidden;
-  max-width: 150px;
-  transition:
-    max-width var(--duration-normal) var(--ease-in-out-smooth),
-    opacity var(--duration-fast) var(--ease-in-out-smooth);
 }
 
-/* 折叠时文字随轨宽一起收拢淡出，而不是瞬间消失 */
+/* 文字展开/收起：opacity + max-width 过渡替代 display:none，消除首帧剪裁。
+   展开方向延迟约 1/3 容器时长（80ms）再淡入，等侧栏基本到位后文字浮现 */
+.research-rail-label,
+.research-brand-name {
+  max-width: 160px;
+  overflow: hidden;
+  transition:
+    opacity var(--motion-duration-small) var(--motion-ease-out)
+      calc(var(--motion-duration-medium) / 3),
+    max-width var(--motion-duration-medium) var(--motion-ease-standard);
+}
+
+/* 收起方向：文字立即淡出且更快（退场短于进场），随后随容器收窄，不瞬灭 */
 .research-rail.is-collapsed .research-rail-label,
 .research-rail.is-collapsed .research-brand-name {
   max-width: 0;
   opacity: 0;
+  transition:
+    opacity var(--motion-duration-micro) var(--motion-ease-in),
+    max-width var(--motion-duration-medium) var(--motion-ease-standard);
 }
 
 .research-rail-home:hover,
@@ -123,11 +133,12 @@
   color: var(--text-primary);
 }
 
+/* 「长流」首页链接：补克制的悬停反馈（同列表菜单项同语言），仅保留品牌墨色 */
 .research-rail-home:hover {
-  background: transparent;
   color: #1f2140;
 }
 
+/* 选中高亮：背景与文字色渐变，让高亮「移动到点了的那项」可感知 */
 .research-rail-item.is-active {
   background: var(--bg-sidebar-active);
   color: var(--accent);
@@ -170,20 +181,57 @@
   color: var(--text-secondary);
   font-size: 16px;
   cursor: pointer;
+  /* 悬停换色与按压回弹同用 micro，保持一套节奏 */
   transition:
-    background-color var(--duration-fast) var(--ease-snappy),
-    color var(--duration-fast) var(--ease-snappy);
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    color var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
 }
 
-/* 折叠/展开图标换向：换节点时做一次轻淡入，交代方向变了（keyframes 见 globals.css） */
-.research-rail-toggle__icon {
-  display: inline-flex;
-  animation: icon-swap var(--duration-normal) var(--ease-out-expo) both;
+/* 按压反馈：轻微回缩，幅度走 --motion-press-scale（reduced-motion 下自动为 1） */
+.research-rail-toggle:active:not(:disabled) {
+  transform: scale(var(--motion-press-scale));
 }
 
 .research-rail-toggle:hover {
   background: var(--bg-sidebar-hover);
   color: var(--text-primary);
+}
+
+/* 折叠按钮图标叠层：收起/展开两枚图标常驻，靠 is-folded 切换显隐 */
+.research-toggle-icon {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.research-toggle-icon-in {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  transition:
+    opacity var(--motion-duration-micro) var(--motion-ease-out),
+    transform var(--motion-duration-micro) var(--motion-ease-out);
+}
+
+/* 展开态当值的是「收起」图标；「展开」图标自 +90° 待入（收起=左翻、展开=右翻） */
+.research-toggle-icon-in + .research-toggle-icon-in {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.85);
+}
+
+/* 收起态：两枚图标 crossfade 互换，同向轻旋转交代「翻过去了」的方向感 */
+.research-toggle-icon.is-folded .research-toggle-icon-in {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.85);
+}
+
+.research-toggle-icon.is-folded .research-toggle-icon-in + .research-toggle-icon-in {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
 }
 
 .research-content {
@@ -192,6 +240,24 @@
   overflow: auto;
   padding: 0 var(--research-gutter) 24px;
   background: transparent;
+}
+
+/* 换页：菜单切到另一件工具时，新详情（或路由加载骨架）轻淡入——
+   opacity 0.6→1 + 4px 上移，small 纯淡切不抢首屏读数，与菜单高亮同步交代去向。
+   终态 transform 归 none：不给页内 fixed 浮层（命名弹层/贴文抽屉）留包含块 */
+.research-content > * {
+  animation: researchPageIn var(--motion-duration-small) var(--motion-ease-out) both;
+}
+
+@keyframes researchPageIn {
+  from {
+    opacity: 0.6;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .research-content:has(.index-levels),
@@ -223,6 +289,47 @@
   padding: 24px;
 }
 
+/* 路由加载骨架：与详情页同形（标题 + 大块 + 双卡），扫光复用全局 .motion-skeleton */
+.research-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 20px;
+}
+
+.research-loading-title {
+  width: 208px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.research-loading-block {
+  height: 320px;
+  border-radius: 14px;
+}
+
+.research-loading-row {
+  display: flex;
+  gap: 16px;
+}
+
+.research-loading-cell {
+  flex: 1;
+  height: 96px;
+  border-radius: 14px;
+}
+
+/* 仅供读屏的加载文案（视觉上保持纯骨架） */
+.research-loading-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 @media (max-width: 720px) {
   .research-shell {
     --research-gutter: 14px;
@@ -233,13 +340,5 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .research-rail,
-  .research-rail-home,
-  .research-rail-item,
-  .research-rail-toggle,
-  .research-rail-label,
-  .research-brand-name {
-    transition: none;
-  }
-}
+/* prefers-reduced-motion：全局 token 归零 + globals.css 的 * 兜底块已覆盖本文件
+   的全部 transition/animation，故此处不再保留局部重复兜底。 */

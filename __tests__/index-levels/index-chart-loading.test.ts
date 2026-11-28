@@ -20,14 +20,19 @@ jest.mock('@/hooks/use-etf-journal-marks', () => ({
   useEtfJournalMarks: () => ({ status: 'signed-out' }),
 }));
 jest.mock('@/components/index-levels/index-level-chart', () => ({
-  IndexLevelChart: ({ code, phase, points }: {
+  // SpanTabs 与图表同模块导出（页面统一渲染时间范围分段），mock 需一并提供
+  SpanTabs: () => null,
+  IndexLevelChart: ({ code, phase, points, onRetry }: {
     code: string;
     phase: string;
     points: Array<{ peTtm?: number }>;
+    onRetry?: () => void;
   }) => require('react').createElement('div', {
     'data-chart-code': code,
     'data-phase': phase,
     'data-pe-count': points.filter(point => point.peTtm != null).length,
+    // 出错态的「重新加载」入口由 tracker 以 onRetry 注入
+    'data-has-retry': typeof onRetry === 'function' ? 'true' : 'false',
   }),
 }));
 
@@ -87,6 +92,8 @@ describe('指数折线加载时序', () => {
     });
 
     expect(chart()?.dataset.phase).toBe('error');
+    // 出错时挂上「重新加载」入口（复用父级加载函数）
+    expect(chart()?.dataset.hasRetry).toBe('true');
   });
 
   it('只有一个市盈率点、无法构成折线时也不显示点位图', async () => {

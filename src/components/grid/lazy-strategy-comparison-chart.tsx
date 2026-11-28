@@ -19,7 +19,7 @@ export const LazyStrategyComparisonChart = dynamic(
           aria-hidden
         />
         <p className="text-sm font-medium text-[var(--muted-foreground)]">
-          加载图表…
+          正在加载图表…
         </p>
       </div>
     ),

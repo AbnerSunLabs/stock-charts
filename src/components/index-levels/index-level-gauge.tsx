@@ -50,7 +50,11 @@ export function IndexLevelGauge({
       <div className="gauge-wrap">
         <GaugeFace scale={scale} marks={marks} needle={ready && close ? angleAt(close.close, scale) : null} />
         <div className="gauge-center">
-          <div className="gauge-value">
+          {/* 状态变化：数值到达 = '—'→数字时 key 重挂，淡入一次（与指针扫针同一拍） */}
+          <div
+            className={ready && close ? 'gauge-value gauge-value-flash' : 'gauge-value'}
+            key={ready && close ? `${close.indexCode}-${close.tradeDate}-${close.close}` : 'pending'}
+          >
             {ready && close ? close.close.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
           </div>
           <div className="gauge-label">
@@ -63,7 +67,7 @@ export function IndexLevelGauge({
           </div>
         </div>
       </div>
-      {phase === 'error' ? <p className="sr">收盘暂时读不出来</p> : null}
+      {phase === 'error' ? <p className="sr">收盘数据暂时无法读取</p> : null}
     </section>
   );
 }

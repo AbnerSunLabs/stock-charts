@@ -20,7 +20,7 @@
       --apricot-mid: #f6c798;
       --apricot-soft: #fdefe0;
       --canvas: #f9f8fc;
-      --ease: cubic-bezier(.2,.7,.2,1);
+      /* 动效一律引用全局 --motion-* token（globals.css :root），不再自造局部曲线。 */
     }
 
     .home-final-b * { box-sizing: border-box; }
@@ -44,10 +44,15 @@
     /* 三团柔光与细颗粒共用隔离的背景层。 */
     /* 背景层自带底色：颗粒的 soft-light 必须有底可混，否则会直接盖成一层灰。 */
     .home-final-b .backdrop { isolation: isolate; background: var(--canvas); }
+    /* 去掉常驻 will-change：漂移动画本身会把元素提为合成层，常驻声明只白占三个大层的合成内存。 */
     .home-final-b .backdrop-glow {
       position: absolute;
       border-radius: 50%;
-      will-change: transform;
+    }
+    /* 标签页切到后台时暂停三团柔光的漂移（装饰动效优先级低于一切交互反馈）；
+       回到前台由 JS 摘掉 is-paused 自动续播。reduced-motion 下动画被静止，本规则不冲突。 */
+    .home-final-b .backdrop.is-paused .backdrop-glow {
+      animation-play-state: paused;
     }
     .home-final-b .backdrop-warm {
       width: 920px;
@@ -126,7 +131,8 @@
     .home-final-b .feature-panel {
       display: flex; flex-direction: column; min-width: 0; min-height: 500px;
       padding: 24px; border: 1px solid; border-radius: 16px;
-      transition: border-color 240ms var(--ease);
+      /* 悬停只过渡边框色（颜色类反馈走 small 档），曲线对齐全局 ease-out。 */
+      transition: border-color var(--motion-duration-small) var(--motion-ease-out);
     }
     .home-final-b .feature-family {
       border-color: rgba(168,90,28,.22);
@@ -150,13 +156,16 @@
       border: 1px solid; border-radius: 10px;
       background: var(--surface);
       box-shadow: none;
-      transition: transform 280ms var(--ease);
+      /* 纸片上浮/回落统一走 transform 的 micro 档，按压回落与悬停同语言。 */
+      transition: transform var(--motion-duration-micro) var(--motion-ease-out);
     }
     .home-final-b .feature-family .chart-paper { border-color: rgba(168,90,28,.20); }
     .home-final-b .feature-tools .chart-paper { border-color: rgba(67,56,202,.18); }
     /* 桌面下两张纸片同高，292px 刚好包住家庭纸片。 */
     .home-final-b .family-paper, .home-final-b .tools-paper { min-height: 292px; }
     .home-final-b .feature-panel:hover .chart-paper, .home-final-b .feature-panel:focus-visible .chart-paper { transform: translateY(-4px); }
+    /* 按压确认：按下时纸片从悬停上浮位回落，松手回弹，交代「按下生效」。 */
+    .home-final-b .feature-panel:active:not(:disabled) .chart-paper { transform: translateY(0); }
     .home-final-b .paper-head { display: flex; align-items: center; justify-content: space-between; }
     .home-final-b .paper-title { font-size: 13px; font-weight: 600; }
     .home-final-b .eye-off { width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
@@ -198,13 +207,13 @@
     .home-final-b .panel-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; }
     .home-final-b .panel-copy h2 { margin: 0; font-size: 28px; font-weight: 600; line-height: 1.3; }
     .home-final-b .panel-copy p { max-width: 340px; margin: 8px 0 0; color: var(--body); font-size: 14px; line-height: 1.7; }
-    .home-final-b .panel-button { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border: 1px solid; border-radius: 999px; background: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background-color 240ms var(--ease), color 240ms var(--ease), border-color 240ms var(--ease), transform 160ms var(--ease); }
-    /* 按压：按钮轻缩、纸片从悬停位回落，交代"按下去了" */
-    .home-final-b .feature-panel:active .panel-button { transform: scale(0.97); }
-    .home-final-b .feature-panel:active .chart-paper { transform: translateY(-2px); }
+    /* 按钮悬停的颜色反馈走 small 档；transform（按压压缩）走 micro 档，同类变化同 token。 */
+    .home-final-b .panel-button { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border: 1px solid; border-radius: 999px; background: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background-color var(--motion-duration-small) var(--motion-ease-out), color var(--motion-duration-small) var(--motion-ease-out), border-color var(--motion-duration-small) var(--motion-ease-out), transform var(--motion-duration-micro) var(--motion-ease-out); }
     .home-final-b .feature-family .panel-button { border-color: rgba(168,90,28,.22); }
     .home-final-b .feature-tools .panel-button { border-color: rgba(67,56,202,.20); }
-    .home-final-b .panel-button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: transform 240ms var(--ease); }
+    .home-final-b .panel-button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--motion-duration-micro) var(--motion-ease-out), opacity var(--motion-duration-micro) var(--motion-ease-out); }
+    /* 按压确认：整颗胶囊随面板按下压缩，120ms 内回弹。 */
+    .home-final-b .feature-panel:active:not(:disabled) .panel-button { transform: scale(var(--motion-press-scale)); }
     .home-final-b .feature-family:hover .panel-button, .home-final-b .feature-family:focus-visible .panel-button { background: var(--apricot-deep); border-color: var(--apricot-deep); color: #fff; }
     .home-final-b .feature-tools:hover .panel-button, .home-final-b .feature-tools:focus-visible .panel-button { background: var(--indigo-deep); border-color: var(--indigo-deep); color: #fff; }
     .home-final-b .feature-panel:hover .panel-button svg, .home-final-b .feature-panel:focus-visible .panel-button svg { transform: translateX(3px); }
@@ -236,10 +245,26 @@
 
 .home-final-b { min-height: 100vh; line-height: normal; }
 .home-final-b .feature-family { cursor: pointer; font: inherit; color: inherit; text-align: left; }
-.home-final-b .mini-chart img { display: block; width: 100%; height: 150px; margin: auto; }
+.home-final-b .feature-family:disabled { cursor: default; }
+/* 迷你图到达淡入：图片网络加载完成（JS 标记 is-loaded）前保持透明，
+   到达后 small 档淡入，交代「内容来了」；高度固定无布局抖动，reduced-motion 由全局兜底立即到终态。 */
+.home-final-b .mini-chart img { display: block; width: 100%; height: 150px; margin: auto; opacity: 0; transition: opacity var(--motion-duration-small) var(--motion-ease-out); }
+.home-final-b .mini-chart.is-loaded img { opacity: 1; }
 @media (max-width: 560px) { .home-final-b .mini-chart img { height: 88px; } }
-
-/* 首屏入场：标题先到、双联画随后一次轻淡入（只播一次，不与内部动效串联）。
-   keyframes 与时长/曲线 token 复用 globals.css 的全站动效语言 */
-.home-final-b .intro { animation: viewFadeIn var(--duration-normal) var(--ease-out-expo) both; }
-.home-final-b .diptych { animation: viewFadeIn var(--duration-normal) var(--ease-out-expo) 80ms both; }
+/* 「打开家账」pending 时的图标槽：箭头与轻量转圈同格叠放，micro 档交叉淡切。 */
+.home-final-b .panel-button-icon { position: relative; display: grid; place-items: center; width: 15px; height: 15px; }
+.home-final-b .panel-button-icon > * { grid-area: 1 / 1; }
+.home-final-b .panel-spinner {
+  width: 13px; height: 13px; border: 1.5px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; opacity: 0;
+  transition: opacity var(--motion-duration-micro) var(--motion-ease-out);
+}
+/* 仅在核验中让转圈可见并旋转，平时不付任何动画成本。 */
+.home-final-b .feature-family.is-checking .panel-spinner { opacity: 1; animation: panel-button-spin var(--motion-duration-medium) linear infinite; }
+.home-final-b .feature-family.is-checking .panel-button-icon svg { opacity: 0; }
+@keyframes panel-button-spin { to { transform: rotate(360deg); } }
+/* 首屏一次性入场：intro 与两张面板用全局 .motion-enter--card（cardFadeIn，large + ease-out），
+   这里只补 stagger——面板依次错峰 40ms（总错峰 80ms ≤ 180ms 上限）。
+   animation 只随首次挂载播放一次，后续状态更新不会重放。 */
+.home-final-b .feature-family.motion-enter--card { animation-delay: var(--motion-stagger-card); }
+.home-final-b .feature-tools.motion-enter--card { animation-delay: calc(var(--motion-stagger-card) * 2); }

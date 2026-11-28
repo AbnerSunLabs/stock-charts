@@ -6,7 +6,9 @@ import {
   GridStepConfig,
   GridStepFormulaHelp,
 } from '@/components/grid/grid-step-config';
-import { useState, type ReactNode } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { useId, useState } from 'react';
+import type { ReactNode } from 'react';
 
 export interface GridParamsPanelProps {
   minTradeUnit: number;
@@ -76,7 +78,10 @@ export function GridParamsPanel({
   embedded = false,
   footer,
 }: GridParamsPanelProps) {
+  /** 受控折叠态：替代原生 <details>，0fr→1fr 过渡 + Chevron 旋转 + 「展开/收起」文案切换 */
   const [stepOpen, setStepOpen] = useState(stepDefaultOpen);
+  const stepContentId = useId();
+
   return (
     <div className={embedded ? 'grid-params-panel--embedded' : 'grid-card'}>
       <div className="border-b border-[var(--border)]">
@@ -103,15 +108,17 @@ export function GridParamsPanel({
         />
       </div>
 
-      <details
-        className="grid-step-details"
-        open={stepOpen || undefined}
-        onToggle={event => setStepOpen(event.currentTarget.open)}
-      >
-        <summary className="grid-step-details__summary">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="ds-section-title">步长与动态（进阶）</h3>
+      <div className={`grid-step-fold${stepOpen ? ' is-open' : ''}`}>
+        <button
+          type="button"
+          className="grid-step-fold__summary"
+          aria-expanded={stepOpen}
+          aria-controls={stepContentId}
+          onClick={() => setStepOpen(open => !open)}
+        >
+          <span>
+            <span className="flex items-center gap-2">
+              <span className="ds-section-title">步长与动态（进阶）</span>
               <span
                 className="inline-flex"
                 onClick={event => {
@@ -121,33 +128,38 @@ export function GridParamsPanel({
               >
                 <GridStepFormulaHelp />
               </span>
-            </div>
-            <p className="grid-step-details__hint mt-1">
+            </span>
+            <span className="grid-step-fold__sub mt-1 block">
               价格步长设置；动态间距只疏密档位，不改单档金额
-            </p>
-          </div>
-          <span className="grid-step-details__hint" aria-hidden>
-            {stepOpen ? '收起' : '展开'}
+            </span>
           </span>
-        </summary>
-        <div className="border-b border-[var(--border)]">
-          <GridStepConfig
-            baseStep={baseStep}
-            onBaseStepChange={onBaseStepChange}
-            mediumStep={mediumStep}
-            onMediumStepChange={onMediumStepChange}
-            largeStep={largeStep}
-            onLargeStepChange={onLargeStepChange}
-            dynamicEnabled={dynamicEnabled}
-            onDynamicEnabledChange={onDynamicEnabledChange}
-            alignLastGridToStep={alignLastGridToStep}
-            onAlignLastGridToStepChange={onAlignLastGridToStepChange}
-            mode={mode}
-            onModeChange={onModeChange}
-            compactHeader
-          />
+          <span className="grid-step-fold__hint">
+            {stepOpen ? '收起' : '展开'}
+            <ChevronDown className="grid-step-fold__chevron" aria-hidden />
+          </span>
+        </button>
+        <div className="grid-step-fold__content" id={stepContentId}>
+          <div className="grid-step-fold__inner">
+            <div className="border-b border-[var(--border)]">
+              <GridStepConfig
+                baseStep={baseStep}
+                onBaseStepChange={onBaseStepChange}
+                mediumStep={mediumStep}
+                onMediumStepChange={onMediumStepChange}
+                largeStep={largeStep}
+                onLargeStepChange={onLargeStepChange}
+                dynamicEnabled={dynamicEnabled}
+                onDynamicEnabledChange={onDynamicEnabledChange}
+                alignLastGridToStep={alignLastGridToStep}
+                onAlignLastGridToStepChange={onAlignLastGridToStepChange}
+                mode={mode}
+                onModeChange={onModeChange}
+                compactHeader
+              />
+            </div>
+          </div>
         </div>
-      </details>
+      </div>
 
       {footer ? (
         <div className="border-t border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-subtle)_55%,var(--card))] p-4 sm:p-6">

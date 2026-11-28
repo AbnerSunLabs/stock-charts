@@ -6,6 +6,8 @@
 
 import { TOOLTIP_Z_INDEX } from '@/components/shared/help-tooltip';
 import { formatGridAmount } from '@/lib/grid/format-grid-amount';
+import { MOTION } from '@/lib/motion';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import {
   buildStrategyComparisonData,
   computeTooltipMetrics,
@@ -199,6 +201,10 @@ export function StrategyComparisonChart({
   priceDecimals,
 }: StrategyComparisonChartProps) {
   const [isCompactChart, setIsCompactChart] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
+  /* 描线动画只在首次挂载播放（320ms + ease-out）；之后关闭 isAnimationActive，
+     重新生成等数据更新直接落位，不重放绘制动画误导「还在算」 */
+  const [lineAnimationActive, setLineAnimationActive] = useState(true);
   const colors = CHART_COLORS;
 
   useEffect(() => {
@@ -209,10 +215,21 @@ export function StrategyComparisonChart({
     return () => mediaQuery.removeEventListener('change', update);
   }, []);
 
+  useEffect(() => {
+    // 描线档位 large(320ms) + 余量后关闭首播动画；时长与 MOTION 同源，改档位自动同步
+    const timer = window.setTimeout(
+      () => setLineAnimationActive(false),
+      MOTION.duration.large * 1000 + 40
+    );
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const chartData = useMemo(
     () => buildStrategyComparisonData(gridData, basePrice, priceDecimals),
     [gridData, basePrice, priceDecimals]
   );
+
+  const lineAnimated = lineAnimationActive && !reducedMotion;
 
   if (chartData.length === 0) return null;
 
@@ -308,6 +325,9 @@ export function StrategyComparisonChart({
               dot={false}
               name="一次全仓死拿"
               activeDot={{ r: 5 }}
+              isAnimationActive={lineAnimated}
+              animationDuration={MOTION.duration.large * 1000}
+              animationEasing="ease-out" // recharts 仅支持标准缓动名，取值对齐 power3.out 的缓出语义
             />
 
             <Line
@@ -316,6 +336,9 @@ export function StrategyComparisonChart({
               stroke={colors.grid}
               strokeWidth={2}
               name="本策略"
+              isAnimationActive={lineAnimated}
+              animationDuration={MOTION.duration.large * 1000}
+              animationEasing="ease-out" // recharts 仅支持标准缓动名，取值对齐 power3.out 的缓出语义
               dot={(props: {
                 cx?: number;
                 cy?: number;

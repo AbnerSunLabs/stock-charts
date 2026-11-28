@@ -1,8 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { EyeFilled, EyeInvisibleFilled } from '@ant-design/icons';
 import {
   App,
   Button,
@@ -29,6 +28,9 @@ import {
 } from '@/types/family-finance';
 import { computeLedgerTotals } from '@/lib/family-finance/aggregates';
 import { FamilyAmountVisibilityProvider } from '@/components/family/family-amount-visibility';
+import { FamilyAmountVisibilityButton } from '@/components/family/family-amount-visibility-toggle';
+import { FamilyChartAmountFade } from '@/components/family/family-chart-amount-fade';
+import { FamilyMotionStyles, useFamilyRowFadeRemoval } from '@/components/family/family-motion';
 import { FamilyAssetSankey } from '@/components/family/family-asset-sankey';
 import { FamilyBalanceTrendChart } from '@/components/family/family-balance-trend-chart';
 import { FamilyMentalAccountsPanel } from '@/components/family/family-mental-accounts-panel';
@@ -50,12 +52,19 @@ export function FamilyOverviewPage() {
     []
   );
   const [memberDrawer, setMemberDrawer] = useState(false);
+  /** 成员添加提交中（按钮原位 loading + 「添加中…」文案，防连点） */
+  const [memberSaving, setMemberSaving] = useState(false);
   /** 金额默认隐藏；每次进入页面重置，不持久化。 */
   const [amountsVisible, setAmountsVisible] = useState(false);
   const [memberForm] = Form.useForm();
+  /** 首屏加载完成后，后续增删改一律静默刷新（不再整页骨架闪一遍） */
+  const loadedOnceRef = useRef(false);
+  const { removingIds, fadeOutRow, settleRemovals } = useFamilyRowFadeRemoval();
 
   const reload = useCallback(async () => {
-    setLoading(true);
+    // 状态变化：首屏加载 → 全页骨架；后续增删改 → 静默刷新（操作按钮自有 confirmLoading）
+    const silent = loadedOnceRef.current;
+    if (!silent) setLoading(true);
     try {
       await repo.ensureSelfMember();
       const [ledgerItems, m, mental, snapshots] = await Promise.all([
@@ -69,11 +78,16 @@ export function FamilyOverviewPage() {
       setMentalAccounts(mental);
       setBalanceSnapshots(snapshots);
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载失败');
+      const reason = e instanceof Error ? e.message : '加载失败';
+      // 静默刷新失败：保留旧数据（回滚提示），明确告知当前展示的是最近一次数据
+      message.error(silent ? `数据刷新失败，当前展示的是最近一次数据（${reason}）` : reason);
     } finally {
-      setLoading(false);
+      loadedOnceRef.current = true;
+      if (!silent) setLoading(false);
+      // 刷新落定后清算删除淡出标记：失败时旧数据仍在的行恢复可见，杜绝幽灵行
+      settleRemovals();
     }
-  }, [repo, message]);
+  }, [repo, message, settleRemovals]);
 
   useEffect(() => {
     void reload();
@@ -107,17 +121,8 @@ export function FamilyOverviewPage() {
         <div className="family-finance-eyebrow">家庭资产</div>
         <div className="family-finance-header__title-row">
           <h1>家庭财务总览</h1>
-          <button
-            type="button"
-            className="family-amount-visibility-toggle"
-            aria-label={amountsVisible ? '隐藏金额' : '显示金额'}
-            aria-pressed={amountsVisible}
-            onClick={() => setAmountsVisible(v => !v)}
-          >
-            <span key={amountsVisible ? 'visible' : 'masked'} className="family-amount-visibility-toggle__icon">
-              {amountsVisible ? <EyeFilled /> : <EyeInvisibleFilled />}
-            </span>
-          </button>
+          {/* 状态变化：金额显隐切换——图标叠层 crossfade，四类图表与文本金额统一淡切 */}
+          <FamilyAmountVisibilityButton onToggle={() => setAmountsVisible(v => !v)} />
         </div>
         <p>把家庭当作一家小公司，在同一张财务视图里看清资产、负债与保障。</p>
       </div>
@@ -137,6 +142,8 @@ export function FamilyOverviewPage() {
         rowKey="id"
         pagination={false}
         dataSource={members}
+        /* 状态变化：成员删除确认成功 → 该行先淡出（exit-small）再静默刷新数据 */
+        rowClassName={record => (removingIds.has(record.id) ? 'family-row-removing' : '')}
         columns={[
           { title: '姓名', dataIndex: 'name' },
           {
@@ -162,7 +169,7 @@ export function FamilyOverviewPage() {
                             const v = (e.target as HTMLInputElement).value;
                             void (async () => {
                               await repo.renameMember(row.id, v);
-                              message.success('已改名');
+                              message.success('已更新姓名');
                               await reload();
                             })();
                           }}
@@ -174,7 +181,7 @@ export function FamilyOverviewPage() {
                         ) as HTMLInputElement | null;
                         if (!el?.value.trim()) throw new Error('名称不能为空');
                         await repo.renameMember(row.id, el.value);
-                        message.success('已改名');
+                        message.success('已更新姓名');
                         await reload();
                       },
                     });
@@ -193,7 +200,8 @@ export function FamilyOverviewPage() {
                         onOk: async () => {
                           try {
                             await repo.deleteMember(row.id);
-                            message.success('已删除');
+                            message.success('已删除成员');
+                            await fadeOutRow(row.id);
                             await reload();
                           } catch (e) {
                             message.error(e instanceof Error ? e.message : '删除失败');
@@ -216,6 +224,8 @@ export function FamilyOverviewPage() {
         layout="vertical"
         className="mt-4"
         onFinish={async values => {
+          // 状态变化：提交添加成员 → 按钮原位 loading + 「添加中…」，完成后静默刷新列表
+          setMemberSaving(true);
           try {
             await repo.createMember({
               name: values.name,
@@ -225,7 +235,9 @@ export function FamilyOverviewPage() {
             message.success('已添加成员');
             await reload();
           } catch (e) {
-            message.error(e instanceof Error ? e.message : '添加失败');
+            message.error(e instanceof Error ? e.message : '添加成员失败，请稍后重试');
+          } finally {
+            setMemberSaving(false);
           }
         }}
       >
@@ -241,8 +253,8 @@ export function FamilyOverviewPage() {
             ]}
           />
         </Form.Item>
-        <Button type="dashed" htmlType="submit" block>
-          + 添加成员
+        <Button type="dashed" htmlType="submit" block loading={memberSaving}>
+          {memberSaving ? '添加中…' : '+ 添加成员'}
         </Button>
       </Form>
     </Drawer>
@@ -251,10 +263,12 @@ export function FamilyOverviewPage() {
   if (!loading && !hasLedger) {
     return (
       <FamilyAmountVisibilityProvider value={amountsVisible}>
-        <div className="family-finance-page family-overview-page space-y-6">
+        {/* 状态变化：页面首次进入 —— 根容器统一 motion-enter（规范 token） */}
+        <div className="family-finance-page family-overview-page space-y-6 motion-enter">
+          <FamilyMotionStyles />
           {pageHeader}
           <Card className="family-finance-section-card family-finance-empty-card">
-            <Empty description="尚无资产条目。请前往资产记账添加后，总览会即时展示。" />
+            <Empty description="还没有资产条目，前往资产记账添加后，总览会即时展示。" />
           </Card>
           <Card className="family-finance-section-card family-overview-policies-card">
             <FamilyPoliciesPage embedded />
@@ -267,18 +281,22 @@ export function FamilyOverviewPage() {
 
   return (
     <FamilyAmountVisibilityProvider value={amountsVisible}>
-      <div className="family-finance-page family-overview-page space-y-6">
+      {/* 状态变化：页面首次进入 —— 根容器统一 motion-enter（规范 token） */}
+      <div className="family-finance-page family-overview-page space-y-6 motion-enter">
+        <FamilyMotionStyles />
         {pageHeader}
 
         <Row gutter={[16, 16]} className="family-overview-kpi-trend-row">
           <Col xs={24} lg={8} xxl={6}>
             <div className="family-overview-kpi-stack">
+              {/* KPI 三卡首屏 stagger（--motion-stagger-card × 序号，仅入场播放一次） */}
               <FamilyFinanceMetricCard
                 label="总资产"
                 value={totals.totalAssets}
                 tone="primary"
                 loading={loading}
                 hint="家庭当前资产合计"
+                stagger={0}
               />
               <FamilyFinanceMetricCard
                 label="总负债"
@@ -286,6 +304,7 @@ export function FamilyOverviewPage() {
                 tone="neutral"
                 loading={loading}
                 hint="家庭共同负债合计"
+                stagger={1}
               />
               <FamilyFinanceMetricCard
                 label="净资产"
@@ -293,6 +312,7 @@ export function FamilyOverviewPage() {
                 tone={totals.netWorth < 0 ? 'negative' : 'positive'}
                 loading={loading}
                 hint="总资产扣除总负债"
+                stagger={2}
               />
             </div>
           </Col>
@@ -314,7 +334,10 @@ export function FamilyOverviewPage() {
               </div>
             }
           >
-            <FamilyAssetSankey items={items} members={members} />
+            {/* 金额显隐：桑基节点文案（含金额）延迟到淡出到底后原地更新 */}
+            <FamilyChartAmountFade>
+              <FamilyAssetSankey items={items} members={members} />
+            </FamilyChartAmountFade>
           </Card>
 
           <Row gutter={[16, 16]} className="family-overview-panels-row">

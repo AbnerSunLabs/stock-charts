@@ -228,9 +228,9 @@ describe('computeMentalAccountTimeProgress', () => {
 
 describe('compareMentalAccountPace', () => {
   it('按百分号两位比较并返回对应文案', () => {
-    expect(compareMentalAccountPace(0.6, 0.5).message).toBe('你们好棒棒');
-    expect(compareMentalAccountPace(0.4, 0.5).message).toBe('需要抓紧存钱啦');
-    expect(compareMentalAccountPace(0.5, 0.5).message).toBe('继续保持哦');
-    expect(compareMentalAccountPace(0.50004, 0.5).message).toBe('继续保持哦');
+    expect(compareMentalAccountPace(0.6, 0.5).message).toBe('领先于计划');
+    expect(compareMentalAccountPace(0.4, 0.5).message).toBe('落后于计划');
+    expect(compareMentalAccountPace(0.5, 0.5).message).toBe('与计划同步');
+    expect(compareMentalAccountPace(0.50004, 0.5).message).toBe('与计划同步');
   });
 });

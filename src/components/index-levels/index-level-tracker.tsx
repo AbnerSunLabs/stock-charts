@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { EssayRail } from "@/components/index-levels/index-essay-rail";
-import { IndexLevelChart } from "@/components/index-levels/index-level-chart";
+import { CLOSE_SPANS, IndexLevelChart, SpanTabs } from "@/components/index-levels/index-level-chart";
 import { attachIndexPe, csindexSymbol, isValidPeTtm, type PePoint } from "@/lib/index-levels/pe-series";
 import { HelpTooltip } from "@/components/shared/help-tooltip";
 import { IndexLevelPicker } from "@/components/index-levels/index-level-picker";
@@ -100,6 +100,27 @@ function useResetOnChange(key: unknown, reset: () => void): void {
   }
 }
 
+/**
+ * 加载期的两连闪治理：新数据未到（value 为 null）时沿用上一份非空值，
+ * 到达后由调用方用 key 重挂触发 0.4→1 微闪（不做滚动计数，金融忌误导读数）。
+ * scope 限定沿用范围：换指数（scope 变化）时立即清空旧值，
+ * 避免旧指数的收盘价/涨跌被冠到新指数名下（跨数据源的读数串台）。
+ */
+function useStaleWhileLoading<T>(value: T | null, scope: unknown): T | null {
+  const [state, setState] = useState<{ scope: unknown; kept: T | null }>({
+    scope,
+    kept: value,
+  });
+  if (scope !== state.scope) {
+    setState({ scope, kept: value });
+    return value;
+  }
+  if (value != null && value !== state.kept) {
+    setState({ scope, kept: value });
+  }
+  return value ?? state.kept;
+}
+
 /** 指数与场内 ETF 的收盘序列。 */
 function useCloseSeries(
   code: string,
@@ -109,11 +130,14 @@ function useCloseSeries(
   etfPoints: IndexClosePoint[];
   phase: Phase;
   etfPhase: Phase;
+  reload: () => void;
 } {
   const [points, setPoints] = useState<IndexClosePoint[]>([]);
   const [etfPoints, setEtfPoints] = useState<IndexClosePoint[]>([]);
   const [phase, setPhase] = useState<Phase>("loading");
   const [etfPhase, setEtfPhase] = useState<Phase>(etfCode ? "loading" : "ready");
+  // 出错态「重新加载」按钮：递增 token 重跑同一个拉取 effect。
+  const [retry, setRetry] = useState(0);
 
   useResetOnChange(code, () => {
     setPoints([]);
@@ -161,18 +185,22 @@ function useCloseSeries(
     return () => {
       cancelled = true;
     };
-  }, [code, etfCode]);
+  }, [code, etfCode, retry]);
 
-  return { points, etfPoints, phase, etfPhase };
+  const reload = useCallback(() => setRetry((count) => count + 1), []);
+  return { points, etfPoints, phase, etfPhase, reload };
 }
 
 /** 场外基金单位净值。已列入共享表的代码优先读落库序列，没有行时走 fund-nav 接口。 */
 function useFundSeries(fundCode?: string): {
   fundPoints: IndexClosePoint[];
   fundPhase: Phase;
+  reload: () => void;
 } {
   const [fundPoints, setFundPoints] = useState<IndexClosePoint[]>([]);
   const [fundPhase, setFundPhase] = useState<Phase>("ready");
+  // 出错态「重新加载」按钮：递增 token 重跑拉取。
+  const [retry, setRetry] = useState(0);
 
   useResetOnChange(fundCode, () => {
     setFundPoints([]);
@@ -200,16 +228,11 @@ function useFundSeries(fundCode?: string): {
     return () => {
       cancelled = true;
     };
-  }, [fundCode]);
+  }, [fundCode, retry]);
 
-  return { fundPoints, fundPhase };
+  const reload = useCallback(() => setRetry((count) => count + 1), []);
+  return { fundPoints, fundPhase, reload };
 }
-
-const SPANS: Array<{ id: CloseSpan; label: string }> = [
-  { id: "all", label: "有记录以来" },
-  { id: "10", label: "近 10 年" },
-  { id: "5", label: "近 5 年" },
-];
 
 /**
  * 点位跟踪：页头是指数名和日期，主图给出收盘、时间范围和可选点位，
@@ -220,15 +243,15 @@ export function IndexLevelTracker() {
   const [code, setCode] = useWatchedIndex();
   const current =
     INDEX_WATCHES.find((item) => item.code === code) ?? INDEX_WATCHES[0];
-  const { points, etfPoints, phase, etfPhase } = useCloseSeries(
-    code,
-    current?.chartEtf?.code,
-  );
+  const { points, etfPoints, phase, etfPhase, reload: reloadClose } =
+    useCloseSeries(code, current?.chartEtf?.code);
   const chartEtfCode = current?.chartEtf?.code;
   const journalMarks = useEtfJournalMarks(
     isJournalLinkedEtf(chartEtfCode) ? chartEtfCode : undefined,
   );
-  const { fundPoints, fundPhase } = useFundSeries(current?.chartFund?.code);
+  const { fundPoints, fundPhase, reload: reloadFund } = useFundSeries(
+    current?.chartFund?.code,
+  );
   const cmb = useCmbFxSeries(current?.chartBankFx === true);
   // 记住用户最后主动选择的时间范围（系统能记住的不让重设）
   const [span, setSpanState] = useState<CloseSpan>("5");
@@ -243,7 +266,7 @@ export function IndexLevelTracker() {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem("index-levels:span");
-      if (saved && SPANS.some(item => item.id === saved)) {
+      if (saved && CLOSE_SPANS.some(item => item.id === saved)) {
         setSpanState(saved as CloseSpan);
       }
     } catch {
@@ -268,6 +291,9 @@ export function IndexLevelTracker() {
     () => latestClose(code, points),
     [code, points],
   );
+  // 状态变化：同一指数刷新期间页头读数保持旧值（不回退成「—」），新值到达后微闪一次；
+  // 换指数时以 code 为作用域立即清空，新数据到位前显示「—」，杜绝旧读数串台。
+  const shownClose = useStaleWhileLoading(close, code);
   const windowed = useMemo(() => sliceSpan(points, span), [points, span]);
   const etfWindow = useMemo(
     () => sliceSpan(etfPoints, span, windowed[windowed.length - 1]?.tradeDate),
@@ -298,8 +324,9 @@ export function IndexLevelTracker() {
   if (!current) return null;
   const selected =
     current.levels.find((level) => String(level.point) === levelId) ?? null;
-  const edge = close
-    ? brackets(close.close, current.levels)
+  // 区间对照同样消费「旧值保持」的读数，与页头一致。
+  const edge = shownClose
+    ? brackets(shownClose.close, current.levels)
     : { below: null, above: null };
   const quotes = selected
     ? quotesForLevel(current.quotes, selected, current.levels)
@@ -312,34 +339,26 @@ export function IndexLevelTracker() {
       <section className="panel">
         <TrackerHead
           current={current}
-          date={close?.tradeDate}
+          date={shownClose?.tradeDate}
           essayCount={essays.length}
           onOpenEssays={() => setEssayOpen(true)}
           onSelect={setCode}
         />
         <div className="group-head">
           <div className="readout">
-            <div className="quote">
+            {/* key 随新读数变化重挂一次，播放 0.4→1 的「新值到达」微闪 */}
+            <div
+              className="quote quote-fresh"
+              key={`${shownClose?.indexCode ?? "none"}-${shownClose?.tradeDate ?? ""}-${shownClose?.close ?? ""}`}
+            >
               <div className="px-row">
-                <b className="px">{close ? formatClose(close.close) : "—"}</b>
-                <ChangeText close={close} />
+                <b className="px">{shownClose ? formatClose(shownClose.close) : "—"}</b>
+                <ChangeText close={shownClose} />
               </div>
               <GapText below={edge.below} above={edge.above} />
             </div>
             <div className="time-side">
-              <div className="tabs" role="group" aria-label="时间范围">
-                {SPANS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={span === item.id ? "tab active" : "tab"}
-                    aria-pressed={span === item.id}
-                    onClick={() => setSpan(item.id)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+              <SpanTabs span={span} onChange={setSpan} />
             </div>
           </div>
         </div>
@@ -351,7 +370,8 @@ export function IndexLevelTracker() {
           code={current.code}
           points={windowed}
           phase={indexChartPhase}
-          errorLabel={csindexSymbol(code) ? "点位或市盈率暂时读不出来" : "收盘暂时读不出来"}
+          errorLabel={csindexSymbol(code) ? "点位或市盈率暂时无法读取" : "收盘数据暂时无法读取"}
+          onRetry={reloadClose}
           span={span}
           levels={levelPoints}
           peHistory={peHistory}
@@ -376,7 +396,10 @@ export function IndexLevelTracker() {
             ))}
           </div>
         ) : null}
-        {quotes.length > 0 ? <QuoteSheet quotes={quotes} /> : null}
+        {/* 折叠槽常挂载：取消档位选择时 0fr→1fr 收起，下方内容不瞬跳 */}
+        <div className="level-sheet-wrap" data-open={quotes.length > 0 ? "true" : "false"}>
+          <QuoteSheet quotes={quotes} />
+        </div>
       </section>
 
       <CmbFxCharts
@@ -392,6 +415,8 @@ export function IndexLevelTracker() {
         fundPoints={fundWindow}
         phase={etfPhase}
         fundPhase={fundPhase}
+        reloadEtf={reloadClose}
+        reloadFund={reloadFund}
         span={span}
         etfMarks={resolveEtfChartMarks(
           current.chartEtf?.code,
@@ -414,9 +439,12 @@ export function IndexLevelTracker() {
 function useCmbFxSeries(enabled: boolean): {
   points: CmbUsdQuotes;
   phase: Phase;
+  reload: () => void;
 } {
   const [points, setPoints] = useState<CmbUsdQuotes>({ bid: [], ask: [] });
   const [phase, setPhase] = useState<Phase>(enabled ? "loading" : "ready");
+  // 出错态「重新加载」按钮：递增 token 重跑拉取。
+  const [retry, setRetry] = useState(0);
 
   useResetOnChange(enabled, () => {
     setPoints({ bid: [], ask: [] });
@@ -447,9 +475,10 @@ function useCmbFxSeries(enabled: boolean): {
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [enabled, retry]);
 
-  return { points, phase };
+  const reload = useCallback(() => setRetry((count) => count + 1), []);
+  return { points, phase, reload };
 }
 
 const CMB_ASK_HELP =
@@ -467,7 +496,7 @@ function CmbFxCharts({
   end,
 }: {
   enabled: boolean;
-  quotes: { points: CmbUsdQuotes; phase: Phase };
+  quotes: { points: CmbUsdQuotes; phase: Phase; reload: () => void };
   span: CloseSpan;
   end?: string;
 }) {
@@ -491,6 +520,7 @@ function CmbFxCharts({
             code="USD.ASK"
             points={ask}
             phase={quotes.phase}
+            onRetry={quotes.reload}
             span={span}
             priceDigits={5}
             marks={CMB_USD_BUY_MARKS}
@@ -510,6 +540,7 @@ function CmbFxCharts({
             code="USD.BID"
             points={bid}
             phase={quotes.phase}
+            onRetry={quotes.reload}
             span={span}
             priceDigits={4}
           />
@@ -586,6 +617,8 @@ function LinkedFundCharts({
   fundPoints,
   phase,
   fundPhase,
+  reloadEtf,
+  reloadFund,
   span,
   etfMarks,
 }: {
@@ -594,6 +627,8 @@ function LinkedFundCharts({
   fundPoints: IndexClosePoint[];
   phase: Phase;
   fundPhase: Phase;
+  reloadEtf: () => void;
+  reloadFund: () => void;
   span: CloseSpan;
   etfMarks: EtfTradeMark[];
 }) {
@@ -610,6 +645,7 @@ function LinkedFundCharts({
         code={watch.chartEtf.code}
         points={etfPoints}
         phase={phase}
+        onRetry={reloadEtf}
         span={span}
         marks={etfMarks}
         priceDigits={3}
@@ -635,6 +671,7 @@ function LinkedFundCharts({
         code={watch.chartFund.code}
         points={fundPoints}
         phase={fundPhase}
+        onRetry={reloadFund}
         span={span}
         marks={FUND_TRADE_MARKS[watch.chartFund.code] ?? []}
         priceDigits={4}
@@ -658,22 +695,26 @@ function LinkedFundCharts({
 }
 
 function QuoteSheet({ quotes }: { quotes: IndexQuote[] }) {
+  // key 随贴文集合变化：换对照档时新内容淡入一次（旧内容已被折叠槽收起）。
+  const contentKey = quotes.map((quote) => quote.postId).join("-");
   return (
     <section className="level-sheet" aria-live="polite" aria-label="E大贴文">
-      {quotes.map((quote) => {
-        const href = quoteHref(quote);
-        return (
-          <article className="utter" key={quote.postId}>
-            <time dateTime={quote.date}>{quote.date.replaceAll("-", "/")}</time>
-            <p className="words">
-              {quote.text}{" "}
-              <a href={href} data-source={quoteSource(href)} target="_blank" rel="noreferrer">
-                查看原文
-              </a>
-            </p>
-          </article>
-        );
-      })}
+      <div className="level-sheet-inner" key={contentKey}>
+        {quotes.map((quote) => {
+          const href = quoteHref(quote);
+          return (
+            <article className="utter" key={quote.postId}>
+              <time dateTime={quote.date}>{quote.date.replaceAll("-", "/")}</time>
+              <p className="words">
+                {quote.text}{" "}
+                <a href={href} data-source={quoteSource(href)} target="_blank" rel="noreferrer">
+                  查看原文
+                </a>
+              </p>
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 }

@@ -15,12 +15,11 @@ export const LazySunburstChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex min-h-[min(360px,50vh)] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--border-muted)] bg-[var(--bg-card)] p-8">
-        <div
-          className="h-9 w-9 animate-pulse rounded-full bg-[color-mix(in_srgb,var(--accent)_20%,transparent)]"
-          aria-hidden
-        />
-        <p className="m-0 text-sm font-medium text-[var(--text-muted)]">加载图表…</p>
+      /* 状态变化：图表库异步加载占位——外框对齐图表容器（实线卡片），骨架扫光统一走
+         motion-skeleton（reduced-motion 下由全局兜底静态化），文案按加载中规范 */
+      <div className="flex min-h-[min(360px,50vh)] flex-col items-center justify-center gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-8">
+        <div className="motion-skeleton h-24 w-24 rounded-full" aria-hidden />
+        <p className="m-0 text-sm font-medium text-[var(--text-muted)]">正在加载图表…</p>
       </div>
     ),
   }

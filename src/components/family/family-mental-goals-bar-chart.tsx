@@ -3,12 +3,14 @@
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useFamilyAmountVisibility } from '@/components/family/family-amount-visibility';
+import { useFamilyChartAnimate } from '@/components/family/family-motion';
 import { formatCompactCny, formatCny } from '@/lib/family-finance/format';
 import type { MentalGoalPriorityAggregate } from '@/types/family-finance';
 
 const Column = dynamic(() => import('@ant-design/charts').then(mod => mod.Column), {
   ssr: false,
-  loading: () => <div className="h-[280px] animate-pulse rounded-lg bg-[var(--bg-muted)]" />,
+  /* 状态变化：图表库异步加载占位——骨架扫光统一走 motion-skeleton（--bg-muted 未定义会呈透明洞） */
+  loading: () => <div className="motion-skeleton h-[280px] rounded-lg" />,
 });
 
 const BAR_COLORS = ['#0052ff', '#7c828a'] as const;
@@ -32,6 +34,7 @@ export function FamilyMentalGoalsBarChart({
   height = 280,
 }: FamilyMentalGoalsBarChartProps) {
   const amountsVisible = useFamilyAmountVisibility();
+  const chartAnimate = useFamilyChartAnimate();
   const data = useMemo<MentalGoalBarRow[]>(
     () =>
       aggregates.flatMap(row => [
@@ -59,6 +62,7 @@ export function FamilyMentalGoalsBarChart({
       group
       height={height}
       autoFit
+      animate={chartAnimate}
       scale={{
         color: { range: [...BAR_COLORS] },
       }}

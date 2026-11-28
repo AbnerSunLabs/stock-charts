@@ -39,6 +39,7 @@ import { MENTAL_ACCOUNT_PRIORITIES } from '@/types/family-finance';
 import { isStructureFourPot } from '@/lib/family-finance/aggregates';
 import { FamilyMentalAccountLiquid } from '@/components/family/family-mental-account-liquid';
 import { FamilyMentalGoalsBarChart } from '@/components/family/family-mental-goals-bar-chart';
+import { FamilyChartAmountFade } from '@/components/family/family-chart-amount-fade';
 import Link from 'next/link';
 import { CloseOutlined, EditOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 
@@ -66,7 +67,7 @@ const PRIORITY_OPTIONS = MENTAL_ACCOUNT_PRIORITIES.map(value => ({
   label: value,
 }));
 
-/** 鼓励文案按进度对比态区分色。 */
+/** 鼓励文案按进度对比态区分色；状态切换时颜色/描边走 small 档过渡（Tailwind 任意值引用 motion token）。 */
 const PACE_MESSAGE_CLASS: Record<MentalPaceStatus, string> = {
   ahead:
     'bg-[var(--success-soft)] text-[var(--success)] ring-1 ring-[color-mix(in_srgb,var(--success)_28%,transparent)]',
@@ -76,14 +77,18 @@ const PACE_MESSAGE_CLASS: Record<MentalPaceStatus, string> = {
     'bg-[var(--accent-soft)] text-[var(--text-accent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_28%,transparent)]',
 };
 
+/** 状态切换（领先/同步/落后迁移）时的统一过渡：只动背景/文字/描边色，small 档。 */
+const PACE_TRANSITION_CLASS =
+  'transition-[background-color,color,box-shadow] duration-[var(--motion-duration-small)] ease-[var(--motion-ease-out)]';
+
 /** 鼓励文案展示逻辑说明（问号 Tooltip）。 */
 const PACE_LOGIC_HELP = (
   <div className="max-w-[260px] space-y-1.5 text-xs leading-relaxed">
     <p className="m-0 font-medium">按存款进度与时间进度对比（百分号保留两位）：</p>
     <ul className="m-0 list-disc space-y-0.5 pl-4">
-      <li>存款 &gt; 时间 → 你们好棒棒</li>
-      <li>存款 &lt; 时间 → 需要抓紧存钱啦</li>
-      <li>相等 → 继续保持哦</li>
+      <li>存款 &gt; 时间 → 领先于计划</li>
+      <li>存款 &lt; 时间 → 落后于计划</li>
+      <li>相等 → 与计划同步</li>
     </ul>
     <p className="m-0 text-white/80">
       时间进度 = (今天 − 开始日) ÷ (预期达成 − 开始日)，夹在 0%～100%；存款进度为当前金额相对目标的完成比例（不超过
@@ -230,7 +235,7 @@ export function FamilyMentalAccountsPanel({
             }
           >
             {accounts.length === 0 ? (
-              <Empty description="尚未设立心理账户" />
+              <Empty description="还没有设立心理账户，点「添加心理账户」把目标存到这里" />
             ) : (
               <div className="family-mental-accounts-groups">
                 {priorityGroups.map(group => (
@@ -295,14 +300,14 @@ export function FamilyMentalAccountsPanel({
                               </div>
                               <div className="mt-1 flex min-w-0 items-center gap-1.5">
                                 <span
-                                  className={`inline-block max-w-full truncate rounded-md px-1.5 py-0.5 text-xs font-semibold ${PACE_MESSAGE_CLASS[pace.status]}`}
+                                  className={`inline-block max-w-full truncate rounded-md px-1.5 py-0.5 text-xs font-semibold ${PACE_MESSAGE_CLASS[pace.status]} ${PACE_TRANSITION_CLASS}`}
                                 >
                                   {pace.message}
                                 </span>
                                 <Tooltip title={PACE_LOGIC_HELP}>
                                   <QuestionCircleOutlined
                                     className="shrink-0 cursor-help text-[var(--text-muted)]"
-                                    aria-label="鼓励文案说明"
+                                    aria-label="进度对比说明"
                                   />
                                 </Tooltip>
                               </div>
@@ -351,7 +356,10 @@ export function FamilyMentalAccountsPanel({
             loading={loading}
           >
             <div className="family-mental-goals-chart-wrap">
-              <FamilyMentalGoalsBarChart aggregates={goalAggregates} />
+              {/* 状态变化：金额显隐切换——Y 轴/提示金额与其它图表共用统一淡切节奏 */}
+              <FamilyChartAmountFade>
+                <FamilyMentalGoalsBarChart aggregates={goalAggregates} />
+              </FamilyChartAmountFade>
             </div>
           </Card>
         </Col>
@@ -366,6 +374,7 @@ export function FamilyMentalAccountsPanel({
         onOk={() => save()}
         confirmLoading={saving}
         okButtonProps={{ disabled: saving || selectable.length === 0 }}
+        okText={saving ? '保存中…' : '保存'}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="mt-2">

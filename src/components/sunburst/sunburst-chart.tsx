@@ -169,6 +169,9 @@ export function SunburstChart({
   const config = useMemo(() => {
     const rootData = { name: 'root', value: 100, children: chartData };
     return {
+      // 状态变化：图表入场动画二选一——关闭 G2 默认进出动画（含重算时的更新动画），
+      // 空态卡↔图表区的入场/切换统一由页面舞台层的交叉淡切承担，避免双层入场叠加与高频重播
+      animate: false,
       data: { value: rootData },
       width: chartSize.width,
       height: chartSize.height,
@@ -219,7 +222,7 @@ export function SunburstChart({
 
   return (
     <div
-      className="sunburst-chart-wrap relative mx-auto aspect-square w-full max-w-[920px] xl:max-w-[1024px] 2xl:max-w-[1160px] min-[1920px]:max-w-[1280px] bg-[var(--bg-card)] rounded-2xl p-2 border border-[var(--border-subtle)] shadow-[var(--shadow-elevated)] animate-[viewFadeIn_0.24s_var(--ease-out-expo)_both] flex items-center justify-center overflow-hidden"
+      className="sunburst-chart-wrap relative mx-auto aspect-square w-full max-w-[920px] xl:max-w-[1024px] 2xl:max-w-[1160px] min-[1920px]:max-w-[1280px] bg-[var(--bg-card)] rounded-2xl p-2 border border-[var(--border-subtle)] shadow-[var(--shadow-elevated)] flex items-center justify-center overflow-hidden"
       ref={chartWrapRef}
     >
       <Sunburst {...config} />

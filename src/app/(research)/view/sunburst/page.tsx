@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { message } from 'antd';
+import { App } from 'antd';
 import { PositionConfigForm } from '@/components/sunburst/position-config-form';
 import { LazySunburstChart } from '@/components/sunburst/lazy-sunburst-chart';
-import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
 import {
   buildSunburstChartDataFromNodes,
   canGenerateSunburstChart,
@@ -14,9 +13,12 @@ import { calculatePositionTree, roundAmount } from '@/utils/calculate-position-t
 import {
   POSITION_CATEGORY_TREE,
 } from '@/utils/position-category-tree';
+import { isReducedMotion } from '@/lib/motion';
 
+/* 状态变化：按钮悬停/按压——只过渡颜色与 transform，按压走 press-scale token，
+   时长曲线统一 micro 档，禁止 transition: all */
 const SUNBURST_BTN_SHARED =
-  'py-2 px-4 font-[var(--font-body)] text-sm font-medium rounded-lg cursor-pointer transition-all duration-150 active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed';
+  'py-2 px-4 font-[var(--font-body)] text-sm font-medium rounded-lg cursor-pointer [transition:background-color,border-color,color,transform_var(--motion-duration-micro)_var(--motion-ease-out)] active:enabled:scale-[var(--motion-press-scale)] disabled:opacity-40 disabled:cursor-not-allowed';
 const SUNBURST_BTN_SECONDARY = `${SUNBURST_BTN_SHARED} text-[var(--text-primary)] bg-[var(--bg-elevated)] border border-[var(--border-subtle)] hover:bg-[var(--bg-sidebar-hover)] hover:border-[var(--border-muted)]`;
 const SUNBURST_BTN_PRIMARY = `${SUNBURST_BTN_SHARED} text-white bg-[var(--accent)] border border-[var(--accent)] hover:bg-[var(--text-accent-soft)] hover:border-[var(--text-accent-soft)] hover:text-white`;
 
@@ -67,9 +69,72 @@ function buildSunburstExportUrl(canvas: HTMLCanvasElement): string {
 }
 
 /**
+ * 生成快照键：下载只在图表与当前输入一致时可用，避免拿到旧图。
+ * 键按路径排序，避免"清空再填回"因录入顺序不同被误判为已过期。
+ */
+function snapshotOf(total: number, leaves: Record<string, number>): string {
+  return JSON.stringify({
+    total,
+    leaves: Object.keys(leaves)
+      .sort()
+      .map(k => [k, leaves[k]]),
+  });
+}
+
+interface SunburstStageProps {
+  hasChart: boolean;
+  chartSectionRef: React.RefObject<HTMLElement>;
+  chartWrapRef: React.RefObject<HTMLDivElement>;
+  chartData: ChartNode[];
+  chartSize: { width: number; height: number };
+  setChartSize: React.Dispatch<React.SetStateAction<{ width: number; height: number }>>;
+}
+
+/**
+ * 状态变化：点击「生成图表」后，空态卡与图表区交叉淡切——
+ * 两层叠放在同一 grid 单元（不推挤布局），图表区以 medium 档（240ms）淡入，
+ * 空态卡以 exit-medium 档（180ms）淡出并让出交互；图表本体已关 G2 动画，
+ * 入场只有容器淡切一层。图表仅在生成后挂载，懒加载不被空态触发。
+ */
+function SunburstStage({
+  hasChart,
+  chartSectionRef,
+  chartWrapRef,
+  chartData,
+  chartSize,
+  setChartSize,
+}: SunburstStageProps) {
+  return (
+    <section ref={chartSectionRef} aria-label="旭日图预览" className="grid flex-1">
+      <div
+        className={`[grid-area:1/1] flex-1 flex items-center justify-center min-h-[min(280px,50vh)] p-4 sm:p-8 bg-[var(--bg-card)] border border-dashed border-[var(--border-muted)] rounded-2xl [transition:opacity_var(--motion-duration-exit-medium)_var(--motion-ease-in)] ${
+          hasChart ? 'pointer-events-none opacity-0' : 'opacity-100'
+        }`}
+        aria-hidden={hasChart}
+      >
+        <p className="m-0 text-[0.9375rem] text-[var(--text-muted)] text-center max-w-[40ch]">
+          填写各分类持仓金额后点击「生成图表」；总投资额可留空，将按持仓合计作图。
+        </p>
+      </div>
+      {hasChart && (
+        <div className="[grid-area:1/1] animate-[viewFadeIn_var(--motion-duration-medium)_var(--motion-ease-out)_both]">
+          <LazySunburstChart
+            chartData={chartData}
+            chartWrapRef={chartWrapRef}
+            chartSize={chartSize}
+            setChartSize={setChartSize}
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
  * 旭日图页面：按分类填写持仓金额，手动生成占比旭日图。
  */
 export default function SunburstPage() {
+  const { message } = App.useApp();
   const [totalInvestment, setTotalInvestment] = useState<number | null>(null);
   const [leafAmounts, setLeafAmounts] = useState<Record<string, number>>({});
   const [chartData, setChartData] = useState<ChartNode[] | null>(null);
@@ -94,15 +159,7 @@ export default function SunburstPage() {
     [effectiveTotal, leafAmounts]
   );
 
-  // 生成快照：下载只在图表与当前输入一致时可用，避免拿到旧图。
-  // 键按路径排序，避免"清空再填回"因录入顺序不同被误判为已过期
-  const snapshotOf = (total: number, leaves: Record<string, number>) =>
-    JSON.stringify({
-      total,
-      leaves: Object.keys(leaves)
-        .sort()
-        .map(k => [k, leaves[k]]),
-    });
+  // 生成快照（键见模块级 snapshotOf）：旧图 + 新输入判定为"已过期"，锁定下载
   const chartSnapshotRef = useRef<string>('');
   const chartStale =
     chartData != null &&
@@ -134,7 +191,8 @@ export default function SunburstPage() {
       );
       return;
     }
-    // 超额判断与表单警告同一精度（按分归一），避免 0.10+0.20 > 0.30 这类浮点误差误拦
+    // 超额时阻止生成：表单已有警告，不让错误状态进入图表；
+    // 判断与表单警告同一精度（按分归一），避免 0.10+0.20 > 0.30 这类浮点误差误拦
     if (
       totalInvestment != null &&
       roundAmount(allocatedTotal) > roundAmount(totalInvestment)
@@ -160,14 +218,16 @@ export default function SunburstPage() {
     effectiveTotal,
     leafAmounts,
     calculatedNodes,
+    message,
   ]);
 
   useEffect(() => {
     if (!chartData?.length) return;
     const timer = window.setTimeout(() => {
-      // 系统"减少动态效果"时直接跳转，不做平滑滚动
+      // 状态变化：生成后滚动定位到图表——reduced-motion 时退化为即时定位，
+      // 与入场淡切错峰 300ms，避免滚动进行中内容还在闪现
       chartSectionRef.current?.scrollIntoView({
-        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        behavior: isReducedMotion() ? 'auto' : 'smooth',
         block: 'center',
       });
     }, 300);
@@ -192,11 +252,13 @@ export default function SunburstPage() {
       a.href = url;
       a.download = `${EXPORT_FILE_PREFIX}${dateStr}${EXPORT_FILE_EXT}`;
       a.click();
-      message.success('图片已下载');
+      message.success('已下载图片');
     } catch {
       message.error('下载失败，请重试');
     }
-  }, []);
+  }, [message]);
+
+  const hasChart = (chartData?.length ?? 0) > 0;
 
   return (
     <div className="sunburst-page min-h-[60vh] flex flex-col w-full text-[var(--text-primary)]">
@@ -224,7 +286,7 @@ export default function SunburstPage() {
           type="button"
           className={SUNBURST_BTN_SECONDARY}
           onClick={handleDownloadPng}
-          disabled={!chartData?.length || chartStale}
+          disabled={!hasChart || chartStale}
           title={chartStale ? '金额已修改，重新生成后可下载' : undefined}
         >
           下载图表 PNG
@@ -236,22 +298,14 @@ export default function SunburstPage() {
         ) : null}
       </section>
 
-      {chartData?.length ? (
-        <section ref={chartSectionRef} aria-label="旭日图预览">
-          <LazySunburstChart
-            chartData={chartData}
-            chartWrapRef={chartWrapRef}
-            chartSize={chartSize}
-            setChartSize={setChartSize}
-          />
-        </section>
-      ) : (
-        <div className="flex-1 flex items-center justify-center min-h-[min(280px,50vh)] p-4 sm:p-8 bg-[var(--bg-card)] border border-dashed border-[var(--border-muted)] rounded-2xl">
-          <p className="m-0 text-[0.9375rem] text-[var(--text-muted)] text-center max-w-[40ch]">
-            填写各分类持仓金额后点击「生成图表」；总投资额可留空，将按持仓合计作图。
-          </p>
-        </div>
-      )}
+      <SunburstStage
+        hasChart={hasChart}
+        chartSectionRef={chartSectionRef}
+        chartWrapRef={chartWrapRef}
+        chartData={chartData ?? []}
+        chartSize={chartSize}
+        setChartSize={setChartSize}
+      />
     </div>
   );
 }

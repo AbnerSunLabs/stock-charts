@@ -108,19 +108,22 @@
   color: var(--correlation-on-brand);
   border-radius: var(--radius-pill);
   box-shadow: none;
-  transition: background-color 160ms ease, opacity 160ms ease;
+  /* 悬停高亮走 micro 档 token */
+  transition:
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    opacity var(--motion-duration-micro) var(--motion-ease-out);
 }
 
 .grid-shell .marketing-primary-btn:hover:not(:disabled) {
   background: var(--primary-active);
-  transform: none;
   box-shadow: none;
   filter: none;
 }
 
+/* 按压反馈：全站统一 scale 收缩，替代旧的 transform: none 反例 */
 .grid-shell .marketing-primary-btn:active:not(:disabled) {
   background: var(--primary-active);
-  transform: none;
+  transform: scale(var(--motion-press-scale));
 }
 
 .grid-shell .marketing-primary-btn:disabled {
@@ -143,25 +146,10 @@
   background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(8px);
   box-shadow: var(--ds-shadow-sm);
-  transition: border-color var(--duration-normal) var(--ease-in-out-smooth);
-}
-
-/* 未保存提示的暖色渐变放在伪元素上用 opacity 过渡：
-   background-image 本身无法插值，直接换会闪跳 */
-.grid-shell .grid-summary-bar::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent-warm) 8%, var(--card)),
-    color-mix(in srgb, var(--card) 94%, transparent)
-  );
-  opacity: 0;
-  transition: opacity var(--duration-normal) var(--ease-in-out-smooth);
-  pointer-events: none;
+  /* 脏态换肤（边框/底色）small 档过渡；dirty 渐变底无法插值，允许瞬切 */
+  transition:
+    border-color var(--motion-duration-small) var(--motion-ease-out),
+    background-color var(--motion-duration-small) var(--motion-ease-out);
 }
 
 .grid-shell .grid-summary-bar--dirty {
@@ -178,6 +166,8 @@
   gap: 0.35rem;
   padding-bottom: 0.65rem;
   border-bottom: 1px solid var(--border);
+  /* 脏态下底部分隔线变色，与整条换肤同 small 档 */
+  transition: border-color var(--motion-duration-small) var(--motion-ease-out);
 }
 
 .grid-shell .grid-summary-bar--dirty .grid-summary-bar__identity {
@@ -215,6 +205,28 @@
 .grid-shell .grid-summary-bar__strategy--local .grid-summary-bar__strategy-name {
   color: var(--muted-foreground);
   font-weight: 500;
+}
+
+/* 脏态提示行：常挂 + grid-rows 0fr→1fr 平滑展开，消除下方内容被顶跳 */
+.grid-shell .grid-summary-bar__reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-duration-medium) var(--motion-ease-out);
+}
+
+.grid-shell .grid-summary-bar__reveal.is-open {
+  grid-template-rows: 1fr;
+}
+
+.grid-shell .grid-summary-bar__reveal-inner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--motion-duration-small) var(--motion-ease-out);
+}
+
+.grid-shell .grid-summary-bar__reveal.is-open .grid-summary-bar__reveal-inner {
+  opacity: 1;
 }
 
 .grid-shell .grid-summary-bar__dirty-hint {
@@ -256,11 +268,29 @@
   color: color-mix(in srgb, var(--accent-warm) 75%, var(--foreground));
   font-size: 0.6875rem;
   font-weight: 700;
-  animation: fade-in var(--duration-fast) var(--ease-out-expo) both;
+  white-space: nowrap;
 }
 
-.grid-shell .grid-summary-bar__dirty-hint {
-  animation: fade-in var(--duration-fast) var(--ease-out-expo) both;
+/* 脏态 chip：横向 0fr→1fr 展开 + 淡入，避免动作区宽度瞬跳 */
+.grid-shell .grid-summary-bar__chip-reveal {
+  display: inline-grid;
+  grid-template-columns: 0fr;
+  transition: grid-template-columns var(--motion-duration-medium) var(--motion-ease-out);
+}
+
+.grid-shell .grid-summary-bar__chip-reveal.is-open {
+  grid-template-columns: 1fr;
+}
+
+.grid-shell .grid-summary-bar__chip-reveal-inner {
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--motion-duration-small) var(--motion-ease-out);
+}
+
+.grid-shell .grid-summary-bar__chip-reveal.is-open .grid-summary-bar__chip-reveal-inner {
+  opacity: 1;
 }
 
 .grid-shell .grid-summary-bar__regen.ant-btn-primary {
@@ -284,47 +314,167 @@
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
+  /* 悬停边框/底色反馈走 micro 档 */
+  transition:
+    border-color var(--motion-duration-micro) var(--motion-ease-out),
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    color var(--motion-duration-micro) var(--motion-ease-out);
 }
 
 .grid-shell .grid-summary-bar__edit:hover {
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
 }
 
-.grid-shell .grid-step-details {
-  border: none;
-}
-
-.grid-shell .grid-step-details > summary {
-  list-style: none;
-  cursor: pointer;
-  user-select: none;
-}
-
-.grid-shell .grid-step-details > summary::-webkit-details-marker {
-  display: none;
-}
-
-.grid-shell .grid-step-details__summary {
+/* 「步长与动态（进阶）」受控折叠：0fr→1fr + 淡入 + Chevron 旋转，替代原生 <details> 硬开合 */
+.grid-shell .grid-step-fold__summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  /* 左侧说明文字换行时与「展开」控件保持呼吸间距，避免窄视口贴边 */
+  gap: 1.25rem;
+  width: 100%;
   padding: 1rem 1.25rem;
+  border: none;
   border-bottom: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color var(--motion-duration-small) var(--motion-ease-out);
 }
 
-.grid-shell .grid-step-details[open] > .grid-step-details__summary {
+.grid-shell .grid-step-fold.is-open .grid-step-fold__summary {
   border-bottom-color: var(--border);
 }
 
-.grid-shell .grid-step-details__hint {
+.grid-shell .grid-step-fold__sub {
+  margin-top: 0.25rem;
   font-size: 0.75rem;
   color: var(--muted-foreground);
+}
+
+.grid-shell .grid-step-fold__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.grid-shell .grid-step-fold__chevron {
+  font-size: 0.85rem;
+  transition: transform var(--motion-duration-micro) var(--motion-ease-out);
+}
+
+.grid-shell .grid-step-fold.is-open .grid-step-fold__chevron {
+  transform: rotate(180deg);
+}
+
+.grid-shell .grid-step-fold__content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-duration-medium) var(--motion-ease-out);
+}
+
+.grid-shell .grid-step-fold.is-open .grid-step-fold__content {
+  grid-template-rows: 1fr;
+}
+
+/* 折叠态用 visibility 移出 Tab 序（对齐原生 <details>），收起过程结束后再隐藏 */
+.grid-shell .grid-step-fold__inner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--motion-duration-small) var(--motion-ease-out),
+    visibility 0s linear var(--motion-duration-medium);
+}
+
+.grid-shell .grid-step-fold.is-open .grid-step-fold__inner {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--motion-duration-small) var(--motion-ease-out),
+    visibility 0s linear 0s;
 }
 
 .grid-shell table {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+/* 一次性进场折叠：0fr→1fr + 淡入（离场瞬切），解释「提示/明细插入」这类状态变化 */
+@keyframes gridRevealRows {
+  from {
+    grid-template-rows: 0fr;
+  }
+
+  to {
+    grid-template-rows: 1fr;
+  }
+}
+
+@keyframes gridFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.grid-shell .grid-reveal {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: gridRevealRows var(--motion-duration-medium) var(--motion-ease-out) both;
+}
+
+.grid-shell .grid-reveal__inner {
+  min-height: 0;
+  overflow: hidden;
+  animation: gridFadeIn var(--motion-duration-small) var(--motion-ease-out) both;
+}
+
+/* 主 Tab 面板切换：新内容 small 档淡入上移，与 antd ink bar 同一次状态变化同一节奏 */
+@keyframes gridTabPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-shift-sm));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.grid-shell .grid-tab-panel {
+  animation: gridTabPanelIn var(--motion-duration-small) var(--motion-ease-out) both;
+}
+
+/* 数值到达微闪：新值 0.4→1 淡入（金融读数不做滚动计数器） */
+@keyframes gridValueSwap {
+  from {
+    opacity: 0.4;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.grid-shell .grid-value-swap {
+  animation: gridValueSwap var(--motion-duration-small) var(--motion-ease-out) both;
+}
+
+/* 高频内容替换（执行列/提示卡首现）：micro 档纯淡切 */
+.grid-shell .grid-cell-swap {
+  animation: gridFadeIn var(--motion-duration-micro) var(--motion-ease-out) both;
 }
 
 /* 网格结果表：展开子行与主表明细列对齐 */
@@ -347,6 +497,50 @@
 
 .grid-shell .grid-result-detail-row td {
   vertical-align: middle;
+}
+
+/* 自绘明细行 hover：替代 Tailwind 默认 150ms，统一走 token */
+.grid-shell .grid-result-detail-row {
+  transition: background-color var(--motion-duration-micro) var(--motion-ease-out);
+}
+
+/* 轮次 Tag：热力换色 small 档过渡；数字变化加 accent 光环脉冲 */
+.grid-shell .grid-rounds-tag {
+  transition:
+    background-color var(--motion-duration-small) var(--motion-ease-out),
+    color var(--motion-duration-small) var(--motion-ease-out),
+    border-color var(--motion-duration-small) var(--motion-ease-out);
+}
+
+@keyframes gridRoundsPulse {
+  from {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+
+  to {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+}
+
+/* 脉冲改为独立装饰层（key 随轮次重挂保证每次都重播），铺满 Tag 借其圆角 */
+.grid-shell .grid-rounds-tag {
+  position: relative;
+}
+
+.grid-shell .grid-rounds-tag__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: gridRoundsPulse var(--motion-duration-small) var(--motion-ease-out);
+}
+
+/* 结果表下载等轻按钮：悬停换底/换色 micro 档 */
+.grid-shell .grid-quiet-btn {
+  transition:
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    border-color var(--motion-duration-micro) var(--motion-ease-out),
+    color var(--motion-duration-micro) var(--motion-ease-out);
 }
 
 .grid-shell .grid-result-table .ant-table-thead > tr > th,
@@ -431,12 +625,6 @@
   border-radius: 0.5rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .grid-shell .marketing-primary-btn {
-    transition: none;
-  }
-}
-
 .grid-shell .grid-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -484,8 +672,12 @@
   font-weight: 600;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease,
-    border-color 0.15s ease;
+  /* 按压/悬停反馈走 micro 档 token */
+  transition:
+    transform var(--motion-duration-micro) var(--motion-ease-out),
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    color var(--motion-duration-micro) var(--motion-ease-out),
+    border-color var(--motion-duration-micro) var(--motion-ease-out);
 }
 
 .grid-shell .grid-save-island:active:not(:disabled) {
@@ -593,11 +785,12 @@
     );
   box-shadow: var(--ds-shadow-sm);
   min-height: 4.75rem;
+  /* 卡片悬停（含 -1px 上浮）走 small 档 */
   transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease,
-    background 0.18s ease;
+    border-color var(--motion-duration-small) var(--motion-ease-out),
+    box-shadow var(--motion-duration-small) var(--motion-ease-out),
+    transform var(--motion-duration-small) var(--motion-ease-out),
+    background-color var(--motion-duration-small) var(--motion-ease-out);
 }
 
 .grid-shell .grid-strategy-library__item:hover {
@@ -744,11 +937,11 @@
   background: var(--card);
 }
 
+/* 骨架条底色与扫光统一由全局 .motion-skeleton 提供（标记处仅保留形状） */
 .grid-shell .grid-strategy-library__skeleton-mark {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--muted-foreground) 14%, var(--card));
 }
 
 .grid-shell .grid-strategy-library__skeleton-copy {
@@ -758,7 +951,6 @@
 .grid-shell .grid-strategy-library__skeleton-line {
   height: 0.75rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--muted-foreground) 16%, var(--card));
 }
 
 .grid-shell .grid-strategy-library__skeleton-line--title {
@@ -770,16 +962,6 @@
   width: 62%;
   height: 0.55rem;
   opacity: 0.75;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .grid-shell .grid-strategy-library__item {
-    transition: none;
-  }
-
-  .grid-shell .grid-strategy-library__item:hover {
-    transform: none;
-  }
 }
 
 .grid-shell .grid-name-overlay {
@@ -852,7 +1034,10 @@
   color: var(--foreground);
   font-size: 0.9375rem;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  /* 焦点环走 micro 档 */
+  transition:
+    border-color var(--motion-duration-micro) var(--motion-ease-out),
+    box-shadow var(--motion-duration-micro) var(--motion-ease-out);
 }
 
 .grid-shell .grid-name-overlay__textarea {
@@ -868,7 +1053,10 @@
   font-family: inherit;
   resize: vertical;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  /* 焦点环走 micro 档 */
+  transition:
+    border-color var(--motion-duration-micro) var(--motion-ease-out),
+    box-shadow var(--motion-duration-micro) var(--motion-ease-out);
 }
 
 .grid-shell .grid-name-overlay__textarea:focus {
@@ -905,7 +1093,11 @@
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  /* 按压/悬停反馈走 micro 档 */
+  transition:
+    transform var(--motion-duration-micro) var(--motion-ease-out),
+    background-color var(--motion-duration-micro) var(--motion-ease-out),
+    opacity var(--motion-duration-micro) var(--motion-ease-out);
 }
 
 .grid-shell .grid-name-overlay__btn:active:not(:disabled) {
@@ -971,12 +1163,14 @@
   }
 }
 
+/* recharts 自定义 Tooltip：悬停首现 micro 淡显，跟手移动不做动画 */
 .grid-shell .grid-chart-tooltip {
   min-width: min(320px, calc(100vw - 2rem));
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-compact);
   box-shadow: var(--ds-shadow-lg);
+  animation: gridFadeIn var(--motion-duration-micro) var(--motion-ease-out) both;
 }
 
 .grid-shell .grid-chart-tooltip__head {
@@ -1183,6 +1377,8 @@
 .grid-shell .grid-portfolio-board__ref {
   color: var(--primary);
   text-decoration: none;
+  /* 悬停换色走 micro 档 */
+  transition: color var(--motion-duration-micro) var(--motion-ease-out);
 }
 
 .grid-shell .grid-portfolio-board__ref:hover {
@@ -1344,6 +1540,73 @@
   color: var(--muted-foreground);
 }
 
+/* 收盘价到达时涨跌 tone 换色：small 档颜色过渡（数值本身用 .grid-value-swap 微闪） */
+.grid-shell .grid-portfolio-card__quote-main,
+.grid-shell .grid-portfolio-card__quote-sub {
+  transition: color var(--motion-duration-small) var(--motion-ease-out);
+}
+
+/* 看板加载骨架：与真实 KPI/卡片同构（复用看板栅格），扫光走全局 .motion-skeleton */
+.grid-shell .grid-portfolio-board__sk-summary-item {
+  min-width: 0;
+  min-height: 6rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.grid-shell .grid-portfolio-board__sk-bar {
+  border-radius: 999px;
+}
+
+.grid-shell .grid-portfolio-board__sk-bar--label {
+  width: 3.5rem;
+  height: 0.75rem;
+  margin-bottom: 0.625rem;
+}
+
+.grid-shell .grid-portfolio-board__sk-bar--value {
+  width: 6rem;
+  height: 1.25rem;
+}
+
+.grid-shell .grid-portfolio-board__sk-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 16rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.grid-shell .grid-portfolio-board__sk-bar--title {
+  width: 42%;
+  height: 1rem;
+  margin-bottom: 1rem;
+}
+
+.grid-shell .grid-portfolio-board__sk-quotes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.grid-shell .grid-portfolio-board__sk-quote {
+  height: 3.5rem;
+  border-radius: 12px;
+}
+
+.grid-shell .grid-portfolio-board__sk-bar--line {
+  width: 68%;
+  height: 0.75rem;
+  margin-top: 0.625rem;
+}
+
 .grid-shell .grid-portfolio-card__kpis {
   display: grid;
 }
@@ -1420,13 +1683,49 @@
   width: 100%;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .grid-shell .grid-save-island--loading .grid-save-island__pulse {
-    animation: none;
-  }
+/* 自研开关：轨道变色与滑块位移统一 small 档（分段滑块语义），替代 Tailwind duration-200 */
+.grid-shell .grid-step-switch {
+  transition: background-color var(--motion-duration-small) var(--motion-ease-out);
+}
 
-  .grid-shell .grid-save-island,
-  .grid-shell .grid-name-overlay__btn {
-    transition: none;
-  }
+.grid-shell .grid-step-switch__thumb {
+  transition: transform var(--motion-duration-small) var(--motion-ease-out);
+}
+
+/* 稳健/抄底模式卡：选中态换肤 small 档，替代 Tailwind duration-200 */
+.grid-shell .grid-mode-card {
+  transition:
+    box-shadow var(--motion-duration-small) var(--motion-ease-out),
+    border-color var(--motion-duration-small) var(--motion-ease-out),
+    background-color var(--motion-duration-small) var(--motion-ease-out);
+}
+
+/* 动态间距区块：三段内容包进单个 0fr→1fr 折叠容器（medium 档，与开关同语言）+ 淡入 */
+.grid-shell .grid-dynamic-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-duration-medium) var(--motion-ease-out);
+}
+
+.grid-shell .grid-dynamic-reveal.is-open {
+  grid-template-rows: 1fr;
+}
+
+/* 折叠态移出 Tab 序（内含模式卡按钮），收起过程结束后再隐藏 */
+.grid-shell .grid-dynamic-reveal__inner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--motion-duration-small) var(--motion-ease-out),
+    visibility 0s linear var(--motion-duration-medium);
+}
+
+.grid-shell .grid-dynamic-reveal.is-open .grid-dynamic-reveal__inner {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--motion-duration-small) var(--motion-ease-out),
+    visibility 0s linear 0s;
 }
