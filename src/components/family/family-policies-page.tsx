@@ -145,12 +145,17 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
       await reload();
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return;
-      message.error(e instanceof Error ? e.message : '保存失败');
+      message.error(describeError(e, '保单保存失败，请重试'));
     } finally {
       savingRef.current = false;
       setSaving(false);
     }
   };
+
+  // 独立打开时默认隐藏金额（与总览/记账一致）；内嵌总览时透传外层开关
+  const inheritedVisible = useFamilyAmountVisibility();
+  const [standaloneVisible, setStandaloneVisible] = useState(false);
+  const effectiveVisible = embedded ? inheritedVisible : standaloneVisible;
 
   return (
     /* 状态变化：独立页面首次进入 —— 根容器统一 motion-enter；内嵌总览时不重复入场 */
@@ -182,9 +187,27 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
             ))}
           </Space>
         </div>
-        <Button type="primary" onClick={openCreate}>
-          + 添加保单
-        </Button>
+        <Space>
+          {!embedded ? (
+            <button
+              type="button"
+              className="family-amount-visibility-toggle"
+              aria-label={standaloneVisible ? '隐藏金额' : '显示金额'}
+              aria-pressed={standaloneVisible}
+              onClick={() => setStandaloneVisible(v => !v)}
+            >
+              <span
+                key={standaloneVisible ? 'visible' : 'masked'}
+                className="family-amount-visibility-toggle__icon"
+              >
+                {standaloneVisible ? <EyeFilled /> : <EyeInvisibleFilled />}
+              </span>
+            </button>
+          ) : null}
+          <Button type="primary" onClick={openCreate}>
+            + 添加保单
+          </Button>
+        </Space>
       </div>
 
       <Table
@@ -282,7 +305,11 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
                   danger
                   onClick={() => {
                     modal.confirm({
-                      title: '删除保单？',
+                      title: `删除保单「${row.name}」？`,
+                      content: '该记录将从保单列表与保障摘要中移除。',
+                      okText: '删除',
+                      okButtonProps: { danger: true },
+                      cancelText: '取消',
                       onOk: async () => {
                         // 状态变化：删除确认成功 → 该行先淡出（exit-small）再静默刷新数据
                         await repo.deletePolicy(row.id);
@@ -346,6 +373,7 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+      </div>
+    </FamilyAmountVisibilityProvider>
   );
 }

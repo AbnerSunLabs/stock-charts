@@ -13,6 +13,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { HelpTooltip } from '@/components/shared/help-tooltip';
+import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
 import { createPortal } from 'react-dom';
 
 export interface GridStrategyNameOverlayProps {
@@ -177,7 +178,7 @@ export function GridStrategyNameOverlay({
       if (reduce) {
         gsap.set(form, { autoAlpha: 0 });
         gsap.set(success, { autoAlpha: 1 });
-        const timer = window.setTimeout(() => animateOut(contextSafe), 400);
+        const timer = window.setTimeout(() => animateOut(contextSafe), 300);
         return () => window.clearTimeout(timer);
       }
       const tl = gsap.timeline({
@@ -204,7 +205,8 @@ export function GridStrategyNameOverlay({
         },
         0.08
       );
-      tl.to({}, { duration: 0.45 });
+      // 成功态停留交给页面上的保存岛接续，浮层只做一拍确认即退
+      tl.to({}, { duration: 0.28 });
     },
     { scope: rootRef, dependencies: [phase] }
   );

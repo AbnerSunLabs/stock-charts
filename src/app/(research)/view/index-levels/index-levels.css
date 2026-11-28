@@ -38,6 +38,9 @@
     sans-serif;
   letter-spacing: 0;
   font-variant-numeric: lining-nums tabular-nums;
+  /* 页面根只做纯透明度入场：带位移的动画会保留 transform，
+     令内部 position:fixed 的 E大侧栏失去视口定位（跟随内容滚动） */
+  animation: fade-in var(--duration-normal) var(--ease-out-expo) both;
 }
 
 .index-levels *,
@@ -170,6 +173,11 @@
   visibility: visible;
   transition: visibility 0s;
 }
+
+.index-levels .essay-rail[data-open='true'] {
+  pointer-events: auto;
+}
+
 .index-levels .essay-backdrop {
   position: absolute;
   inset: 0;
@@ -186,6 +194,11 @@
   transition-duration: var(--motion-duration-exit-medium);
   transition-timing-function: var(--motion-ease-in);
 }
+
+.index-levels .essay-rail[data-open='true'] .essay-backdrop {
+  opacity: 1;
+}
+
 .index-levels .essay-panel {
   position: absolute;
   top: 0;
@@ -208,6 +221,11 @@
   transition-duration: var(--motion-duration-exit-large);
   transition-timing-function: var(--motion-ease-in);
 }
+
+.index-levels .essay-rail[data-open='true'] .essay-panel {
+  transform: translateX(0);
+}
+
 .index-levels .essay-close {
   display: inline-flex;
   flex: none;
@@ -567,6 +585,16 @@
 .index-levels .chart-host {
   position: relative;
   margin-top: 16px;
+}
+
+/* 加载/错误 → 就绪：整幅图轻淡入交代"数据到了"；同相位内换数据不重播 */
+.index-levels .chart-host .chart {
+  animation: viewFadeIn var(--duration-normal) var(--ease-out-expo) both;
+}
+
+/* 悬停卡只做出现淡入（keyframes 见 globals.css）；移动完全跟手（不加位移过渡） */
+.index-levels .tip.show {
+  animation: fade-in var(--duration-fast) var(--ease-out-expo) both;
 }
 .index-levels .panel .chart {
   display: block;

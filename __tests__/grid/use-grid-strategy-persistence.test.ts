@@ -245,4 +245,72 @@ describe('useGridStrategyPersistence', () => {
     expect(latest!.libraryOpen).toBe(true);
     expect(window.sessionStorage.getItem(PENDING_GRID_STRATEGY_LIBRARY_KEY)).toBeNull();
   });
+
+  it('openStrategy 成功时返回 true 并回调 onOpenStrategy', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: { id: 'user-1' } as User },
+      error: null,
+    });
+    const saved: SavedGridStrategyV1 = {
+      ...meta(),
+      config: buildPayload().config,
+      resultSnapshot: buildPayload().resultSnapshot,
+    };
+    repository.get.mockResolvedValue(saved);
+    await mount();
+    let opened: boolean | undefined;
+    await act(async () => {
+      opened = await latest!.openStrategy('strategy-1');
+    });
+    expect(opened).toBe(true);
+    expect(onOpenStrategy).toHaveBeenCalledWith(saved);
+    expect(latest!.currentStrategy?.id).toBe('strategy-1');
+  });
+
+  it('openStrategy 进行中重复调用被跳过并返回 false', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: { id: 'user-1' } as User },
+      error: null,
+    });
+    let resolveGet: (value: SavedGridStrategyV1) => void = () => {};
+    repository.get.mockReturnValue(
+      new Promise<SavedGridStrategyV1>(resolve => {
+        resolveGet = resolve;
+      })
+    );
+    await mount();
+    let first: Promise<boolean> | undefined;
+    let second: Promise<boolean> | undefined;
+    await act(async () => {
+      first = latest!.openStrategy('strategy-1');
+      second = latest!.openStrategy('strategy-1');
+    });
+    const saved: SavedGridStrategyV1 = {
+      ...meta(),
+      config: buildPayload().config,
+      resultSnapshot: buildPayload().resultSnapshot,
+    };
+    await act(async () => {
+      resolveGet(saved);
+    });
+    expect(await second).toBe(false);
+    expect(await first).toBe(true);
+    expect(onOpenStrategy).toHaveBeenCalledTimes(1);
+  });
+
+  it('openStrategy 会话失效时返回 false 且不回调 onOpenStrategy', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: { id: 'user-1' } as User },
+      error: null,
+    });
+    repository.get.mockRejectedValue(new Error('登录状态已失效，请重新登录'));
+    await mount();
+    let opened: boolean | undefined;
+    await act(async () => {
+      opened = await latest!.openStrategy('strategy-1');
+    });
+    expect(opened).toBe(false);
+    expect(onOpenStrategy).not.toHaveBeenCalled();
+    expect(latest!.loginOpen).toBe(true);
+  });
 });

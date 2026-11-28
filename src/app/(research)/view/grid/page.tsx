@@ -27,6 +27,7 @@ import {
   isDraftConfigDirty,
 } from '@/lib/grid/grid-strategy-workflow';
 import { normalizeJournalStrategyId } from '@/lib/grid/grid-journal-filter';
+import { describeError } from '@/lib/describe-error';
 import { formatGridAmount, formatGridPrice } from '@/lib/grid/format-grid-amount';
 import { extractEtfCode } from '@/lib/grid/grid-board-close-quote';
 import {
@@ -51,12 +52,25 @@ import { App, Button, Card, Drawer, Empty, Grid, Tabs } from 'antd';
 import { gsap } from 'gsap';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
+
+/** 平滑滚动；系统开启"减少动态效果"时改为直接跳转 */
+function scrollIntoViewMotionAware(
+  element: HTMLElement | null,
+  block: ScrollLogicalPosition = 'start'
+): void {
+  element?.scrollIntoView({
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    block,
+  });
+}
+
 /**
  * 网格交易策略页（Coinbase 双态布局 + 云端保存）。
  */
 export default function GridStrategyPage() {
   return (
-    <div className="relative overflow-x-hidden text-[var(--foreground)]">
+    <div className="relative overflow-x-hidden text-[var(--foreground)] animate-[fade-in_0.24s_var(--ease-out-expo)_both]">
       <GridAntdProvider>
         <GridStrategyPageInner />
       </GridAntdProvider>
@@ -85,10 +99,21 @@ function GridStrategyPageInner() {
   );
   const [nameModalError, setNameModalError] = useState<string | null>(null);
   const [mainTab, setMainTab] = useState<'calc' | 'board' | 'journal'>('calc');
+  // 跟踪最新 tab：异步打开完成后若用户已手动切走，则不再强行切回
+  const mainTabRef = useRef<'calc' | 'board' | 'journal'>('calc');
+  const switchMainTab = (tab: 'calc' | 'board' | 'journal') => {
+    mainTabRef.current = tab;
+    setMainTab(tab);
+  };
+  const [openingStrategyId, setOpeningStrategyId] = useState<string | null>(
+    null
+  );
   const [boardStrategies, setBoardStrategies] = useState<SavedGridStrategyV1[]>(
     []
   );
   const [boardLoading, setBoardLoading] = useState(false);
+  // 首次拉取是否已结束：区分"还没加载"与"加载完确实为空"，深链筛选不被提前归一
+  const [boardFetched, setBoardFetched] = useState(false);
   const [journalStrategyFilter, setJournalStrategyFilter] = useState<
     string | 'all'
   >('all');
@@ -139,7 +164,18 @@ function GridStrategyPageInner() {
     [params, dynamicGridEnabled, dynamicGridMode]
   );
 
-  const draftDirty = isDraftConfigDirty(draftConfig, generatedConfig);
+  // 草稿基线：从未生成结果时的对照物。新建重置回到默认，打开/保存后随配置更新，
+  // 使"首次生成前"的参数编辑也纳入放弃确认（否则会被静默丢弃）
+  const baselineConfigRef = useRef<GridStrategyConfigV1>({
+    params: DEFAULT_GRID_PARAMS,
+    dynamicGridEnabled: false,
+    dynamicGridMode: 'stable',
+  });
+  const draftDirty = isDraftConfigDirty(
+    draftConfig,
+    generatedConfig,
+    baselineConfigRef.current
+  );
 
   const applyOpenedStrategy = useCallback(
     (strategy: SavedGridStrategyV1) => {
@@ -147,6 +183,7 @@ function GridStrategyPageInner() {
       setDynamicGridEnabled(strategy.config.dynamicGridEnabled);
       setDynamicGridMode(strategy.config.dynamicGridMode);
       setGeneratedConfig(strategy.config);
+      baselineConfigRef.current = strategy.config;
       setResult(strategy.resultSnapshot);
       setGeneratedDirty(false);
       setParamsDrawerOpen(false);
@@ -193,17 +230,18 @@ function GridStrategyPageInner() {
       const list = await strategyRepo.listAll();
       setBoardStrategies(list);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载看板失败');
+      message.error(describeError(error, '加载看板失败，请重试'));
       setBoardStrategies([]);
     } finally {
       setBoardLoading(false);
+      setBoardFetched(true);
     }
   }, [message, persistence.user, strategyRepo]);
 
   useLayoutEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab === 'board' || tab === 'journal' || tab === 'calc') setMainTab(tab);
+    if (tab === 'board' || tab === 'journal' || tab === 'calc') switchMainTab(tab);
     const strategyId = params.get('strategy');
     if (tab === 'journal' && strategyId) setJournalStrategyFilter(strategyId);
   }, []);
@@ -217,7 +255,7 @@ function GridStrategyPageInner() {
     if (!id || tab === 'journal' || tab === 'board') return;
     openedStrategyQuery.current = true;
     void persistence.openStrategy(id).catch(error => {
-      message.error(error instanceof Error ? error.message : '打开失败');
+      message.error(describeError(error, '打开失败，请重试'));
     });
   }, [message, persistence.user, persistence.openStrategy]);
 
@@ -231,12 +269,34 @@ function GridStrategyPageInner() {
     const normalized = normalizeJournalStrategyId(
       journalStrategyFilter,
       boardStrategies.map(strategy => strategy.id),
-      boardLoading
+      boardLoading || !boardFetched
     );
     if (normalized !== journalStrategyFilter) {
       setJournalStrategyFilter(normalized);
     }
-  }, [boardLoading, boardStrategies, journalStrategyFilter]);
+  }, [boardLoading, boardFetched, boardStrategies, journalStrategyFilter]);
+
+  // 页签与流水筛选写回 URL：刷新/分享后停在当前位置，不用用户重找（能替人做的直接做）。
+  // 跳过首次运行：挂载首帧写回会抢在深链（?tab&strategy）被异步消费之前把它抹掉
+  const urlSyncInitRef = useRef(false);
+  useEffect(() => {
+    if (!urlSyncInitRef.current) {
+      urlSyncInitRef.current = true;
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', mainTab);
+    if (mainTab === 'journal' && journalStrategyFilter !== 'all') {
+      params.set('strategy', journalStrategyFilter);
+    } else {
+      params.delete('strategy');
+    }
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}?${params.toString()}`
+    );
+  }, [mainTab, journalStrategyFilter]);
 
   const currentStrategyTrades = useMemo(() => {
     const id = persistence.currentStrategy?.id;
@@ -454,13 +514,18 @@ function GridStrategyPageInner() {
     setGeneratedConfig(null);
     setGeneratedDirty(false);
     setParamsDrawerOpen(false);
+    baselineConfigRef.current = {
+      params: DEFAULT_GRID_PARAMS,
+      dynamicGridEnabled: false,
+      dynamicGridMode: 'stable',
+    };
   };
 
   const handleCreateGridStrategy = () => {
     confirmDiscardIfNeeded(() => {
       persistence.clearCurrentStrategy();
       resetCalculatorDraft();
-      setMainTab('calc');
+      switchMainTab('calc');
     }, 'create');
   };
 
@@ -533,7 +598,7 @@ function GridStrategyPageInner() {
           await persistence.updateCurrentStrategy(payload);
           setGeneratedDirty(false);
         } catch (error) {
-          message.error(error instanceof Error ? error.message : '更新失败');
+          message.error(describeError(error, '更新失败，请重试'));
         }
       })();
       return;
@@ -579,27 +644,47 @@ function GridStrategyPageInner() {
         config: { ...payload.config, note },
       });
       setGeneratedConfig(prev => (prev ? { ...prev, note } : prev));
+      if (generatedConfig) {
+        baselineConfigRef.current = { ...generatedConfig, note };
+      }
       setGeneratedDirty(false);
       void tradesApi.refresh();
       void refreshBoardStrategies();
     } catch (error) {
-      setNameModalError(error instanceof Error ? error.message : '保存失败');
+      setNameModalError(describeError(error, '保存失败，请重试'));
       throw error;
     }
   };
 
-  const handleOpenStrategy = (id: string) => {
+  const handleOpenStrategy = (id: string, onOpened?: () => void) => {
     confirmDiscardIfNeeded(() => {
-      void persistence.openStrategy(id).catch(error => {
-        message.error(error instanceof Error ? error.message : '打开失败');
-      });
+      setOpeningStrategyId(id);
+      void persistence.openStrategy(id)
+        .then(opened => {
+          // 仅在真正打开成功时回调（防重入跳过 / 登录失效会 resolve false）
+          if (opened) onOpened?.();
+        })
+        .catch(error => {
+          message.error(describeError(error, '打开失败，请重试'));
+        })
+        .finally(() => {
+          setOpeningStrategyId(null);
+        });
     });
   };
 
   const handleDeleteStrategy = (strategy: GridStrategyMetadata) => {
+    // 库表对 grid_strategy_trades.strategy_id 定义了 ON DELETE CASCADE（见
+    // docs/superpowers/specs/2026-09-09-grid-portfolio-journal-design.md），删除必须说清连带后果
+    const tradeCount = tradesApi.trades.filter(
+      t => t.strategyId === strategy.id
+    ).length;
     modal.confirm({
-      title: '删除该策略？',
-      content: '只删除该保存记录，不影响其他策略。删除后可在当前页重新保存。',
+      title: `删除策略「${strategy.name}」？`,
+      content:
+        tradeCount > 0
+          ? `该策略及其 ${tradeCount} 笔成交流水将一并永久删除，无法恢复。`
+          : '该策略及其全部成交流水（如有）将一并永久删除，无法恢复。',
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -610,7 +695,7 @@ function GridStrategyPageInner() {
           await refreshBoardStrategies();
           message.success('已删除');
         } catch (error) {
-          message.error(error instanceof Error ? error.message : '删除失败');
+          message.error(describeError(error, '删除失败，请重试'));
           throw error;
         }
       },
@@ -789,7 +874,7 @@ function GridStrategyPageInner() {
 
         <Tabs
           activeKey={mainTab}
-          onChange={key => setMainTab(key as 'calc' | 'board' | 'journal')}
+          onChange={key => switchMainTab(key as 'calc' | 'board' | 'journal')}
           className="mb-4"
           items={[
             { key: 'board', label: '组合看板' },
@@ -798,6 +883,11 @@ function GridStrategyPageInner() {
           ]}
         />
 
+        {/* key 随页签切换重挂载：新内容做一次轻淡入，交代"切到哪一页" */}
+        <div
+          key={mainTab}
+          className="animate-[viewFadeIn_0.24s_var(--ease-out-expo)_both]"
+        >
         {mainTab === 'board' ? (
           /* Tab 面板切换：新内容统一 small 档淡入上移（grid-tab-panel），与 ink bar 同节奏 */
           <div key="board" className="grid-tab-panel">
@@ -1022,12 +1112,17 @@ function GridStrategyPageInner() {
             )}
           </div>
         ) : null}
+        </div>
       </div>
 
       <LoginModal
         open={persistence.loginOpen}
         onClose={() => persistence.setLoginOpen(false)}
-        redirectTo="/view/grid"
+        redirectTo={
+          typeof window === 'undefined'
+            ? '/view/grid'
+            : `${window.location.pathname}${window.location.search}`
+        }
         title={loginTitle}
         description={loginDescription}
       />
@@ -1096,7 +1191,7 @@ function GridStrategyPageInner() {
             );
             setTradeModalOpen(false);
           } catch (error) {
-            message.error(error instanceof Error ? error.message : '记账失败');
+            message.error(describeError(error, '记账失败，请重试'));
           } finally {
             setTradeSubmitting(false);
           }

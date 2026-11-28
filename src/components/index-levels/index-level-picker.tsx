@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 
+import { usePresence } from '@/hooks/use-presence';
 import { INDEX_WATCHES } from '@/lib/index-levels/catalog';
 
 const MENU_KEYS: Record<string, number | 'start' | 'end'> = {
@@ -31,6 +32,7 @@ export function IndexLevelPicker({
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listId = useId();
+  const { mounted, visible } = usePresence(open, MENU_EXIT_MS);
   const current = INDEX_WATCHES.find(item => item.code === value) ?? INDEX_WATCHES[0];
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export function IndexLevelPicker({
     // 菜单还不存在，querySelector 落空会让方向键失灵）
     if (!open || !menuMounted) return undefined;
     const onPointer = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!root?.contains(event.target as Node)) setOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
@@ -57,12 +59,41 @@ export function IndexLevelPicker({
     };
     document.addEventListener('mousedown', onPointer);
     document.addEventListener('keydown', onKey);
-    rootRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus();
     return () => {
       document.removeEventListener('mousedown', onPointer);
       document.removeEventListener('keydown', onKey);
+      // 关闭即把焦点移出菜单：退场窗口内 aria-hidden 不能包住持有焦点的元素
+      if (root?.contains(document.activeElement)) {
+        root
+          ?.querySelector<HTMLButtonElement>('.index-select')
+          ?.focus();
+      }
     };
   }, [open, menuMounted]);
+
+  // 菜单由 usePresence 控制晚一帧挂载，聚焦选中项要等可见态而非 open 边沿
+  useEffect(() => {
+    if (!visible) return;
+    rootRef.current
+      ?.querySelector<HTMLButtonElement>('[aria-selected="true"]')
+      ?.focus();
+  }, [visible]);
+
+  // 菜单卸载后焦点若掉到 body，还给触发按钮。
+  // 只在"曾挂载过"之后生效：初次挂载（mounted 恒为 false 的首帧）不能抢焦点
+  const wasMountedRef = useRef(false);
+  useEffect(() => {
+    if (mounted) {
+      wasMountedRef.current = true;
+      return;
+    }
+    if (!wasMountedRef.current) return;
+    if (document.activeElement === document.body) {
+      rootRef.current
+        ?.querySelector<HTMLButtonElement>('.index-select')
+        ?.focus();
+    }
+  }, [mounted]);
 
   return (
     <div className="index-select-wrap" ref={rootRef}>
@@ -81,6 +112,7 @@ export function IndexLevelPicker({
       {menuMounted ? (
         <IndexMenu
           id={listId}
+          open={visible}
           value={value}
           open={open}
           onPick={code => {
@@ -96,11 +128,14 @@ export function IndexLevelPicker({
 
 function IndexMenu({
   id,
+  open,
   value,
   open,
   onPick,
 }: {
   id: string;
+  /** 是否处于可见态（退场期间为 false，驱动 data-open 播放收起过渡） */
+  open: boolean;
   value: string;
   open: boolean;
   onPick: (code: string) => void;
@@ -126,7 +161,13 @@ function IndexMenu({
     >
       {INDEX_WATCHES.map(item => (
         <li key={item.code} role="presentation">
-          <button type="button" role="option" aria-selected={item.code === value} onClick={() => onPick(item.code)}>
+          <button
+            type="button"
+            role="option"
+            aria-selected={item.code === value}
+            tabIndex={open ? 0 : -1}
+            onClick={() => onPick(item.code)}
+          >
             <span>{item.name}</span>
             <span className="index-menu-code">{item.code}</span>
           </button>

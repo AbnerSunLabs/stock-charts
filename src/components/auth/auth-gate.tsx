@@ -26,6 +26,7 @@ type GateState =
   | { status: 'loading' }
   | { status: 'need_login' }
   | { status: 'denied' }
+  | { status: 'check_failed' }
   | { status: 'allowed'; user: User };
 
 /** 门禁访问判定结果（refresh 内部流转使用） */

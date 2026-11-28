@@ -41,7 +41,8 @@ export interface UseGridStrategyPersistenceReturn {
   currentStrategy: GridStrategyMetadata | null;
   openLibrary: () => Promise<void>;
   closeLibrary: () => void;
-  openStrategy: (id: string) => Promise<void>;
+  /** resolve 值表示是否真正打开成功（防重入跳过 / 登录失效时为 false） */
+  openStrategy: (id: string) => Promise<boolean>;
   createStrategy: (name: string, payload: GridStrategySavePayload) => Promise<void>;
   updateCurrentStrategy: (payload: GridStrategySavePayload) => Promise<void>;
   renameStrategy: (id: string, name: string, symbol: string, note: string) => Promise<void>;
@@ -201,8 +202,8 @@ export function useGridStrategyPersistence(
   }, []);
 
   const openStrategy = useCallback(
-    async (id: string) => {
-      if (openingRef.current) return;
+    async (id: string): Promise<boolean> => {
+      if (openingRef.current) return false;
       openingRef.current = true;
       setActionId(id);
       try {
@@ -210,10 +211,12 @@ export function useGridStrategyPersistence(
         setCurrentStrategy(toMeta(strategy));
         onOpenStrategy(strategy);
         setLibraryOpen(false);
+        return true;
       } catch (error) {
-        if (!handleAuthError(error)) {
-          throw error;
+        if (handleAuthError(error)) {
+          return false;
         }
+        throw error;
       } finally {
         openingRef.current = false;
         setActionId(null);

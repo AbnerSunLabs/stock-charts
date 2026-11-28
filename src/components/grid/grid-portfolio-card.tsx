@@ -73,11 +73,14 @@ export function toPortfolioCardView(
  */
 export function GridPortfolioCard({
   view,
+  opening,
   onOpenCalculator,
   onOpenJournal,
   onEdit,
 }: {
   view: PortfolioCardView;
+  /** 正在打开进计算器时按钮转 loading，避免等待期无反馈或重复点击 */
+  opening?: boolean;
   onOpenCalculator: (strategyId: string) => void;
   onOpenJournal: (strategyId: string) => void;
   onEdit?: (strategy: SavedGridStrategyV1) => void;
@@ -145,7 +148,12 @@ export function GridPortfolioCard({
           </div>
         </div>
         <Space className="grid-portfolio-card__actions">
-          <Button type="primary" shape="round" onClick={() => onOpenCalculator(s.id)}>
+          <Button
+            type="primary"
+            shape="round"
+            loading={opening}
+            onClick={() => onOpenCalculator(s.id)}
+          >
             打开计算器
           </Button>
           <Button shape="round" onClick={() => onOpenJournal(s.id)}>

@@ -81,7 +81,7 @@ export function GridSaveStatusIsland({
         .join(' ')}
       disabled={!interactive}
       aria-busy={loading}
-      aria-label={label}
+      aria-label={displayLabel}
       onClick={() => {
         if (!interactive) return;
         onSave();

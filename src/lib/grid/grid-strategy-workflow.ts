@@ -67,12 +67,16 @@ export function hasDiscardableGridChanges(input: {
 }
 
 /**
- * 由当前草稿表单构造配置，并与已生成配置比较是否脏。
+ * 由当前草稿表单构造配置，并与"已生成配置"比较是否脏。
+ * baseline 是从未生成（generated 为空）时的对照物（初始默认值或刚载入的策略配置），
+ * 保护首次生成前的参数编辑：没有它，新建/打开会静默丢掉用户已填的参数。
  */
 export function isDraftConfigDirty(
   draft: GridStrategyConfigV1,
-  generated: GridStrategyConfigV1 | null
+  generated: GridStrategyConfigV1 | null,
+  baseline?: GridStrategyConfigV1 | null
 ): boolean {
-  if (!generated) return false;
-  return !isSameGridStrategyConfig(draft, generated);
+  const reference = generated ?? baseline ?? null;
+  if (!reference) return false;
+  return !isSameGridStrategyConfig(draft, reference);
 }

@@ -1,0 +1,5 @@
+# Orca 仓库级 setup hook（与本机 Orca 界面 hookSettings 同值，随 git 追溯）
+# 注意：不共享 node_modules——pnpm 全局 store 硬链已让各 worktree 独立安装
+# 近零成本（实测 19s），而软链共享会触发 ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY
+scripts:
+  setup: bash scripts/orca-setup.sh

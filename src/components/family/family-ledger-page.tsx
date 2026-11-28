@@ -257,11 +257,14 @@ export function FamilyLedgerPage() {
       if (e && typeof e === 'object' && 'errorFields' in e) {
         throw e;
       }
-      // 转移已提交时刷新列表，避免关闭弹窗后看到过期余额
+      // 转移已提交时刷新列表，避免关闭弹窗后看到过期余额；
+      // rethrow 让 Modal 保持打开，用户重试时只提交条目信息（转移输入已清空）
       if (transferCommitted) {
         void reload();
+        message.error('余额转移已完成，条目信息未保存，请重试保存');
+        throw e instanceof Error ? e : new Error('条目信息未保存');
       }
-      message.error(e instanceof Error ? e.message : '保存失败');
+      message.error(describeError(e, '保存失败，请重试'));
       throw e instanceof Error ? e : new Error('保存失败');
     } finally {
       itemSavingRef.current = false;
@@ -367,7 +370,11 @@ export function FamilyLedgerPage() {
               danger
               onClick={() => {
                 modal.confirm({
-                  title: '删除该条目？',
+                  title: `删除条目「${row.name}」？`,
+                  content: '该条目将从账本移除，资产或负债合计随之更新。',
+                  okText: '删除',
+                  okButtonProps: { danger: true },
+                  cancelText: '取消',
                   onOk: async () => {
                     // 状态变化：删除确认成功 → 该行先淡出（exit-small）再静默刷新数据
                     await repo.deleteLedgerItem(row.id);

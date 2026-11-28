@@ -22,6 +22,6 @@ test.describe('仓位旭日图', () => {
     await expect(chartSection).toBeVisible({ timeout: 15_000 });
     await expect(chartSection.locator('canvas')).toBeVisible({ timeout: 20_000 });
 
-    await expect(page.getByRole('button', { name: '下载 PNG' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '下载图表 PNG' })).toBeEnabled();
   });
 });

@@ -4,7 +4,7 @@ import { formatTradeAmount } from '@/lib/grid/format-trade-amount';
 import type { GridStrategyTradeSide } from '@/types/grid-strategy-trade';
 import { Button, DatePicker, Form, InputNumber, Modal, type FormInstance } from 'antd';
 import dayjs, { type Dayjs } from '@/lib/antd-dayjs';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface GridTradeEntryDefaults {
   side: GridStrategyTradeSide;
@@ -114,9 +114,11 @@ function TradeEntryFields({
         </span>
       </div>
       <div className="grid-trade-entry-modal__footer">
-        <Button onClick={onCancel}>取消</Button>
+        <Button disabled={loading} onClick={onCancel}>
+          取消
+        </Button>
         <Button type="primary" htmlType="submit" loading={loading}>
-          确认
+          {loading ? '正在记账…' : '确认'}
         </Button>
       </div>
     </Form>
@@ -138,6 +140,15 @@ export function GridTradeEntryModal({
   const [form] = Form.useForm<FormValues>();
   const price = Form.useWatch('price', form);
   const qty = Form.useWatch('qty', form);
+  // 渲染期优先取当前 defaults、退场期（父层已清空）回落到上一次的值：
+  // 既零陈旧帧，又让 Modal 有内容可播完退场动画
+  const [lastDefaults, setLastDefaults] = useState(defaults);
+
+  useEffect(() => {
+    if (defaults) setLastDefaults(defaults);
+  }, [defaults]);
+
+  const shownDefaults = defaults ?? lastDefaults;
 
   useEffect(() => {
     if (!open || !defaults) return;
@@ -158,6 +169,9 @@ export function GridTradeEntryModal({
       destroyOnHidden
       width={400}
       centered
+      closable={!loading}
+      maskClosable={!loading}
+      keyboard={!loading}
       wrapClassName="grid-trade-entry-modal"
     >
       {defaults ? (

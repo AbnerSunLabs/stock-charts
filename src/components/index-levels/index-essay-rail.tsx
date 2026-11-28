@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { usePresence } from '@/hooks/use-presence';
 import { quoteSource } from '@/lib/index-levels/catalog';
 import { essayHref, type IndexEssay } from '@/lib/index-levels/index-essays';
 

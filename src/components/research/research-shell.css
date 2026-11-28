@@ -96,6 +96,10 @@
 .research-rail-label {
   font-size: 14px;
   line-height: 1;
+  max-width: 150px;
+  transition:
+    max-width var(--duration-normal) var(--ease-in-out-smooth),
+    opacity var(--duration-fast) var(--ease-in-out-smooth);
 }
 
 .research-brand-name {

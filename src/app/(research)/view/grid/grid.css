@@ -154,12 +154,10 @@
 
 .grid-shell .grid-summary-bar--dirty {
   border-color: color-mix(in srgb, var(--accent-warm) 45%, var(--border));
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--accent-warm) 8%, var(--card)),
-      color-mix(in srgb, var(--card) 94%, transparent)
-    );
+}
+
+.grid-shell .grid-summary-bar--dirty::before {
+  opacity: 1;
 }
 
 .grid-shell .grid-summary-bar__identity {
@@ -719,6 +717,10 @@
   display: inline-flex;
   font-size: 0.875rem;
   line-height: 1;
+}
+
+.grid-shell .grid-save-island__label {
+  animation: fade-in var(--duration-fast) var(--ease-out-expo) both;
 }
 
 .grid-shell .grid-strategy-library-drawer.ant-drawer .ant-drawer-header {
@@ -1516,12 +1518,14 @@
   color: var(--foreground);
 }
 
+/* 方向色对齐全站 A股语义（红涨绿跌，同 index-levels 的 .chg）：
+   "再跌"= 跌（绿）、"再涨"= 涨（红）；盈亏金额仍用 盈绿亏红，两者语义不同 */
 .grid-shell .grid-portfolio-card__quote-main--drop {
-  color: var(--loss);
+  color: var(--profit);
 }
 
 .grid-shell .grid-portfolio-card__quote-main--rise {
-  color: var(--profit);
+  color: var(--loss);
 }
 
 .grid-shell .grid-portfolio-card__quote-main--flat,

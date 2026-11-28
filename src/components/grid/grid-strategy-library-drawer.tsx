@@ -11,7 +11,9 @@ import type { GridStrategyMetadata } from '@/types/grid-strategy-storage';
 import { MOTION, isReducedMotion } from '@/lib/motion';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+
+import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
 
 export interface GridStrategyLibraryDrawerProps {
   open: boolean;
@@ -123,7 +125,7 @@ export function GridStrategyLibraryDrawer({
       );
       gsap.fromTo(
         items,
-        { autoAlpha: 0, y: 12 },
+        { autoAlpha: 0, y: 10 },
         {
           autoAlpha: 1,
           y: 0,

@@ -123,6 +123,21 @@
   box-sizing: border-box;
 }
 
+/* 系统"减少动态效果"：全站动效归零但保留最终状态。
+   用极短时长而非 none，保证依赖 transitionend/animationend 的组件仍能走完生命周期。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -322,6 +337,9 @@ body::after {
   margin-inline: auto;
   padding: 40px 24px 64px;
   color: var(--family-ink);
+  /* 页面根只做纯透明度入场（原因见 index-levels.css 同款注释：避免 transform
+     令内部 fixed 层失去视口定位） */
+  animation: fade-in var(--duration-normal) var(--ease-out-expo) both;
 }
 
 .family-finance-page .family-finance-page__header,
@@ -599,6 +617,12 @@ body::after {
 .family-finance-page .family-amount-visibility-toggle:focus-visible {
   outline: 2px solid var(--accent, #0052ff);
   outline-offset: 2px;
+}
+
+/* 显隐换挡：图标换节点时做一次轻淡入交代状态翻转；金额本身立即生效 */
+.family-finance-page .family-amount-visibility-toggle__icon {
+  display: inline-flex;
+  animation: icon-swap var(--duration-normal) var(--ease-out-expo) both;
 }
 
 .family-finance-page.family-overview-page .family-finance-header p {

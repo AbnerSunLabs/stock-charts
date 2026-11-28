@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { App } from 'antd';
 import { LoginModal } from '@/components/auth/login-modal';
 import { ChangliuMark } from '@/components/brand/changliu-mark';
 import { RESEARCH_ENTRY_HREF } from '@/components/research/research-catalog';
@@ -133,6 +134,7 @@ function useDocumentHidden(): boolean {
 
 export function HomeFinalB() {
   const router = useRouter();
+  const { message } = App.useApp();
   const [loginOpen, setLoginOpen] = useState(false);
   /** 「打开家账」核验中：按钮禁用 + 箭头换转圈 + 文案「正在核验…」，请求结束自动复位。 */
   const [checkingFamily, setCheckingFamily] = useState(false);
@@ -146,6 +148,11 @@ export function HomeFinalB() {
       const result = await checkFamilyAccess();
       if (result.allowed) {
         router.push('/view/family');
+        return;
+      }
+      if (result.reason === 'error') {
+        // 校验请求本身失败：保留会话，提示重试，而不是把人登出
+        message.warning('暂时无法验证访问权限，请稍后重试');
         return;
       }
       if (result.session) await signOut();

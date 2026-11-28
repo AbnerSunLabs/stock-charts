@@ -280,11 +280,14 @@ export function PositionConfigForm({
     [totalInvestment, calculatedNodes]
   );
 
+  // 总额留空时按持仓合计作图：百分比按已填金额自归一，显示提示交代口径
+  const totalForDisplay = totalInvestment ?? allocated;
   const allocatedPct = useMemo(() => {
-    const total = totalInvestment ?? 0;
-    if (total <= 0) return '0.00%';
-    return `${((allocated / total) * 100).toFixed(2)}%`;
-  }, [allocated, totalInvestment]);
+    if (totalForDisplay <= 0) return '0.00%';
+    return `${((allocated / totalForDisplay) * 100).toFixed(2)}%`;
+  }, [allocated, totalForDisplay]);
+  const autoTotal =
+    totalInvestment == null && allocated > 0;
 
   const defaultOpenKeys = useMemo(() => collectAllPaths(POSITION_CATEGORY_TREE), []);
 
@@ -314,6 +317,11 @@ export function PositionConfigForm({
           已分配：{formatYuan(allocated)} 元（{allocatedPct}）
           <span className="mx-2">·</span>
           未分配：{formatYuan(unallocated)} 元
+          {autoTotal ? (
+            <span className="ml-2 text-[var(--text-secondary)]">
+              （未填总额，将按持仓合计作图）
+            </span>
+          ) : null}
         </div>
       </div>
 

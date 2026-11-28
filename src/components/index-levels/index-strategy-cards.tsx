@@ -32,12 +32,20 @@ export function IndexStrategyCards({ funds }: { funds: TrackingEtf[] }) {
     let cancelled = false;
     setReady(false);
     const client = createBrowserSupabaseClient();
-    void loadStrategyCards(client, watched).then(next => {
-      if (!cancelled) {
-        setViews(next);
-        setReady(true);
-      }
-    });
+    // catch 兜底：任何未预期异常都不能以未捕获 rejection 打断页面
+    void loadStrategyCards(client, watched)
+      .then(next => {
+        if (!cancelled) {
+          setViews(next);
+          setReady(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setViews([]);
+          setReady(true);
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -87,9 +95,11 @@ async function loadStrategyCards(
   client: ReturnType<typeof createBrowserSupabaseClient>,
   watched: Set<string>
 ): Promise<PortfolioCardView[]> {
-  const { data } = await client.auth.getSession();
-  if (!data.session) return [];
   try {
+    // getSession 也纳入兜底：网络故障时 auth-js 会 reject
+    // （内部 response 为 undefined 读 result.ok 即崩），不接住会变成未捕获异常打断点位页
+    const { data } = await client.auth.getSession();
+    if (!data.session) return [];
     const strategies = await new GridStrategyRepository(client).listAll();
     const matched = strategies.filter(strategy => {
       const code = extractEtfCode(strategy.symbol);
@@ -106,6 +116,7 @@ async function loadStrategyCards(
       return toPortfolioCardView(strategy, trades, code ? closes.get(code) : undefined);
     });
   } catch {
+    // 读不到会话或行情时按"无跟踪卡片"降级，不阻断点位页
     return [];
   }
 }
