@@ -28,11 +28,14 @@ import {
   type PePoint,
 } from "@/lib/index-levels/pe-series";
 
-const SPANS: Array<{ id: CloseSpan; label: string }> = [
+/** 区间档位表：tracker 的 localStorage 恢复校验也用它（单一事实来源） */
+export const CLOSE_SPANS: Array<{ id: CloseSpan; label: string }> = [
   { id: "all", label: "有记录以来" },
   { id: "10", label: "近 10 年" },
   { id: "5", label: "近 5 年" },
 ];
+
+const SPANS = CLOSE_SPANS;
 
 /** 折线用聚焦页的靛色。买卖徽章仍是 A 股语系：买入绿、卖出红。 */
 const LINE = "#8183d8";

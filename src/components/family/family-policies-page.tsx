@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EyeFilled, EyeInvisibleFilled } from '@ant-design/icons';
 import {
   App,
   Button,
@@ -14,7 +15,12 @@ import {
   Tag,
 } from 'antd';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import { describeError } from '@/lib/describe-error';
 import { FamilyFinanceRepository } from '@/lib/supabase/family-finance-repository';
+import {
+  FamilyAmountVisibilityProvider,
+  useFamilyAmountVisibility,
+} from '@/components/family/family-amount-visibility';
 import {
   POLICY_TYPE_LABELS,
   COVERAGE_POLICY_TYPES,
@@ -158,8 +164,10 @@ export function FamilyPoliciesPage({ embedded = false }: { embedded?: boolean })
   const effectiveVisible = embedded ? inheritedVisible : standaloneVisible;
 
   return (
-    /* 状态变化：独立页面首次进入 —— 根容器统一 motion-enter；内嵌总览时不重复入场 */
-    <div className={`space-y-4 ${embedded ? '' : 'motion-enter'}`}>
+    /* 内嵌总览时继承上级金额显隐，独立路由自治（origin/main 0d43b57 语义）；
+       独立页面首次进入 —— 根容器统一 motion-enter，内嵌总览时不重复入场 */
+    <FamilyAmountVisibilityProvider value={effectiveVisible}>
+      <div className={`space-y-4 ${embedded ? '' : 'motion-enter'}`}>
       <FamilyMotionStyles />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

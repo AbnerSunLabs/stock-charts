@@ -52,18 +52,6 @@ import { App, Button, Card, Drawer, Empty, Grid, Tabs } from 'antd';
 import { gsap } from 'gsap';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
-
-/** 平滑滚动；系统开启"减少动态效果"时改为直接跳转 */
-function scrollIntoViewMotionAware(
-  element: HTMLElement | null,
-  block: ScrollLogicalPosition = 'start'
-): void {
-  element?.scrollIntoView({
-    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    block,
-  });
-}
 
 /**
  * 网格交易策略页（Coinbase 双态布局 + 云端保存）。
@@ -908,13 +896,17 @@ function GridStrategyPageInner() {
                 strategies={boardStrategies}
                 trades={tradesApi.trades}
                 loading={boardLoading || tradesApi.loading}
+                openingStrategyId={openingStrategyId}
                 onOpenCalculator={id => {
-                  setMainTab('calc');
-                  handleOpenStrategy(id);
+                  // 等策略结果写入后再切 tab，避免先闪计算器初始页再跳结果页；
+                  // 若等待期间用户已手动切走 tab，则尊重用户选择不强切
+                  handleOpenStrategy(id, () => {
+                    if (mainTabRef.current === 'board') switchMainTab('calc');
+                  });
                 }}
                 onOpenJournal={id => {
                   setJournalStrategyFilter(id);
-                  setMainTab('journal');
+                  switchMainTab('journal');
                 }}
                 onEdit={strategy => {
                   setNameModalMode('rename');
@@ -948,15 +940,12 @@ function GridStrategyPageInner() {
                   trades={tradesApi.trades}
                   strategyId={journalStrategyFilter}
                   onStrategyChange={setJournalStrategyFilter}
+                  loadError={tradesApi.error}
+                  onRetry={() => void tradesApi.refresh()}
+                  loading={tradesApi.loading}
                   onDelete={async id => {
-                    try {
-                      await tradesApi.deleteTrade(id);
-                      message.success('已删除');
-                    } catch (error) {
-                      message.error(
-                        error instanceof Error ? error.message : '删除失败'
-                      );
-                    }
+                    // 成败提示由流水组件统一负责（失败保留确认框便于重试），页面不再双重 toast
+                    await tradesApi.deleteTrade(id);
                   }}
                 />
               </div>

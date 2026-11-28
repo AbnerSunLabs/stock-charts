@@ -4,7 +4,6 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { App } from 'antd';
 import { PositionConfigForm } from '@/components/sunburst/position-config-form';
 import { LazySunburstChart } from '@/components/sunburst/lazy-sunburst-chart';
-import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
 import {
   buildSunburstChartDataFromNodes,
   canGenerateSunburstChart,
@@ -69,6 +68,19 @@ function buildSunburstExportUrl(canvas: HTMLCanvasElement): string {
   return output.toDataURL('image/png');
 }
 
+/**
+ * 生成快照键：下载只在图表与当前输入一致时可用，避免拿到旧图。
+ * 键按路径排序，避免"清空再填回"因录入顺序不同被误判为已过期。
+ */
+function snapshotOf(total: number, leaves: Record<string, number>): string {
+  return JSON.stringify({
+    total,
+    leaves: Object.keys(leaves)
+      .sort()
+      .map(k => [k, leaves[k]]),
+  });
+}
+
 interface SunburstStageProps {
   hasChart: boolean;
   chartSectionRef: React.RefObject<HTMLElement>;
@@ -101,7 +113,7 @@ function SunburstStage({
         aria-hidden={hasChart}
       >
         <p className="m-0 text-[0.9375rem] text-[var(--text-muted)] text-center max-w-[40ch]">
-          填写总投资额与各分类持仓金额后，点击「生成图表」查看旭日图。
+          填写各分类持仓金额后点击「生成图表」；总投资额可留空，将按持仓合计作图。
         </p>
       </div>
       {hasChart && (
@@ -147,15 +159,7 @@ export default function SunburstPage() {
     [effectiveTotal, leafAmounts]
   );
 
-  // 生成快照：下载只在图表与当前输入一致时可用，避免拿到旧图。
-  // 键按路径排序，避免"清空再填回"因录入顺序不同被误判为已过期
-  const snapshotOf = (total: number, leaves: Record<string, number>) =>
-    JSON.stringify({
-      total,
-      leaves: Object.keys(leaves)
-        .sort()
-        .map(k => [k, leaves[k]]),
-    });
+  // 生成快照（键见模块级 snapshotOf）：旧图 + 新输入判定为"已过期"，锁定下载
   const chartSnapshotRef = useRef<string>('');
   const chartStale =
     chartData != null &&
@@ -187,9 +191,35 @@ export default function SunburstPage() {
       );
       return;
     }
-    setChartData(buildSunburstChartDataFromNodes(calculatedNodes, total));
-    message.success('已生成图表');
-  }, [totalInvestment, calculatedNodes, message]);
+    // 超额时阻止生成：表单已有警告，不让错误状态进入图表；
+    // 判断与表单警告同一精度（按分归一），避免 0.10+0.20 > 0.30 这类浮点误差误拦
+    if (
+      totalInvestment != null &&
+      roundAmount(allocatedTotal) > roundAmount(totalInvestment)
+    ) {
+      message.error('持仓合计超过总投资额，请调整金额后生成');
+      return;
+    }
+    const data = buildSunburstChartDataFromNodes(calculatedNodes, total);
+    if (data.length === 0) {
+      // 兜底：占比全零等异常情况下不假装生成成功（快照不更新，下载锁定语义不变）
+      message.error('没有可生成的持仓数据，请检查已填金额');
+      return;
+    }
+    // 快照在确认生成成功后才更新：失败时保持旧快照，旧图+新输入仍判定为"已过期"
+    chartSnapshotRef.current = snapshotOf(effectiveTotal, leafAmounts);
+    setChartData(data);
+    message.success(
+      totalInvestment == null ? '图表已生成（按持仓合计作图）' : '图表已生成'
+    );
+  }, [
+    totalInvestment,
+    allocatedTotal,
+    effectiveTotal,
+    leafAmounts,
+    calculatedNodes,
+    message,
+  ]);
 
   useEffect(() => {
     if (!chartData?.length) return;
@@ -256,7 +286,8 @@ export default function SunburstPage() {
           type="button"
           className={SUNBURST_BTN_SECONDARY}
           onClick={handleDownloadPng}
-          disabled={!hasChart}
+          disabled={!hasChart || chartStale}
+          title={chartStale ? '金额已修改，重新生成后可下载' : undefined}
         >
           下载图表 PNG
         </button>

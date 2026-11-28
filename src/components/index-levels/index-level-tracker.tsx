@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { EssayRail } from "@/components/index-levels/index-essay-rail";
-import { IndexLevelChart, SpanTabs } from "@/components/index-levels/index-level-chart";
+import { CLOSE_SPANS, IndexLevelChart, SpanTabs } from "@/components/index-levels/index-level-chart";
 import { attachIndexPe, csindexSymbol, isValidPeTtm, type PePoint } from "@/lib/index-levels/pe-series";
 import { HelpTooltip } from "@/components/shared/help-tooltip";
 import { IndexLevelPicker } from "@/components/index-levels/index-level-picker";
@@ -266,7 +266,7 @@ export function IndexLevelTracker() {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem("index-levels:span");
-      if (saved && SPANS.some(item => item.id === saved)) {
+      if (saved && CLOSE_SPANS.some(item => item.id === saved)) {
         setSpanState(saved as CloseSpan);
       }
     } catch {

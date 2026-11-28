@@ -20,7 +20,7 @@ export interface AuthGateProps {
   redirectPath: string;
 }
 
-type GateStatus = 'loading' | 'need_login' | 'denied' | 'allowed';
+type GateStatus = 'loading' | 'need_login' | 'denied' | 'check_failed' | 'allowed';
 
 type GateState =
   | { status: 'loading' }
@@ -33,11 +33,15 @@ type GateState =
 type AccessOutcome =
   | { kind: 'need_login' }
   | { kind: 'denied' }
+  | { kind: 'check_failed' }
   | { kind: 'allowed'; user: User };
 
 /** 拉取并判定门禁结果；无权限时顺带登出，提示由调用方统一弹出 */
 async function resolveAccessOutcome(onWarn: (text: string) => void): Promise<AccessOutcome> {
   const result = await checkFamilyAccess();
+  // 校验请求失败（含会话查询失败）必须先于未登录分流：此时 session 可能为空，
+  // 误判成 need_login/denied 会引导重新登录甚至登出；保留会话交给用户重试
+  if (result.reason === 'error') return { kind: 'check_failed' };
   if (!result.session) return { kind: 'need_login' };
   if (!result.allowed) {
     onWarn('当前 GitHub 账号无家庭财务访问权限');
@@ -94,6 +98,22 @@ function GateResultView({
   );
 }
 
+/** check_failed 视图：校验请求本身失败（网络/服务），保留会话只给重试，不弹登录窗 */
+function CheckFailedGateView({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Result
+      status="warning"
+      title="暂时无法验证家庭财务权限"
+      subTitle="网络或服务暂时不可用，你的登录状态未受影响。"
+      extra={
+        <Button type="primary" onClick={onRetry}>
+          重试
+        </Button>
+      }
+    />
+  );
+}
+
 /** allowed 视图：门禁放行后的正文（入场由外层交叉淡切的淡入上移承担） */
 function AllowedGateView({
   user,
@@ -126,7 +146,7 @@ interface GateLayer {
 const GATE_EXIT_FALLBACK_MS = 320;
 
 /**
- * 状态变化：门禁各状态视图（loading/need_login/denied/allowed）切换时交叉淡切——
+ * 状态变化：门禁各状态视图（loading/need_login/denied/check_failed/allowed）切换时交叉淡切——
  * 新层 small 档（180ms）淡入上移，旧层走独立的 viewFadeOut（exit-small 档）淡出下移，
  * 退场短于进场；不同名 keyframe 保证切换时动画必然重新开始。
  * 双层叠放在同一 grid 单元互不推挤；时长曲线全走 token，reduced-motion 下
@@ -224,11 +244,11 @@ export function AuthGate({ children, redirectPath }: AuthGateProps) {
           ? { status: 'allowed', user: outcome.user }
           : { status: outcome.kind }
       );
-    } catch (e) {
-      // 文案规范：兜底错误不露黑话，给下一步动作
-      message.error(e instanceof Error ? e.message : '登录状态核验失败，请重试');
-      setState({ status: 'need_login' });
-      setLoginOpen(true);
+    } catch {
+      // checkFamilyAccess 已把可预期失败归一为 reason:'error'，到这里属兜底：
+      // 同样保留会话进入可重试态并收起登录窗，避免把临时故障误导成未登录
+      setState({ status: 'check_failed' });
+      setLoginOpen(false);
     }
   }, [message]);
 
@@ -244,6 +264,8 @@ export function AuthGate({ children, redirectPath }: AuthGateProps) {
         <AllowedGateView user={state.user} onSignedOut={() => void refresh()}>
           {children}
         </AllowedGateView>
+      ) : state.status === 'check_failed' ? (
+        <CheckFailedGateView onRetry={() => void refresh()} />
       ) : (
         <GateResultView
           denied={state.status === 'denied'}

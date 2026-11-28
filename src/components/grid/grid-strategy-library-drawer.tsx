@@ -13,7 +13,6 @@ import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { useEffect, useRef, type ReactNode } from 'react';
 
-import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
 
 export interface GridStrategyLibraryDrawerProps {
   open: boolean;

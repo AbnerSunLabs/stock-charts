@@ -322,6 +322,7 @@ export function GridPortfolioBoard({
           <GridPortfolioCard
             key={view.s.id}
             view={view}
+            opening={openingStrategyId === view.s.id}
             onOpenCalculator={onOpenCalculator}
             onOpenJournal={onOpenJournal}
             onEdit={onEdit}

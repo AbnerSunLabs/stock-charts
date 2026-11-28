@@ -41,6 +41,7 @@ import {
 } from '@/lib/family-finance/aggregates';
 import { formatCny, formatDateTime } from '@/lib/family-finance/format';
 import { listTransferTargetOptions } from '@/lib/family-finance/ledger-transfer';
+import { describeError } from '@/lib/describe-error';
 import { FamilyAmountVisibilityProvider } from '@/components/family/family-amount-visibility';
 import { FamilyAmountVisibilityButton } from '@/components/family/family-amount-visibility-toggle';
 import { FamilyAmountText } from '@/components/family/family-amount-text';
@@ -115,7 +116,8 @@ export function FamilyLedgerPage() {
       setItems(i);
       setAssetHistory(buildFamilyAssetHistory(historyRows));
     } catch (e) {
-      const reason = e instanceof Error ? e.message : '加载失败';
+      // 纯英文技术报错替换为可行动的中文兜底（describeError），再按首屏/静默两种口径呈现
+      const reason = describeError(e, '账目加载失败，请重试');
       // 静默刷新失败：保留旧数据（回滚提示），明确告知当前展示的是最近一次数据
       message.error(silent ? `数据刷新失败，当前展示的是最近一次数据（${reason}）` : reason);
     } finally {
@@ -376,8 +378,15 @@ export function FamilyLedgerPage() {
                   okButtonProps: { danger: true },
                   cancelText: '取消',
                   onOk: async () => {
+                    try {
+                      await repo.deleteLedgerItem(row.id);
+                    } catch (e) {
+                      // 删除失败：抛回确认框保持打开便于重试，避免"看着关了其实没删掉"；
+                      // 此时行未被标记淡出，不存在幽灵行
+                      message.error(describeError(e, '删除失败，请重试'));
+                      throw e;
+                    }
                     // 状态变化：删除确认成功 → 该行先淡出（exit-small）再静默刷新数据
-                    await repo.deleteLedgerItem(row.id);
                     message.success('已删除该条流水');
                     await fadeOutRow(row.id);
                     await reload();

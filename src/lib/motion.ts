@@ -30,9 +30,10 @@ gsap.defaults({
 /**
  * 是否偏好减少动态效果。仅用于一次性判断（事件处理器、图表配置）；
  * 组件内响应式渲染请用 usePrefersReducedMotion。
- * @returns 系统开启「减少动态效果」时为 true；服务端渲染恒为 false
+ * @returns 系统开启「减少动态效果」时为 true；服务端渲染与无 matchMedia 的旧 jsdom 恒为 false
  */
 export function isReducedMotion(): boolean {
   if (typeof window === 'undefined') return false;
+  if (typeof window.matchMedia !== 'function') return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

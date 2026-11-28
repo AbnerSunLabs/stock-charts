@@ -13,7 +13,6 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { HelpTooltip } from '@/components/shared/help-tooltip';
-import { prefersReducedMotion } from '@/lib/prefers-reduced-motion';
 import { createPortal } from 'react-dom';
 
 export interface GridStrategyNameOverlayProps {

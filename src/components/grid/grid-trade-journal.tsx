@@ -286,7 +286,22 @@ export function GridTradeJournal({
         ) : null}
       </Space>
       {rows.length === 0 ? (
-        <Empty description="还没有成交流水。保存策略后，可在档位表中记录每一笔买入与卖出。" />
+        /* 读失败不算"无流水"：错误横幅已交代失败与重试，空态文案反而误导 */
+        loadError ? null : hasFilter ? (
+          <Empty description="当前筛选没有流水">
+            <Button
+              shape="round"
+              onClick={() => {
+                onStrategyChange('all');
+                setSideFilter('all');
+              }}
+            >
+              清除筛选
+            </Button>
+          </Empty>
+        ) : (
+          <Empty description="还没有成交流水。保存策略后，可在档位表中记录每一笔买入与卖出。" />
+        )
       ) : (
         <Table
           size="middle"

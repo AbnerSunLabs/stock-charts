@@ -337,7 +337,19 @@
 .index-levels .index-select:active:not(:disabled) {
   transform: scale(var(--motion-press-scale));
 }
-/* 跟踪指数下拉菜单：展开 = 顶部原点缩放淡入（收起更短更快） */
+/* 跟踪指数下拉菜单：展开用进场 keyframe（菜单是打开后才挂载的元素，
+   transition 没有前值可过渡，keyframe 才能在挂载帧起播）；收起走更短的退场过渡 */
+@keyframes ilMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .index-levels .index-menu {
   position: absolute;
   z-index: 40;
@@ -355,22 +367,20 @@
   border-radius: 8px;
   box-shadow: var(--ds-shadow-lg);
   transform-origin: top right;
-  transform: translateY(-4px) scale(0.98);
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity var(--motion-duration-small) var(--motion-ease-out),
-    transform var(--motion-duration-small) var(--motion-ease-out);
 }
+
 .index-levels .index-menu[data-open='true'] {
-  transform: none;
-  opacity: 1;
+  animation: ilMenuIn var(--motion-duration-small) var(--motion-ease-out) both;
   pointer-events: auto;
 }
+
 .index-levels .index-menu[data-open='false'] {
-  transition-duration: var(--motion-duration-exit-small),
-    var(--motion-duration-exit-small);
-  transition-timing-function: var(--motion-ease-in), var(--motion-ease-in);
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  pointer-events: none;
+  transition:
+    opacity var(--motion-duration-exit-small) var(--motion-ease-in),
+    transform var(--motion-duration-exit-small) var(--motion-ease-in);
 }
 .index-levels .index-menu button {
   display: flex;
